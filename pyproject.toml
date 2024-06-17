@@ -15,8 +15,7 @@ classifiers = [
 ]
 dependencies = [
   "dask[complete]>=2023.3.0",
-  "netcdf4",
-  "h5py",
+  "netcdf4==1.6.5",
   "xarray[io,accel,viz]>=2023.3.0",
   "s3fs>=2023.3.0",
   "fsspec>=2023.3.0",
