@@ -121,7 +121,8 @@ def send(
     filepaths
         List of filepaths to the datasets to be sent.
     bucket
-        Name of the bucket in the object store.
+        Name of the bucket in the object store. Bucket names can consist only of
+        lowercase letters, numbers, dots (.), and hyphens (-).
     store_credentials_json
         Path to the JSON file containing the object store credentials.
     variables
@@ -294,7 +295,8 @@ def _send_variable(
     var
         Variable to be sent.
     bucket
-        Name of the bucket in the object store.
+        Name of the bucket in the object store. Bucket names can consist only of
+        lowercase letters, numbers, dots (.), and hyphens (-).
     object_prefix
         Prefix to be added to the object names in the object store.
     append_dim
@@ -686,7 +688,8 @@ def _send_data_to_store(
     obj_store
         Object store to be used.
     bucket
-        Name of the bucket in the object store.
+        Name of the bucket in the object store. Bucket names can consist only of
+        lowercase letters, numbers, dots (.), and hyphens (-).
     ds_filepath
         Dataset to be sent.
     object_prefix

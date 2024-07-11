@@ -134,7 +134,7 @@ class ObjectStoreS3(s3fs.S3FileSystem):
         Parameters
         ----------
         bucket
-            Bucket to create.
+            Bucket to create. Bucket names can consist only of lowercase letters, numbers, dots (.), and hyphens (-).
         """
         try:
             return self.mkdir(bucket, **kwargs)
