@@ -392,7 +392,10 @@ def _send_variable(
 
     except FileNotFoundError:
         logging.info("Creating %s", dest)
-        ds_filepath = _reproject_ds(ds_filepath, var)
+
+        if reproject:
+            # Reproject the dataset to the expected projection
+            ds_filepath = _reproject_ds(ds_filepath, var)
 
         ds_filepath = _calculate_metadata(
             xr.Dataset(), ds_filepath, var, append_dim, reproject
