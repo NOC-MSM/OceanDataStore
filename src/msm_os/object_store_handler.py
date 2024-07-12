@@ -392,7 +392,10 @@ def _send_variable(
 
     except FileNotFoundError:
         logging.info("Creating %s", dest)
-        ds_filepath = _reproject_ds(ds_filepath, var)
+
+        if reproject:
+            # Reproject the dataset to the expected projection
+            ds_filepath = _reproject_ds(ds_filepath, var)
 
         ds_filepath = _calculate_metadata(
             xr.Dataset(), ds_filepath, var, append_dim, reproject
@@ -567,7 +570,11 @@ def _calculate_metadata(
 
     # Calculate expected variables and coords for the dataset
     expected_variables = list(set(list(ds_obj_store.keys()) + list(ds_filepath.keys())))
-    expected_coords = list(set(list(ds_obj_store.coords) + list(ds_obj_store.coords)))
+    expected_coords = list(set(list(ds_obj_store.coords) + list(ds_filepath.coords)))
+    if not expected_variables:
+        expected_variables = ["none"]
+    if not expected_coords:
+        expected_coords = ["none"]
     ds_filepath.attrs["expected_variables"] = expected_variables
     ds_filepath.attrs["expected_coords"] = expected_coords
 
