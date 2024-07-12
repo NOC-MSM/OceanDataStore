@@ -66,7 +66,7 @@ An additional flag is used:
 | `--append_dim` | `-a` | Append dimension (default=`time_counter`). |
 | `--variables` | `-v` | Variables to send. If not provided, all variables will be sent. If set to `compact`, the variables will not be sent to separate Zarr files. |
 | `--reproject` | `-r` | Whether to reproject data. If not provided, the data is not reprojected. If present, reproject the data from tri-polar grid to PlateCarree.
-| `--chunk_strategy` | `-cs` | Chunk strategy in the output data. If provided, the output data will be chunked according to the specified strategy. The format is a JSON string, e.g., '{"time_counter": 1, "x": 100, "y": 100}'.
+| `--chunk-strategy` | `-cs` | Chunk strategy in the output data. If provided, the output data will be chunked according to the specified strategy. If not provided, it will use the `auto` mode. The format is a JSON string, e.g., '{"time_counter": 1, "x": 100, "y": 100}'.
 
 ## Credentials File
 
