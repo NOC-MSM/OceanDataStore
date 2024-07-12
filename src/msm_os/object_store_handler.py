@@ -418,7 +418,7 @@ def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
     """
     # Apply custom chunking if the dimensions are present
     # chunking = {"x": 100, "y": 100, "time_counter": 1}
-    variables = _get_update_variables(ds_filepath, None)
+    variables = ds_filepath.variables
 
     for variable in variables:
         new_chunking = {

@@ -44,6 +44,7 @@ def process_action(args):
         sys.exit(0)
 
     variables = list(args.variables) if args.variables is not None else None
+    print(args.chunk_strategy)
 
     if args.action == "send":
         if args.variables is not None and "compact" in args.variables:
@@ -59,6 +60,7 @@ def process_action(args):
             append_dim=args.append_dim,
             send_vars_indep=not send_vars_indep,
             object_prefix=args.object_prefix,
+            rechunk=args.chunk_strategy,
             to_zarr_kwargs=None,
         )
 
