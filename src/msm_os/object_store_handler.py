@@ -564,10 +564,13 @@ def _calculate_metadata(
     # Calculate expected size for the dimension
     expected_size = _calculate_expected_dimension_size(
         ds_obj_store, ds_filepath, append_dim
-    )
+    )    
+    logging.info("Expected size: %s", expected_size)
     for dim, size in expected_size.items():
         ds_filepath[dim].attrs["expected_size"] = size
-
+        logging.info("Expected size for %s: %s", dim, size)
+        logging.info("Size attrs: %s", ds_filepath[dim].attrs)
+        
     # Calculate expected variables and coords for the dataset
     expected_variables = list(set(list(ds_obj_store.keys()) + list(ds_filepath.keys())))
     expected_coords = list(set(list(ds_obj_store.coords) + list(ds_filepath.coords)))
