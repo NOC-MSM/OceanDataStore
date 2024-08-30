@@ -152,14 +152,13 @@ def validate_dimensions(ds_obj_store: xr.Dataset):
     ds_obj_store : xr.Dataset
         The dataset loaded from the object store.
     """
-    for dim, size in ds_obj_store.sizes.items():
-        # Get the expected size from the attribute
-        expected_size = ds_obj_store[dim].attrs.get("expected_size", None)
-        if expected_size is None:
-            raise ExpectedAttrsNotFound("expected_size")
+    expected_size = ds_obj_store.attrs.get("expected_size", None)
+    if expected_size is None:
+        raise ExpectedAttrsNotFound("expected_size")
 
+    for dim, size in ds_obj_store.sizes.items():
         # Compare the expected size with the actual size
-        if size != expected_size:
+        if size != expected_size[dim]:
             raise DimensionMismatch(dim, size, expected_size)
 
 

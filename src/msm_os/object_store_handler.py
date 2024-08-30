@@ -388,7 +388,7 @@ def _send_variable(
             logging.warning(
                 "Object store object %s will be rolled back to previous version", dest
             )
-            rollback_object(obj_store, bucket, object_prefix, var, append_dim)
+            rollback_object(obj_store, ds_filepath[append_dim].values, bucket, object_prefix, var, append_dim)
 
     except FileNotFoundError:
         logging.info("Creating %s", dest)
@@ -564,13 +564,11 @@ def _calculate_metadata(
     # Calculate expected size for the dimension
     expected_size = _calculate_expected_dimension_size(
         ds_obj_store, ds_filepath, append_dim
-    )    
-    logging.info("Expected size: %s", expected_size)
-    for dim, size in expected_size.items():
-        ds_filepath[dim].attrs["expected_size"] = size
-        logging.info("Expected size for %s: %s", dim, size)
-        logging.info("Size attrs: %s", ds_filepath[dim].attrs)
-        
+    )
+    if not expected_size:
+        expected_size = ["none"]
+    ds_filepath.attrs["expected_size"] = expected_size
+
     # Calculate expected variables and coords for the dataset
     expected_variables = list(set(list(ds_obj_store.keys()) + list(ds_filepath.keys())))
     expected_coords = list(set(list(ds_obj_store.coords) + list(ds_filepath.coords)))
@@ -624,21 +622,31 @@ def _calculate_expected_dimension_size(
     """
     expected_size = {}
     for dim, _ in ds_filepath.sizes.items():
+        logging.info("Dim: %s", dim)
         if dim == append_dim:
             if not ds_obj_store.sizes.get(dim):
                 current_size = 0
             else:
                 current_size = len(ds_obj_store[dim])
             append_size = len(ds_filepath[dim])
+            logging.info("Current size: %s", current_size)
+            logging.info("Append size: %s", append_size)
+
             expected_size[dim] = current_size + append_size
         else:
+            logging.info("Size: %s", len(ds_filepath[dim]))
             expected_size[dim] = len(ds_filepath[dim])
 
     return expected_size
 
 
 def rollback_object(
-    obj_store: ObjectStoreS3, bucket: str, object_prefix: str, var: str, append_dim: str
+    obj_store: ObjectStoreS3,
+    append_dim_values: np.ndarray,
+    bucket: str,
+    object_prefix: str,
+    var: str,
+    append_dim: str
 ) -> None:
     """
     Rolls back the Zarr object stored in the object store by removing the
@@ -648,6 +656,8 @@ def rollback_object(
     ----------
     obj_store
         Object store instance.
+    ds_filepath
+        Dataset to be rolled back.
     bucket
         Name of the bucket.
     object_prefix
