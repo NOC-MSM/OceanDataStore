@@ -46,10 +46,10 @@ class ExpectedAttrsNotFound(Exception):
 class CheckSumMismatch(Exception):
     """Exception raised for when a checksum mismatch is found."""
 
-    def __init__(self, append_dim, value, expected_checksum, actual_checksum):
+    def __init__(self, append_dim, expected_checksum, actual_checksum):
         """Initialise the exception."""
         message = (
-            f"Checksum mismatch for append dim {append_dim}: {value}. Expected: {expected_checksum}, Actual: {actual_checksum}"
+            f"Checksum mismatch for append dim {append_dim}. Expected: {expected_checksum}, Actual: {actual_checksum}"
         )
         logging.warning(message)
         super().__init__(message)

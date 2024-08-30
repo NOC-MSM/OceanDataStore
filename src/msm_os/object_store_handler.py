@@ -589,12 +589,7 @@ def _calculate_metadata(
                 data_bytes_reprojected, dtype=np.uint32
             ).sum()
 
-    if append_dim in list(ds_filepath[var].sizes):
-        ds_filepath.attrs[
-            f"expected_checksum_{ds_filepath[var].time_counter.values[0]}"
-        ] = expected_checksum
-    else:
-        ds_filepath.attrs[f"expected_checksum_{var}"] = expected_checksum
+    ds_filepath.attrs["expected_checksum"] = expected_checksum
 
     return ds_filepath
 

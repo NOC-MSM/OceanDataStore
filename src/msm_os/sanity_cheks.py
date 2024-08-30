@@ -230,28 +230,31 @@ def validate_checksum(
     expected_checksum = None
     if append_dim not in list(ds[var].sizes):
         specific_chunk = ds_obj_store
-        expected_checksum = ds_obj_store.attrs.get(f"expected_checksum_{var}", None)
+        expected_checksum = ds_obj_store.attrs.get("expected_checksum", None)
     else:
-        specific_chunk = ds_obj_store.isel({append_dim: ds[append_dim].values[-1]})
+        try:
+            specific_chunk = ds_obj_store.sel({append_dim: ds[append_dim].values})
+        except KeyError:
+            specific_chunk = None
         if specific_chunk is not None:
             expected_checksum = specific_chunk.attrs.get(
-                f"expected_checksum_{ds[append_dim].values[-1]}", None
+                "expected_checksum", None
             )
 
     if expected_checksum:
         data_bytes = specific_chunk[var].values.tobytes()
         actual_checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
-        data_bytes_reprojected = specific_chunk[f"reprojected_{var}"].values.tobytes()
-        actual_checksum += np.frombuffer(data_bytes_reprojected, dtype=np.uint32).sum()
+        if f"projected_{var}" in specific_chunk:
+            data_bytes_reprojected = specific_chunk[f"projected_{var}"].values.tobytes()
+            actual_checksum += np.frombuffer(data_bytes_reprojected, dtype=np.uint32).sum()
 
         if actual_checksum != expected_checksum:
             raise CheckSumMismatch(
                 append_dim,
-                ds[append_dim].values[-1],
                 expected_checksum,
                 actual_checksum,
             )
     else:
         raise CheckSumMismatch(
-            append_dim, ds[append_dim].values[-1], expected_checksum, actual_checksum
+            append_dim, expected_checksum, actual_checksum
         )
