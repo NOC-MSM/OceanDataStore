@@ -152,7 +152,7 @@ def validate_dimensions(ds_obj_store: xr.Dataset):
     ds_obj_store : xr.Dataset
         The dataset loaded from the object store.
     """
-    for dim, size in ds_obj_store.dims.items():
+    for dim, size in ds_obj_store.sizes.items():
         # Get the expected size from the attribute
         expected_size = ds_obj_store[dim].attrs.get("expected_size", None)
         if expected_size is None:
