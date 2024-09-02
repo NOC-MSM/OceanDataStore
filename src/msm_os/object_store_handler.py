@@ -248,7 +248,7 @@ def _update_data(
     """
 
     try:
-        check_duplicates(ds_filepath, ds_obj_store, append_dim)
+        ds_filepath = check_duplicates(ds_filepath, ds_obj_store, append_dim)
     except DuplicatedAppendDimValue:
         logging.info("Updating %s", mapper.root)
         # Define region to write to
@@ -327,7 +327,7 @@ def _send_variable(
 
         try:
             ds_obj_store = xr.open_zarr(mapper)
-            check_duplicates(ds_filepath, ds_obj_store, append_dim)
+            ds_filepath = check_duplicates(ds_filepath, ds_obj_store, append_dim)
             if reproject:
                 # Reproject the dataset to the expected projection
                 ds_filepath = _reproject_ds(ds_filepath, var)
@@ -766,7 +766,7 @@ def _send_data_to_store(
 
             try:
                 ds_obj_store = xr.open_zarr(mapper)
-                check_duplicates(ds_filepath, ds_obj_store, append_dim)
+                ds_filepath = check_duplicates(ds_filepath, ds_obj_store, append_dim)
                 ds_filepath.to_zarr(mapper, mode="a", append_dim=append_dim)
             except DuplicatedAppendDimValue:
                 logging.info(

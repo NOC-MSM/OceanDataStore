@@ -20,7 +20,7 @@ def check_duplicates(
     ds_filepath: xr.Dataset,
     ds_obj_store: xr.Dataset,
     append_dim: str,
-) -> None:
+) -> xr.Dataset:
     """
     Check if there are duplicates in the append dimension.
 
@@ -37,6 +37,10 @@ def check_duplicates(
     ------
     DuplicatedAppendDimValue
         If duplicates are found in the append dimension.
+    
+    Returns
+    -------
+    xr.Dataset
     """
     filepath_append_dim = ds_filepath[append_dim]
 
@@ -44,23 +48,21 @@ def check_duplicates(
     n_dupl = np.sum(np.isin(ds_obj_store[append_dim], filepath_append_dim))
 
     if n_dupl == 0:
-        return n_dupl
-    elif n_dupl == filepath_append_dim.size:
+        return ds_filepath
+    if n_dupl == filepath_append_dim.size:
         raise DuplicatedAppendDimValue(
             n_dupl,
             append_dim,
             filepath_append_dim.values[0],
             filepath_append_dim.values[-1],
         )
-    elif n_dupl > 0:
-        raise ValueError(
-            f"Only found {n_dupl} duplicates in the append dimension when "
-            f"there are {filepath_append_dim.size} values in the dataset."
-        )
+    if n_dupl < filepath_append_dim.size:
+        ds_filepath = ds_filepath.sel({append_dim: ~np.isin(filepath_append_dim, ds_obj_store[append_dim])})
     else:
         raise NotImplementedError(
             "Found error in check_duplicates which is not implemented."
         )
+    return ds_filepath
 
 
 def check_variable_exists(
