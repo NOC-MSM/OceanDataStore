@@ -1,6 +1,8 @@
 """Module with sanity checks."""
 
 from typing import List
+import logging
+
 import numpy as np
 import xarray as xr
 from fsspec.mapping import FSMap
@@ -248,6 +250,9 @@ def validate_checksum(
             data_bytes_reprojected = specific_chunk[f"projected_{var}"].values.tobytes()
             actual_checksum += np.frombuffer(data_bytes_reprojected, dtype=np.uint32).sum()
 
+        logging.info(
+            f"Expected checksum: {expected_checksum}, Actual checksum: {actual_checksum}"
+        )
         if actual_checksum != expected_checksum:
             raise CheckSumMismatch(
                 append_dim,

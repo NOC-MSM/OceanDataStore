@@ -403,7 +403,6 @@ def _send_variable(
         if rechunk:
             ds_filepath = _rechunk_ds(ds_filepath, rechunk)
 
-        # Append the variable to the object store
         ds_filepath.to_zarr(mapper, mode="a")
 
 
@@ -671,7 +670,7 @@ def rollback_object(
         if append_dim in zarr_array.attrs["_ARRAY_DIMENSIONS"]:
             append_dim_index = zarr_array.attrs["_ARRAY_DIMENSIONS"].index(append_dim)
             new_shape = list(original_shape)
-            new_shape[append_dim_index] -= 1
+            new_shape[append_dim_index] -= len(append_dim_values)
             zarr_array.attrs["_ARRAY_DIMENSIONS"] = zarr_array.attrs[
                 "_ARRAY_DIMENSIONS"
             ]
