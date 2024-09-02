@@ -339,7 +339,8 @@ def _send_variable(
 
             # Rechunk the dataset
             if rechunk:
-                ds_filepath = _rechunk_ds(ds_filepath, rechunk)
+                logging.warning("You already have data in the object store and you can't rechunk it")
+                # ds_filepath = _rechunk_ds(ds_filepath, rechunk)
 
             # Append the variable to the object store
             ds_filepath.to_zarr(
