@@ -116,6 +116,7 @@ def check_data_integrity(
     var: str,
     append_dim: str,
     ds: xr.Dataset,
+    first_file: bool = False,
     test_list: List[str] = None,
 ) -> None:
     """
@@ -144,7 +145,7 @@ def check_data_integrity(
             validate_dimensions(ds_obj_store)
             validate_variables(ds_obj_store)
         if test == "checksum":
-            validate_checksum(ds_obj_store, var, append_dim, ds)
+            validate_checksum(ds_obj_store, var, append_dim, ds, first_file)
 
 
 def validate_dimensions(ds_obj_store: xr.Dataset):
@@ -207,7 +208,11 @@ def validate_coords(ds_obj_store: xr.Dataset):
 
 
 def validate_checksum(
-    ds_obj_store: xr.Dataset, var: str, append_dim: str, ds: xr.Dataset
+    ds_obj_store: xr.Dataset,
+    var: str,
+    append_dim: str,
+    ds: xr.Dataset,
+    first_file: bool = False
 ):
     """
     Validate the checksum of the dataset.
@@ -222,6 +227,8 @@ def validate_checksum(
         The name of the dimension to check for duplicates.
     ds
         The dataset to be checked.
+    first_file
+        Whether this is the first file being sent.
     """
 
     #     if append_dim in list(ds_filepath[var].sizes):
@@ -233,8 +240,13 @@ def validate_checksum(
 
     expected_checksum = None
     if append_dim not in list(ds[var].sizes):
-        specific_chunk = ds_obj_store
-        expected_checksum = ds_obj_store.attrs.get("expected_checksum", None)
+        if first_file:
+            specific_chunk = ds_obj_store
+            expected_checksum = ds_obj_store.attrs.get("expected_checksum", None)
+        else:
+            logging.info("The variable is not chunked along the append dimension.")
+            logging.info("Skipping checksum validation.")
+            return
     else:
         try:
             specific_chunk = ds_obj_store.sel({append_dim: ds[append_dim].values})
@@ -245,7 +257,7 @@ def validate_checksum(
                 "expected_checksum", None
             )
 
-    if expected_checksum:
+    if expected_checksum is not None:
         data_bytes = specific_chunk[var].values.tobytes()
         actual_checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
         if f"projected_{var}" in specific_chunk:
