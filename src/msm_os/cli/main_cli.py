@@ -59,6 +59,8 @@ def process_action(args):
             append_dim=args.append_dim,
             send_vars_indep=not send_vars_indep,
             object_prefix=args.object_prefix,
+            rechunk=args.chunk_strategy,
+            reproject=args.reproject,
             to_zarr_kwargs=None,
         )
 
