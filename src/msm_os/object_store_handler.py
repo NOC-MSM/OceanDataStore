@@ -308,6 +308,7 @@ def _send_variable(
         Whether to reproject the dataset.
     """
     check_variable_exists(ds_filepath, var)
+    ds_filepath_var = ds_filepath[[var]]
 
     dest = f"{bucket}/{object_prefix}/{var}.zarr"
     mapper = obj_store.get_mapper(dest)
@@ -315,7 +316,7 @@ def _send_variable(
     try:
         check_destination_exists(obj_store, dest)
 
-        if append_dim not in ds_filepath[var].dims:
+        if append_dim not in ds_filepath_var.dims:
             logging.info(
                 "Skipping %s because %s is not in the dimensions of %s",
                 dest,
@@ -328,23 +329,24 @@ def _send_variable(
 
         try:
             ds_obj_store = xr.open_zarr(mapper)
-            ds_filepath = check_duplicates(ds_filepath, ds_obj_store, append_dim)
+            ds_filepath_var = check_duplicates(ds_filepath_var, ds_obj_store, append_dim)
             if reproject:
                 # Reproject the dataset to the expected projection
-                ds_filepath = _reproject_ds(ds_filepath, var)
+                ds_filepath_var = _reproject_ds(ds_filepath_var, var)
 
             # Calculate expected size, variables, chunks and checksum
-            ds_filepath = _calculate_metadata(
-                ds_obj_store, ds_filepath, var, append_dim, reproject
+            ds_filepath_var = _calculate_metadata(
+                ds_obj_store, ds_filepath_var, var, append_dim, reproject
             )
 
             # Rechunk the dataset
             if rechunk:
                 logging.warning("You already have data in the object store and you can't rechunk it")
-                # ds_filepath = _rechunk_ds(ds_filepath, rechunk)
+                # logging.warning("The actual chunk size is %s", ds_filepath_var[var].data.chunksize)
+                # ds_filepath_var = _rechunk_ds(ds_filepath_var, rechunk)
 
             # Append the variable to the object store
-            ds_filepath.to_zarr(
+            ds_filepath_var.to_zarr(
                 mapper, mode="a", append_dim=append_dim
             )
 
@@ -365,7 +367,7 @@ def _send_variable(
                                   var,
                                   append_dim,
                                   mapper,
-                                  ds_filepath,
+                                  ds_filepath_var,
                                   dest,
                                   first_file=False)
 
@@ -375,15 +377,15 @@ def _send_variable(
 
         if reproject:
             # Reproject the dataset to the expected projection
-            ds_filepath = _reproject_ds(ds_filepath, var)
+            ds_filepath_var = _reproject_ds(ds_filepath_var, var)
 
-        ds_filepath = _calculate_metadata(
-            xr.Dataset(), ds_filepath, var, append_dim, reproject, first_file
+        ds_filepath_var = _calculate_metadata(
+            xr.Dataset(), ds_filepath_var, var, append_dim, reproject, first_file
         )
         if rechunk:
-            ds_filepath = _rechunk_ds(ds_filepath, rechunk)
+            ds_filepath_var = _rechunk_ds(ds_filepath_var, rechunk)
 
-        ds_filepath.to_zarr(mapper, mode="a")
+        ds_filepath_var.to_zarr(mapper, mode="a")
 
         data_integrity_evaluation(obj_store,
                             bucket,
@@ -391,7 +393,7 @@ def _send_variable(
                             var,
                             append_dim,
                             mapper,
-                            ds_filepath,
+                            ds_filepath_var,
                             dest,
                             first_file)
 
