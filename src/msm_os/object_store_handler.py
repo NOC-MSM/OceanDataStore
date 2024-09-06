@@ -452,7 +452,16 @@ def data_integrity_evaluation(obj_store: ObjectStoreS3,
         logging.warning(
             "Object store object %s will be rolled back to previous version", dest
         )
-        rollback_object(obj_store, ds_filepath[append_dim].values, bucket, object_prefix, var, append_dim)
+        if first_file:
+            logging.warning("No previous version found. The object will be deleted.")
+            obj_store.delete(dest)
+        else:
+            rollback_object(obj_store,
+                            ds_filepath[append_dim].values,
+                            bucket,
+                            object_prefix,
+                            var,
+                            append_dim)
 
 def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
     """ Rechunk the dataset.
@@ -683,6 +692,8 @@ def _calculate_checksum(expected_checksum: int,
     Returns:
         int: The expected checksum for the variable.
     """
+    logging.info("Calculating checksum for %s", var)
+    logging.info('Time values: %s', part_of_ds_dataset[var].time_counter.values)
     data_bytes = part_of_ds_dataset[var].values
     expected_checksum += np.frombuffer(data_bytes, dtype=np.uint32).sum()
     if "y" in list(part_of_ds_dataset.sizes):
