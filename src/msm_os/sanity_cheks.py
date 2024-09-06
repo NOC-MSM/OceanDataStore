@@ -313,11 +313,8 @@ def _calculate_checksum(expected_checksum: int,
     Returns:
         int: The expected checksum for the variable.
     """
-    logging.info("Calculating checksum for %s", var)
-    logging.info('Time values: %s', part_of_ds_dataset[var].time_counter.values)
     data_bytes = part_of_ds_dataset[var].values
     checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
-    logging.info("Checksum: %s", checksum)
     expected_checksum += checksum
     if "y" in list(part_of_ds_dataset.sizes):
         if reproject:
@@ -378,12 +375,8 @@ def _calculate_expected_dimension_size(
             else:
                 current_size = len(ds_obj_store[dim])
             append_size = len(ds_filepath[dim])
-            logging.info("Current size: %s", current_size)
-            logging.info("Append size: %s", append_size)
-
             expected_size[dim] = current_size + append_size
         else:
-            logging.info("Size: %s", len(ds_filepath[dim]))
             expected_size[dim] = len(ds_filepath[dim])
 
     return expected_size

@@ -44,8 +44,6 @@ def process_action(args):
         sys.exit(0)
 
     variables = list(args.variables) if args.variables is not None else None
-    print(args.chunk_strategy)
-    print(args.reproject)
 
     if args.action == "send":
         if args.variables is not None and "compact" in args.variables:
