@@ -24,10 +24,12 @@ from .exceptions import (
 )
 from .object_store import ObjectStoreS3
 from .sanity_cheks import (
+    calculate_metadata,
     check_destination_exists,
     check_duplicates,
     check_variable_exists,
     check_data_integrity,
+    data_integrity_evaluation,
 )
 
 try:
@@ -335,7 +337,7 @@ def _send_variable(
                 ds_filepath_var = _reproject_ds(ds_filepath_var, var)
 
             # Calculate expected size, variables, chunks and checksum
-            ds_filepath_var = _calculate_metadata(
+            ds_filepath_var = calculate_metadata(
                 ds_obj_store, ds_filepath_var, var, append_dim, reproject
             )
 
@@ -361,14 +363,12 @@ def _send_variable(
             )
             return
 
-        data_integrity_evaluation(obj_store,
-                                  bucket,
-                                  object_prefix,
-                                  var,
+        data_integrity_evaluation(var,
                                   append_dim,
                                   mapper,
                                   ds_filepath_var,
                                   dest,
+                                  reproject,
                                   first_file=False)
 
     except FileNotFoundError:
@@ -379,7 +379,7 @@ def _send_variable(
             # Reproject the dataset to the expected projection
             ds_filepath_var = _reproject_ds(ds_filepath_var, var)
 
-        ds_filepath_var = _calculate_metadata(
+        ds_filepath_var = calculate_metadata(
             xr.Dataset(), ds_filepath_var, var, append_dim, reproject, first_file
         )
         if rechunk:
@@ -387,81 +387,26 @@ def _send_variable(
 
         ds_filepath_var.to_zarr(mapper, mode="a")
 
-        data_integrity_evaluation(obj_store,
-                            bucket,
-                            object_prefix,
-                            var,
-                            append_dim,
-                            mapper,
-                            ds_filepath_var,
-                            dest,
-                            first_file)
+        try:
+            data_integrity_evaluation(var,
+                                      append_dim,
+                                      mapper,
+                                      ds_filepath_var,
+                                      dest,
+                                      reproject,
+                                      first_file)
+        except (ExpectedAttrsNotFound, DimensionMismatch, CheckSumMismatch):
+            if first_file:
+                logging.warning("No previous version found. The object will be deleted.")
+                obj_store.delete(dest)
+            else:
+                rollback_object(obj_store,
+                                ds_filepath[append_dim].values,
+                                bucket,
+                                object_prefix,
+                                var,
+                                append_dim)
 
-
-def data_integrity_evaluation(obj_store: ObjectStoreS3,
-                              bucket: str,
-                              object_prefix: str,
-                              var: str,
-                              append_dim: str,
-                              mapper: Any,
-                              ds_filepath: xr.Dataset,
-                              dest: str,
-                              first_file: bool = False) -> None:
-    """ Evaluate the data integrity of the dataset.
-
-    Args:
-        obj_store (ObjectStoreS3): object store instance.
-        bucket (str): bucket name.
-        object_prefix (str): prefix of the object.
-        var (str): variable name.
-        append_dim (str): name of the append dimension.
-        mapper (Any): object store mapper.
-        ds_filepath (xr.Dataset): dataset to be evaluated.
-        dest (str): destination of the dataset.
-        first_file (bool, optional): Whether this is the first file being sent.
-            Defaults to False.
-    """
-    # Check data integrity
-    try:
-        check_data_integrity(mapper, var, append_dim, ds_filepath, first_file=first_file)
-        logging.info("Data integrity check passed for %s", dest)
-    except (ExpectedAttrsNotFound, DimensionMismatch, CheckSumMismatch) as error:
-        if isinstance(error, ExpectedAttrsNotFound):
-            error_msg = "missing expected attributes in the metadata"
-        elif isinstance(error, DimensionMismatch):
-            error_msg = "dimension mismatch"
-        elif isinstance(error, CheckSumMismatch):
-            error_msg = "checksum mismatch"
-
-        if append_dim not in list(ds_filepath[var].sizes):
-            logging.warning(
-                "Error found while trying to update file %s: %s. Error: %s",
-                dest,
-                error_msg,
-                error,
-            )
-        else:
-            logging.warning(
-                "Error found while trying to update file %s with time value of %s: %s. Error: %s",
-                dest,
-                ds_filepath[var].time_counter.values[0],
-                error_msg,
-                error,
-            )
-
-        logging.warning(
-            "Object store object %s will be rolled back to previous version", dest
-        )
-        if first_file:
-            logging.warning("No previous version found. The object will be deleted.")
-            obj_store.delete(dest)
-        else:
-            rollback_object(obj_store,
-                            ds_filepath[append_dim].values,
-                            bucket,
-                            object_prefix,
-                            var,
-                            append_dim)
 
 def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
     """ Rechunk the dataset.
@@ -588,183 +533,6 @@ def _reproject_ds(ds_filepath: xr.Dataset, var: str) -> xr.Dataset:
     # combined_ds = combined_ds.fillna(0)
 
     return combined_ds
-
-
-def _calculate_metadata(
-    ds_obj_store: xr.Dataset,
-    ds_filepath: xr.Dataset,
-    var: str,
-    append_dim: str,
-    reproject: bool,
-    first_file: bool = False,
-) -> xr.Dataset:
-    """
-    Calculate metadata for the dataset.
-
-    Parameters
-    ----------
-    ds_obj_store : xr.Dataset
-        The dataset to which the variable will be appended.
-    ds_filepath : xr.Dataset
-        The dataset that will be appended.
-    var : str
-        The name of the variable being appended.
-    append_dim : str
-        The name of the dimension along which the variable is being appended.
-    first_file : bool
-        Whether this is the first file being sent.
-    Returns
-    -------
-    xr.Dataset
-        The dataset with the calculated metadata.
-    """
-
-    # Calculate expected size for the dimension
-    expected_size = _calculate_expected_dimension_size(
-        ds_obj_store, ds_filepath, append_dim
-    )
-    if not expected_size:
-        expected_size = ["none"]
-    ds_filepath.attrs["expected_size"] = expected_size
-
-    # Calculate expected variables and coords for the dataset
-    expected_variables = list(set(list(ds_obj_store.keys()) + list(ds_filepath.keys())))
-    expected_coords = list(set(list(ds_obj_store.coords) + list(ds_filepath.coords)))
-    if not expected_variables:
-        expected_variables = ["none"]
-    if not expected_coords:
-        expected_coords = ["none"]
-    ds_filepath.attrs["expected_variables"] = expected_variables
-    ds_filepath.attrs["expected_coords"] = expected_coords
-
-    # Calculate checksum for the variable
-    expected_checksum = _calculate_expected_checksum(ds_filepath, var, reproject, first_file)
-
-    ds_filepath.attrs["expected_checksum"] = expected_checksum
-
-    return ds_filepath
-
-def _calculate_expected_checksum(ds_filepath: xr.Dataset,
-                                 var: str,
-                                 reproject: bool,
-                                 first_file: bool) -> int:
-    """ Calculate the expected checksum for the variable.
-
-    Args:
-        ds_filepath (xr.Dataset): The dataset to be checked.
-        var (str): The variable to check.
-        reproject (bool): Whether to reproject the dataset.
-        first_file (bool): Whether this is the first file being sent.
-
-    Returns:
-        int: The expected checksum for the variable.
-    """
-    expected_checksum = 0
-    if 'time_counter' not in ds_filepath[var].sizes:
-        if first_file:
-            expected_checksum += _calculate_checksum(expected_checksum,
-                                                                    ds_filepath,
-                                                                    var,
-                                                                    reproject)
-    else:
-        time_values = ds_filepath[var].time_counter.values
-        for time_value in time_values:
-            expected_checksum += _calculate_checksum(expected_checksum,
-                                                                    ds_filepath.sel(
-                                                                        time_counter=time_value),
-                                                                    var,
-                                                                    reproject)
-
-    return expected_checksum
-
-def _calculate_checksum(expected_checksum: int,
-                                       part_of_ds_dataset: xr.Dataset,
-                                       var: str,
-                                       reproject: bool) -> int:
-    """ Calculate checksum
-
-    Args:
-        expected_checksum (int): Expected checksum
-        part_of_ds_dataset (xr.Dataset): The dataset to be checked.
-        var (str): The variable to check.
-        reproject (bool): Whether to reproject the dataset.
-
-    Returns:
-        int: The expected checksum for the variable.
-    """
-    logging.info("Calculating checksum for %s", var)
-    logging.info('Time values: %s', part_of_ds_dataset[var].time_counter.values)
-    data_bytes = part_of_ds_dataset[var].values
-    expected_checksum += np.frombuffer(data_bytes, dtype=np.uint32).sum()
-    if "y" in list(part_of_ds_dataset.sizes):
-        if reproject:
-            data_bytes_reprojected = part_of_ds_dataset[f"projected_{var}"].values.tobytes()
-            expected_checksum += np.frombuffer(
-                data_bytes_reprojected, dtype=np.uint32
-            ).sum()
-    return expected_checksum
-
-    # else:
-    #     for time in ds_filepath[var].time_counter.values:
-    #         data_bytes = ds_filepath[var].isel(time_counter=time).values.tobytes()
-    #         expected_checksum += np.frombuffer(data_bytes, dtype=np.uint32).sum()
-    #         if "y" in list(ds_filepath.sizes):
-    #             if reproject:
-    #                 data_bytes_reprojected = ds_filepath[f"projected_{var}"].isel(time_counter=time).values.tobytes()
-    #                 expected_checksum += np.frombuffer(
-    #                     data_bytes_reprojected, dtype=np.uint32
-    #                 ).sum()
-
-    # data_bytes = ds_filepath[var].values.tobytes()
-    # expected_checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
-    # if "y" in list(ds_filepath.sizes):
-    #     if reproject:
-    #         data_bytes_reprojected = ds_filepath[f"projected_{var}"].values.tobytes()
-    #         expected_checksum += np.frombuffer(
-    #             data_bytes_reprojected, dtype=np.uint32
-    #         ).sum()
-    # return expected_checksum
-
-def _calculate_expected_dimension_size(
-    ds_obj_store: xr.Dataset, ds_filepath: xr.Dataset, append_dim: str
-) -> int:
-    """
-    Calculate the expected size for the specified dimension based on the current
-    dataset and variable.
-
-    Parameters
-    ----------
-    ds_obj_store : xr.Dataset
-        The dataset to which the variable will be appended.
-    ds_filepath : xr.Dataset
-        The dataset that will be appended.
-    append_dim : str
-        The name of the dimension along which the variable is being appended.
-
-    Returns
-    -------
-    int
-        The expected size for the specified dimension.
-    """
-    expected_size = {}
-    for dim, _ in ds_filepath.sizes.items():
-        logging.info("Dim: %s", dim)
-        if dim == append_dim:
-            if not ds_obj_store.sizes.get(dim):
-                current_size = 0
-            else:
-                current_size = len(ds_obj_store[dim])
-            append_size = len(ds_filepath[dim])
-            logging.info("Current size: %s", current_size)
-            logging.info("Append size: %s", append_size)
-
-            expected_size[dim] = current_size + append_size
-        else:
-            logging.info("Size: %s", len(ds_filepath[dim]))
-            expected_size[dim] = len(ds_filepath[dim])
-
-    return expected_size
-
 
 def rollback_object(
     obj_store: ObjectStoreS3,
