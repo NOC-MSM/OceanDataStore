@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 import xarray as xr
-import dask
+import dask.array
 from fsspec.mapping import FSMap
 
 from .exceptions import (
@@ -315,7 +315,7 @@ def _calculate_checksum(expected_checksum: int,
         int: The expected checksum for the variable.
     """
     def calculate_result(var_part_of_ds_dataset):
-        dtype = var_part_of_ds_dataset.data.dtype
+        dtype = var_part_of_ds_dataset.data.dtype    
         if np.issubdtype(dtype, np.number):
             if isinstance(var_part_of_ds_dataset.data, dask.array.core.Array):
                 data_array = var_part_of_ds_dataset.data.astype(np.uint32)
