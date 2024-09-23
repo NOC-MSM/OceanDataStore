@@ -61,6 +61,7 @@ def process_action(args):
             object_prefix=args.object_prefix,
             rechunk=args.chunk_strategy,
             reproject=args.reproject,
+            skip_integrity_check=args.skip_integrity_check,
             to_zarr_kwargs=None,
         )
 

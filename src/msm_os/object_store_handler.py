@@ -23,12 +23,11 @@ from .exceptions import (
     CheckSumMismatch,
 )
 from .object_store import ObjectStoreS3
-from .sanity_cheks import (
+from .sanity_checks import (
     calculate_metadata,
     check_destination_exists,
     check_duplicates,
     check_variable_exists,
-    check_data_integrity,
     data_integrity_evaluation,
 )
 
@@ -113,6 +112,7 @@ def send(
     client: Optional[Client] = None,#
     rechunk: dict = None,
     reproject: bool = False,
+    skip_integrity_check: bool = False,
     to_zarr_kwargs: Optional[dict] = None,
 ) -> None:
     """
@@ -141,6 +141,8 @@ def send(
         Rechunk strategy dictionary, by default None.
     reproject
         Whether to reproject the dataset, by default False.
+    skip_integrity_check
+        Whether to skip the data integrity check, by default False.
     to_zarr_kwargs
         Additional keyword arguments passed to xr.Dataset.to_zarr(), by default None.
     """
@@ -168,6 +170,7 @@ def send(
             client,
             rechunk,
             reproject,
+            skip_integrity_check,
             to_zarr_kwargs,
         )
 
@@ -285,6 +288,7 @@ def _send_variable(
     append_dim: str,
     rechunk: dict,
     reproject: bool = False,
+    skip_integrity_check: bool = True,
 ) -> None:
     """
     Send a single variable to the object store.
@@ -308,6 +312,8 @@ def _send_variable(
         Whether to rechunk the dataset.
     reproject
         Whether to reproject the dataset.
+    skip_integrity_check
+        Whether to skip the data integrity check.
     """
     check_variable_exists(ds_filepath, var)
     ds_filepath_var = ds_filepath[[var]]
@@ -343,14 +349,30 @@ def _send_variable(
 
             # Rechunk the dataset
             if rechunk:
-                logging.warning("You already have data in the object store and you can't rechunk it")
-                # logging.warning("The actual chunk size is %s", ds_filepath_var[var].data.chunksize)
+                actual_data_chunksize = {dim: chunk[0] for dim, chunk in zip(ds_obj_store[var].dims,
+                                                                             ds_obj_store[var].chunks) if chunk}
+                new_chunking = {
+                    dim: size
+                    for dim, size in rechunk.items()
+                    if dim in ds_filepath[var].dims
+                }
+
+                chunks_differ = any(
+                    dim in actual_data_chunksize and actual_data_chunksize[dim] != new_chunking[dim]
+                    for dim in new_chunking
+                )
+
+                if chunks_differ:
+                    logging.warning("The actual data on the object store has chunk size: %s", actual_data_chunksize)
+                    logging.warning("And you are trying to rechunk it to: %s", new_chunking)
+                    logging.warning("You can't rechunk the data on the object store")
                 # ds_filepath_var = _rechunk_ds(ds_filepath_var, rechunk)
 
             # Append the variable to the object store
             ds_filepath_var.to_zarr(
                 mapper, mode="a", append_dim=append_dim
             )
+            first_file = False
 
         except DuplicatedAppendDimValue:
             logging.info(
@@ -362,15 +384,6 @@ def _send_variable(
                 "Skipping %s due to no %s on data dimensions", dest, append_dim
             )
             return
-
-        data_integrity_evaluation(var,
-                                  append_dim,
-                                  mapper,
-                                  ds_filepath_var,
-                                  dest,
-                                  reproject,
-                                  first_file=False)
-
     except FileNotFoundError:
         logging.info("Creating %s", dest)
         first_file = True
@@ -387,14 +400,15 @@ def _send_variable(
 
         ds_filepath_var.to_zarr(mapper, mode="a")
 
+    if not skip_integrity_check:
         try:
             data_integrity_evaluation(var,
-                                      append_dim,
-                                      mapper,
-                                      ds_filepath_var,
-                                      dest,
-                                      reproject,
-                                      first_file)
+                                    append_dim,
+                                    mapper,
+                                    ds_filepath_var,
+                                    dest,
+                                    reproject,
+                                    first_file)
         except (ExpectedAttrsNotFound, DimensionMismatch, CheckSumMismatch):
             if first_file:
                 logging.warning("No previous version found. The object will be deleted.")
@@ -406,6 +420,8 @@ def _send_variable(
                                 object_prefix,
                                 var,
                                 append_dim)
+    else:
+        logging.warning("As requested, skipping data integrity check for %s", dest)
 
 
 def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
@@ -420,7 +436,6 @@ def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
     # Apply custom chunking if the dimensions are present
     # chunking = {"x": 100, "y": 100, "time_counter": 1}
     variables = ds_filepath.variables
-
     for variable in variables:
         new_chunking = {
             dim: size
@@ -431,6 +446,7 @@ def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
             ds_filepath[variable] = ds_filepath[
                 variable
             ].chunk(new_chunking)
+            
     return ds_filepath
 
 def _reproject_ds(ds_filepath: xr.Dataset, var: str) -> xr.Dataset:
@@ -592,6 +608,7 @@ def _send_data_to_store(
     client: Client,
     rechunk: dict,
     reproject: bool,
+    skip_integrity_check: bool,
     to_zarr_kwargs: dict,
 ) -> None:
     """
@@ -618,10 +635,12 @@ def _send_data_to_store(
         Dask client.
     rechunk
         Rechunk strategy dictionary.
-    to_zarr_kwargs
-        Additional keyword arguments passed to xr.Dataset.to_zarr(), by default None.
     reproject
         Whether to reproject the dataset.
+    skip_integrity_check
+        Whether to skip the data integrity check.
+    to_zarr_kwargs
+        Additional keyword arguments passed to xr.Dataset.to_zarr(), by default None.
     """
     # See https://stackoverflow.com/questions/66769922/concurrently-write-xarray-datasets-to-zarr-how-to-efficiently-scale-with-dask
     if send_vars_indep:
@@ -639,7 +658,8 @@ def _send_data_to_store(
                         object_prefix,
                         append_dim,
                         rechunk,
-                        reproject
+                        reproject,
+                        skip_integrity_check
                     )
                 )
             client.gather(futures)
@@ -653,7 +673,8 @@ def _send_data_to_store(
                     object_prefix,
                     append_dim,
                     rechunk,
-                    reproject
+                    reproject,
+                    skip_integrity_check
                 )
 
     else:

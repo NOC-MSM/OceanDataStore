@@ -5,6 +5,7 @@ import logging
 
 import numpy as np
 import xarray as xr
+import dask.array
 from fsspec.mapping import FSMap
 
 from .exceptions import (
@@ -313,15 +314,35 @@ def _calculate_checksum(expected_checksum: int,
     Returns:
         int: The expected checksum for the variable.
     """
-    data_bytes = part_of_ds_dataset[var].values
-    checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
-    expected_checksum += checksum
+    def calculate_result(var_part_of_ds_dataset):
+        dtype = var_part_of_ds_dataset.data.dtype
+        if np.issubdtype(dtype, np.number):
+            if isinstance(var_part_of_ds_dataset.data, dask.array.core.Array):
+                data_array = part_of_ds_dataset[var].data
+                data_array = dask.array.where(dask.array.isnan(data_array), 0, data_array)
+                data_array = dask.array.where(data_array == np.inf, 0, data_array)
+                data_array = dask.array.where(data_array == -np.inf, 0, data_array)
+                data_array = data_array.astype(np.uint32)
+            else:
+                values = var_part_of_ds_dataset.values
+                values = np.nan_to_num(values, nan=0, posinf=0, neginf=0).astype(np.uint32)
+                data_array = dask.array.from_array(values, chunks='auto')
+            checksum = data_array.sum().compute()
+        else:
+            checksum = 0
+        return checksum
+    expected_checksum += calculate_result(part_of_ds_dataset[var])
+
+    # data_bytes = part_of_ds_dataset[var].values
+    # checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
+    # expected_checksum += checksum
     if "y" in list(part_of_ds_dataset.sizes):
         if reproject:
-            data_bytes_reprojected = part_of_ds_dataset[f"projected_{var}"].values.tobytes()
-            expected_checksum += np.frombuffer(
-                data_bytes_reprojected, dtype=np.uint32
-            ).sum()
+            expected_checksum += calculate_result(part_of_ds_dataset[f"projected_{var}"])
+            # data_bytes_reprojected = part_of_ds_dataset[f"projected_{var}"].values.tobytes()
+            # expected_checksum += np.frombuffer(
+            #     data_bytes_reprojected, dtype=np.uint32
+            # ).sum()
     return expected_checksum
 
     # else:
@@ -368,7 +389,6 @@ def _calculate_expected_dimension_size(
     """
     expected_size = {}
     for dim, _ in ds_filepath.sizes.items():
-        logging.info("Dim: %s", dim)
         if dim == append_dim:
             if not ds_obj_store.sizes.get(dim):
                 current_size = 0
