@@ -389,7 +389,6 @@ def _calculate_expected_dimension_size(
     """
     expected_size = {}
     for dim, _ in ds_filepath.sizes.items():
-        logging.info("Dim: %s", dim)
         if dim == append_dim:
             if not ds_obj_store.sizes.get(dim):
                 current_size = 0

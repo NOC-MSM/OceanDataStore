@@ -363,7 +363,11 @@ def _send_variable(
                 )
 
                 if chunks_differ:
-                    logging.warning("You already have data in the object store and you can't rechunk it")
+                    logging.warning("The actual data on the object store has chunk size: %s", actual_data_chunksize)
+                    logging.warning("And you are trying to rechunk it to: %s", new_chunking)
+                    logging.warning("You can't rechunk the data on the object store")
+                    # logging.warning("You already have data in the object store and you can't rechunk it")
+
                 # ds_filepath_var = _rechunk_ds(ds_filepath_var, rechunk)
 
             # Append the variable to the object store
@@ -418,6 +422,8 @@ def _send_variable(
                                 object_prefix,
                                 var,
                                 append_dim)
+    else:
+        logging.warning("As requested, skipping data integrity check for %s", dest)
 
 
 def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
@@ -432,9 +438,7 @@ def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
     # Apply custom chunking if the dimensions are present
     # chunking = {"x": 100, "y": 100, "time_counter": 1}
     variables = ds_filepath.variables
-    print(variables)
     for variable in variables:
-        print(variable)
         new_chunking = {
             dim: size
             for dim, size in rechunk.items()
@@ -444,7 +448,6 @@ def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
             ds_filepath[variable] = ds_filepath[
                 variable
             ].chunk(new_chunking)
-            print(ds_filepath[variable].chunks)
             
     return ds_filepath
 
