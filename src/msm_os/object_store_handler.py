@@ -443,11 +443,9 @@ def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
             if dim in ds_filepath[variable].dims
         }
         if len(new_chunking.keys()) > 0:
-            print(f"Rechunking {variable} to {new_chunking}")
             ds_filepath[variable] = ds_filepath[
                 variable
             ].chunk(new_chunking)
-            print(f"New chunking: {ds_filepath[variable].chunks}")
             
     return ds_filepath
 
