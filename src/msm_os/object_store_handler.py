@@ -427,8 +427,9 @@ def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
     # Apply custom chunking if the dimensions are present
     # chunking = {"x": 100, "y": 100, "time_counter": 1}
     variables = ds_filepath.variables
-
+    print(variables)
     for variable in variables:
+        print(variable)
         new_chunking = {
             dim: size
             for dim, size in rechunk.items()
@@ -438,6 +439,8 @@ def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
             ds_filepath[variable] = ds_filepath[
                 variable
             ].chunk(new_chunking)
+            print(ds_filepath[variable].chunks)
+            
     return ds_filepath
 
 def _reproject_ds(ds_filepath: xr.Dataset, var: str) -> xr.Dataset:
