@@ -349,14 +349,19 @@ def _send_variable(
 
             # Rechunk the dataset
             if rechunk:
-                actual_data_chunksize = {dim: chunk[0] for dim, chunk in zip(ds_filepath_var[var].dims,
-                                                                             ds_filepath_var[var].chunks)}
+                actual_data_chunksize = {dim: chunk[0] for dim, chunk in zip(ds_obj_store[var].dims,
+                                                                             ds_obj_store[var].chunks) if chunk}
                 new_chunking = {
                     dim: size
                     for dim, size in rechunk.items()
                     if dim in ds_filepath[var].dims
                 }
-                chunks_differ = any(actual_data_chunksize[dim] != new_chunking[dim] for dim in new_chunking)
+
+                chunks_differ = any(
+                    dim in actual_data_chunksize and actual_data_chunksize[dim] != new_chunking[dim]
+                    for dim in new_chunking
+                )
+
                 if chunks_differ:
                     logging.warning("You already have data in the object store and you can't rechunk it")
                 # ds_filepath_var = _rechunk_ds(ds_filepath_var, rechunk)
