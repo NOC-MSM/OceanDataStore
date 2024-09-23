@@ -366,8 +366,6 @@ def _send_variable(
                     logging.warning("The actual data on the object store has chunk size: %s", actual_data_chunksize)
                     logging.warning("And you are trying to rechunk it to: %s", new_chunking)
                     logging.warning("You can't rechunk the data on the object store")
-                    # logging.warning("You already have data in the object store and you can't rechunk it")
-
                 # ds_filepath_var = _rechunk_ds(ds_filepath_var, rechunk)
 
             # Append the variable to the object store
@@ -445,9 +443,11 @@ def _rechunk_ds(ds_filepath: xr.Dataset, rechunk: dict) -> xr.Dataset:
             if dim in ds_filepath[variable].dims
         }
         if len(new_chunking.keys()) > 0:
+            print(f"Rechunking {variable} to {new_chunking}")
             ds_filepath[variable] = ds_filepath[
                 variable
             ].chunk(new_chunking)
+            print(f"New chunking: {ds_filepath[variable].chunks}")
             
     return ds_filepath
 
