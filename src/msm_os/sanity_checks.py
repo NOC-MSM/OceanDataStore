@@ -315,11 +315,14 @@ def _calculate_checksum(expected_checksum: int,
         int: The expected checksum for the variable.
     """
     def calculate_result(var_part_of_ds_dataset):
-        dtype = var_part_of_ds_dataset.data.dtype    
+        dtype = var_part_of_ds_dataset.data.dtype
         if np.issubdtype(dtype, np.number):
             if isinstance(var_part_of_ds_dataset.data, dask.array.core.Array):
                 data_array = part_of_ds_dataset[var].data
-                data_array = dask.array.nan_to_num(data_array, nan=0, posinf=0, neginf=0).astype(np.uint32)
+                data_array = dask.array.where(dask.array.isnan(data_array), 0, data_array)
+                data_array = dask.array.where(data_array == np.inf, 0, data_array)
+                data_array = dask.array.where(data_array == -np.inf, 0, data_array)
+                data_array = data_array.astype(np.uint32)
             else:
                 values = var_part_of_ds_dataset.values
                 values = np.nan_to_num(values, nan=0, posinf=0, neginf=0).astype(np.uint32)
