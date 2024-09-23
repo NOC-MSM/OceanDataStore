@@ -318,8 +318,8 @@ def _calculate_checksum(expected_checksum: int,
         data_array = part_of_ds_dataset[var].data.astype(np.uint32)
         checksum = data_array.sum().compute()
     else:
-        data_bytes = part_of_ds_dataset[var].values.tobytes()
-        checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
+        data_array = da.from_array(part_of_ds_dataset[var].values.astype(np.uint32), chunks='auto')
+    checksum = data_array.sum().compute()
 
     expected_checksum += checksum
 
@@ -331,10 +331,10 @@ def _calculate_checksum(expected_checksum: int,
         if reproject:
             if isinstance(part_of_ds_dataset[f"projected_{var}"].data, da.Array):
                 data_array_reprojected = part_of_ds_dataset[f"projected_{var}"].data.astype(np.uint32)
-                reprojected_checksum = data_array_reprojected.sum().compute()
             else:
-                data_bytes_reprojected = part_of_ds_dataset[f"projected_{var}"].values.tobytes()
-                reprojected_checksum = np.frombuffer(data_bytes_reprojected, dtype=np.uint32).sum()
+                data_array = da.from_array(part_of_ds_dataset[f"projected_{var}"].values.astype(np.uint32),
+                                           chunks='auto')
+            reprojected_checksum = data_array_reprojected.sum().compute()
 
             expected_checksum += reprojected_checksum
             # data_bytes_reprojected = part_of_ds_dataset[f"projected_{var}"].values.tobytes()
