@@ -67,6 +67,7 @@ An additional flag is used:
 | `--variables` | `-v` | Variables to send. If not provided, all variables will be sent. If set to `compact`, the variables will not be sent to separate Zarr files. |
 | `--reproject` | `-r` | Whether to reproject data. If not provided, the data is not reprojected. If present, reproject the data from tri-polar grid to PlateCarree.
 | `--chunk-strategy` | `-cs` | Chunk strategy in the output data. If provided, the output data will be chunked according to the specified strategy. If not provided, it will use the `auto` mode. The format is a JSON string, e.g., '{"time_counter": 1, "x": 100, "y": 100}'.
+| `--skip-integrity-check` | `-si` | Whether to skip data integrity check. If not provided, the integrity checks will be applied to the data in order to check if the uploaded data is OK.
 
 ## Credentials File
 
@@ -95,10 +96,12 @@ If a chunk strategy is specified, the output data will be chunked accordingly. I
 
 ### Check Data Integrity
 
-Every time new data is appended to an existing Zarr file, integrity checks are performed to verify if the metadata and data match the expected format.
+Every time new data is appended to an existing Zarr file, it is possible to perform some integrity checks to verify if the metadata and data match the expected format.
 
 1. Metadata check: Each new NetCDF file sent to the object store will have its metadata checked, including the number and names of variables and coordinates. If there are discrepancies, a specific error is raised.
 
 2. Data check: The checksum of the data in the NetCDF file is compared with the data in the Zarr file after upload. If they differ, an error is raised.
 
 If any errors are detected during these checks, the data is rolled back to the previous version. This rollback is performed directly in the Zarr file by updating the metadata to exclude the new data. The system will retry the upload twice more; if it fails again, a message is logged.
+
+The integrity check may take a while and slow down to upload process. Because of that, if you want to skip this check, you can add set the `skip_integrity_check` to false when you are sending a file to the object store.

@@ -5,6 +5,7 @@ import logging
 
 import numpy as np
 import xarray as xr
+import dask.array as da
 from fsspec.mapping import FSMap
 
 from .exceptions import (
@@ -313,15 +314,33 @@ def _calculate_checksum(expected_checksum: int,
     Returns:
         int: The expected checksum for the variable.
     """
-    data_bytes = part_of_ds_dataset[var].values
-    checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
+    if isinstance(part_of_ds_dataset[var].data, da.Array):
+        data_array = part_of_ds_dataset[var].data.astype(np.uint32)
+        checksum = data_array.sum().compute()
+    else:
+        data_bytes = part_of_ds_dataset[var].values.tobytes()
+        checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
+
     expected_checksum += checksum
+
+
+    # data_bytes = part_of_ds_dataset[var].values
+    # checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
+    # expected_checksum += checksum
     if "y" in list(part_of_ds_dataset.sizes):
         if reproject:
-            data_bytes_reprojected = part_of_ds_dataset[f"projected_{var}"].values.tobytes()
-            expected_checksum += np.frombuffer(
-                data_bytes_reprojected, dtype=np.uint32
-            ).sum()
+            if isinstance(part_of_ds_dataset[f"projected_{var}"].data, da.Array):
+                data_array_reprojected = part_of_ds_dataset[f"projected_{var}"].data.astype(np.uint32)
+                reprojected_checksum = data_array_reprojected.sum().compute()
+            else:
+                data_bytes_reprojected = part_of_ds_dataset[f"projected_{var}"].values.tobytes()
+                reprojected_checksum = np.frombuffer(data_bytes_reprojected, dtype=np.uint32).sum()
+
+            expected_checksum += reprojected_checksum
+            # data_bytes_reprojected = part_of_ds_dataset[f"projected_{var}"].values.tobytes()
+            # expected_checksum += np.frombuffer(
+            #     data_bytes_reprojected, dtype=np.uint32
+            # ).sum()
     return expected_checksum
 
     # else:
