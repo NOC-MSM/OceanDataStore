@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 import xarray as xr
-import dask.array as da
+import dask
 from fsspec.mapping import FSMap
 
 from .exceptions import (
@@ -314,29 +314,27 @@ def _calculate_checksum(expected_checksum: int,
     Returns:
         int: The expected checksum for the variable.
     """
-    if isinstance(part_of_ds_dataset[var].data, da.Array):
-        data_array = part_of_ds_dataset[var].data.astype(np.uint32)
-        checksum = data_array.sum().compute()
-    else:
-        data_array = da.from_array(part_of_ds_dataset[var].values.astype(np.uint32), chunks='auto')
-    checksum = data_array.sum().compute()
-
-    expected_checksum += checksum
-
+    def calculate_result(var_part_of_ds_dataset):
+        dtype = var_part_of_ds_dataset.data.dtype
+        if np.issubdtype(dtype, np.number):
+            if isinstance(var_part_of_ds_dataset.data, dask.array.core.Array):
+                data_array = var_part_of_ds_dataset.data.astype(np.uint32)
+            else:
+                values = var_part_of_ds_dataset.values
+                values = np.nan_to_num(values, nan=0, posinf=0, neginf=0).astype(np.uint32)
+                data_array = dask.array.from_array(values, chunks='auto')
+            checksum = data_array.sum().compute()
+        else:
+            checksum = 0
+        return checksum
+    expected_checksum += calculate_result(part_of_ds_dataset[var])
 
     # data_bytes = part_of_ds_dataset[var].values
     # checksum = np.frombuffer(data_bytes, dtype=np.uint32).sum()
     # expected_checksum += checksum
     if "y" in list(part_of_ds_dataset.sizes):
         if reproject:
-            if isinstance(part_of_ds_dataset[f"projected_{var}"].data, da.Array):
-                data_array_reprojected = part_of_ds_dataset[f"projected_{var}"].data.astype(np.uint32)
-            else:
-                data_array = da.from_array(part_of_ds_dataset[f"projected_{var}"].values.astype(np.uint32),
-                                           chunks='auto')
-            reprojected_checksum = data_array_reprojected.sum().compute()
-
-            expected_checksum += reprojected_checksum
+            expected_checksum += calculate_result(part_of_ds_dataset[f"projected_{var}"])
             # data_bytes_reprojected = part_of_ds_dataset[f"projected_{var}"].values.tobytes()
             # expected_checksum += np.frombuffer(
             #     data_bytes_reprojected, dtype=np.uint32
