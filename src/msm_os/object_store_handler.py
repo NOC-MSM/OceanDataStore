@@ -343,9 +343,10 @@ def _send_variable(
                 ds_filepath_var = _reproject_ds(ds_filepath_var, var)
 
             # Calculate expected size, variables, chunks and checksum
-            ds_filepath_var = calculate_metadata(
-                ds_obj_store, ds_filepath_var, var, append_dim, reproject
-            )
+            if not skip_integrity_check:
+                ds_filepath_var = calculate_metadata(
+                    ds_obj_store, ds_filepath_var, var, append_dim, reproject
+                )
 
             # Rechunk the dataset
             if rechunk:
@@ -391,10 +392,15 @@ def _send_variable(
         if reproject:
             # Reproject the dataset to the expected projection
             ds_filepath_var = _reproject_ds(ds_filepath_var, var)
-
-        ds_filepath_var = calculate_metadata(
-            xr.Dataset(), ds_filepath_var, var, append_dim, reproject, first_file
-        )
+        if not skip_integrity_check:
+            ds_filepath_var = calculate_metadata(
+                xr.Dataset(),
+                ds_filepath_var,
+                var,
+                append_dim,
+                reproject,
+                first_file
+            )
         if rechunk:
             ds_filepath_var = _rechunk_ds(ds_filepath_var, rechunk)
 
