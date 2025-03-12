@@ -7,7 +7,7 @@ A Python library designed to streamline the writing, updating, and downloading o
 To install this package, clone the repository first:
 
 ```bash
-git clone git@github.com:NOC-OI/msm-os.git
+git clone git@github.com:NOC-MSM/msm-os.git
 cd msm-os
 ```
 
