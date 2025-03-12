@@ -14,16 +14,17 @@ classifiers = [
   "Intended Audience :: Science/Research"
 ]
 dependencies = [
-  "dask[complete]>=2023.3.0",
-  "netcdf4==1.6.5",
-  "xarray[io,accel,viz]>=2023.3.0",
-  "s3fs>=2023.3.0",
-  "fsspec>=2023.3.0",
-  "numpy==1.26.4",
+  "dask>=2025.2.0",
+  "aiobotocore==2.7.0",
+  "botocore==1.31.17",
+  "netcdf4>=1.7.2",
+  "xarray>=2025.1.2",
+  "s3fs>=2025.3.0",
+  "fsspec>=2025.3.0",
+  "numpy>=2.2.3",
   "scitools-iris>=3.9.0",
   "tenacity>=8.3.0",
-  "intake",
-  "intake-xarray"
+  "zarr==2.18.2",
   ]
 
 dynamic = ["version"]
