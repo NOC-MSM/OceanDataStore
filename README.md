@@ -19,7 +19,19 @@ pip install -e .
 
 ## Usage
 
-### Sending Files
+### Creating a Credentials File
+
+To get started using **msm-os**, users need to create a credentials .json file containing the following information:
+
+```json
+{
+    "secret": "your_secret",
+    "token": "your_token",
+    "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk"
+}
+```
+
+### Sending Individual Files
 
 To send a file to an object store, use the following command:
 
@@ -33,6 +45,35 @@ The flags used are:
 - `-b`: Bucket name in the object store where the variables will be stored.
 
 In the example, without a `-p` (or `--prefix`), the variables will be stored in `eorca025/T1y/<var>.zarr`. If a `--prefix` is provided, the variables will be stored in `eorca025/<prefix>/<var>.zarr`.
+
+### Sending Lots of Files
+
+To send a large number of files to an object store, we can use [dask](https://www.dask.org) via the following command:
+
+```bash
+msm_os send_with_dask -f $filepaths -c credentials.json -b eorca025 -p exp1 
+                      -gf $filepath_domain -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}'
+                      -cs '{"x":720, "y":603, "depthw":25}'
+                      -dco '{"temporary_directory":"/path/to/temp/directory/","local_directory":"/path/to/local/directory/"}'
+                      -dlc '{"n_workers":20,"threads_per_worker":1,"memory_limit":"2.5GB"}'
+```
+
+The flags used are:
+- `-f`: Paths to the NetCDF file containing the variables (stored in variable filepaths).
+- `-c`: Path to the JSON file containing the object store credentials.
+- `-b`: Bucket name in the object store where the variables will be stored.
+- `-p`: Prefix used to define path to object (see above).
+- `gf`: Path to model grid file containing domain variables.
+- `uc`: Coordinates dimension variables to update given as a JSON string '{current_coord : new_coord}'.
+- `-cs`: Chunk strategy used to rechunk model data.
+- `dco`: Dask configuration as a JSON string.
+- `dlc`: Dask LocalCluster configuration as a JSON string.
+
+In the example, a LocalCluster with 20 single threaded workers, each with 2.5 GB of available memory, is used to transfer a large collection of files to an object store.
+
+Users are recommended to implement send_with_dask workflows using a job scheduler, such as SLURM or PBS, to run the LocalCluster on a single compute node.
+
+Note  the netCDF4 library does not support multi-threaded access to datasets, so users should ensure that ``threads_per_worker : 1`` to avoid raising CancelledError exceptions when using send_with_dask.
 
 ### Updating or Replacing Files
 
@@ -68,18 +109,6 @@ An additional flag is used:
 | `--reproject` | `-r` | Whether to reproject data. If not provided, the data is not reprojected. If present, reproject the data from tri-polar grid to PlateCarree.
 | `--chunk-strategy` | `-cs` | Chunk strategy in the output data. If provided, the output data will be chunked according to the specified strategy. If not provided, it will use the `auto` mode. The format is a JSON string, e.g., '{"time_counter": 1, "x": 100, "y": 100}'.
 | `--skip-integrity-check` | `-si` | Whether to skip data integrity check. If not provided, the integrity checks will be applied to the data in order to check if the uploaded data is OK.
-
-## Credentials File
-
-The credentials file should contain the following information:
-
-```json
-{
-    "secret": "your_secret",
-    "token": "your_token",
-    "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk"
-}
-```
 
 ## Steps During Data Send/Update
 
