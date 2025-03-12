@@ -4,6 +4,8 @@ import logging
 import os
 from typing import Any, List, Optional
 
+import time
+import glob
 import numpy as np
 import xarray as xr
 import iris
@@ -32,7 +34,8 @@ from .sanity_checks import (
 )
 
 try:
-    from dask.distributed import Client
+    import dask
+    from dask.distributed import Client, LocalCluster
     from dask.distributed import KilledWorker
 except ImportError:
     logging.warning(
@@ -174,6 +177,211 @@ def send(
             to_zarr_kwargs,
         )
 
+def send_with_dask(
+    filepaths: List[str] | str,
+    bucket: str,
+    object_prefix: str,
+    store_credentials_json: str,
+    variables: Optional[List[str]] = 'all',
+    send_vars_indep: bool = True,
+    grid_filepath: Optional[str] = None,
+    update_coords: Optional[dict] = None,
+    append_dim: str = "time_counter",
+    dask_config_kwargs: Optional[dict] = None,
+    dask_cluster_kwargs: Optional[dict] = None,
+    rechunk: Optional[dict] = None,
+    to_zarr_kwargs: Optional[dict] = None,
+) -> None:
+    """
+    Send data to the object store using dask local cluster to write chunks.
+
+    Parameters
+    ----------
+    filepaths
+        Regular expression or list of filepaths to the datasets to be sent.
+    bucket
+        Name of the bucket in the object store. Bucket names can consist only of
+        lowercase letters, numbers, dots (.), and hyphens (-).
+    store_credentials_json
+        Path to the JSON file containing the object store credentials.
+    variables
+        List of variables to send. If None, all variables will be sent, by default None.
+    send_vars_indep
+        Whether to send variables as separate objects, by default True.
+    grid_filepath
+        Path to file containing model grid parameter, by default None.
+    update_coords
+        Dictionary of coordinate variables to update, by default None.
+    append_dim
+        Name of the append dimension, by default "time_counter".
+    object_prefix
+        Prefix to be added to the object names in the object store, by default None.
+    rechunk
+        Rechunk strategy dictionary, by default None.
+    dask_config_kwargs: Dict[str,str], optional
+        Dask configuration settings passed to dask.config.set(), by defualt None.
+    dask_cluster_kwargs: dict, optional
+        Dask cluster configuration settings passed to LocalCluster(), by default None.
+    to_zarr_kwargs
+        Additional keyword arguments passed to xr.Dataset.to_zarr(), by default None.
+    """
+    to_zarr_kwargs = to_zarr_kwargs or {}
+
+    # === Prepare Object Store === #
+    obj_store = ObjectStoreS3(anon=False, store_credentials_json=store_credentials_json)
+    if not obj_store.exists(bucket):
+        logging.info("Bucket '%s' doesn't exist. Creating...", bucket)
+
+    # === Configure Cluster === #
+    # Update dask configuration settings:
+    if dask_config_kwargs is not None:
+        dask.config.set(dask_config_kwargs)
+        logging.info(
+            "Updated dask configuration settings"
+            )
+
+    # Create local dask cluster & client:
+    with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster) as client:
+        logging.info(
+            "Created LocalCluster with Client: %s", client.dashboard_link
+            )
+
+        # === Open multi-file netCDF dataset === #
+        # If filenames is an expression, extract all files:
+        if isinstance(filepaths, str):
+            if '*' in filepaths:
+                filepaths = glob.glob(filepaths)
+                filepaths.sort()
+
+        # Open multi-file dataset as dask.delayed object:
+        if rechunk is None:
+            ds_filepath = xr.open_mfdataset(filepaths,
+                                            engine='netcdf4',
+                                            parallel=True,
+                                            concat_dim=append_dim,
+                                            combine='nested',
+                                            data_vars='minimal',
+                                            coords='minimal',
+                                            compat='override'
+                                            )
+        else:
+            ds_filepath = xr.open_mfdataset(filepaths,
+                                            engine='netcdf4',
+                                            chunks=rechunk,
+                                            parallel=True,
+                                            concat_dim=append_dim,
+                                            combine='nested',
+                                            data_vars='minimal',
+                                            coords='minimal',
+                                            compat='override'
+                                            )
+
+        if update_coords is not None:
+            # === Update coordinates using model grid file === #
+            if grid_filepath is None:
+                raise ValueError(
+                    "grid_filepath must be provided to update coordinate variables."
+                    )
+            else:
+                ds_grid = xr.open_dataset(grid_filepath)
+            # Update coordinate variables using model grid parameters:
+            for key in update_coords.keys():
+                coord_data = ds_grid[update_coords[key]].squeeze()
+                # Rechunk dimensions to user specified chunks:
+                if rechunk is not None:
+                    coord_chunks = {dim: rechunk[dim] for dim in coord_data.dims}
+                    # Assign new chunked coordinates to dataset:
+                    ds_filepath = ds_filepath.assign_coords(
+                        {key: coord_data.chunk(coord_chunks)}
+                        )
+                else:
+                    # Assign new unchunked coordinates to dataset:
+                    ds_filepath = ds_filepath.assign_coords(
+                        {key: coord_data}
+                        )
+            logging.info(
+            'Completed: Updated coordinate variables.'
+            )
+        
+        if send_vars_indep:
+            # === Send variables to object store === #
+            if variables is None:
+                # Get variable names:
+                variables = list(ds_filepath.data_vars)
+
+            # Write each variable to a separate zarr store:
+            for var in variables:
+                logging.info(
+                'Sending Variable %s', var
+                )
+                # Define S3 mapping:
+                dest = f"{bucket}/{object_prefix}/{var}"
+                mapper = obj_store.get_mapper(dest)
+
+                if obj_store.exists(dest):
+                    logging.info(
+                            'Skipping: Variable exists in %s', dest
+                            )
+                else:
+                    try:
+                        # Append to existing zarr store:
+                        check_destination_exists(obj_store, dest)
+                        t_start = time.time()
+                        ds_filepath[var].to_zarr(mapper, append_dim=append_dim, consolidated=True)
+                        t_end = time.time()
+                        logging.info(
+                            'Completed: Sent Variable %s in %s', dest, t_end-t_start
+                            )
+
+                    except FileNotFoundError:
+                        t_start = time.time()
+                        ds_filepath[var].to_zarr(mapper, mode='w', consolidated=True)
+                        t_end = time.time()
+                        logging.info(
+                            'Completed: Sent Variable %s in %s', dest, t_end-t_start
+                            )
+
+                    # Release resources to avoid memory leaks:
+                    ds_filepath.close()
+            
+        else:
+            # === Send Dataset to object store === #
+            # Define S3 mapping:
+            dest = f"{bucket}/{object_prefix}"
+            mapper = obj_store.get_mapper(dest)
+
+            if obj_store.exists(dest):
+                logging.info(
+                    'Skipping: Variable exists in %s', dest
+                    )
+            else:
+                try:
+                    # Append to existing zarr store:
+                    check_destination_exists(obj_store, dest)
+                    t_start = time.time()
+                    ds_filepath.to_zarr(mapper, append_dim=append_dim, consolidated=True)
+                    t_end = time.time()
+                    logging.info(
+                        'Completed: Sent Dataset to s3://%s in %s', dest, t_end-t_start
+                        )
+
+                except FileNotFoundError:
+                    t_start = time.time()
+                    ds_filepath.to_zarr(mapper, mode='w', consolidated=True)
+                    t_end = time.time()
+                    logging.info(
+                        'Completed: Sent Dataset to s3://%s in %s', dest, t_end-t_start
+                        )
+
+                # Release resources to avoid memory leaks:
+                ds_filepath.close()
+            
+        # === Shutdown Dask Cluster === #
+        client.shutdown()
+        client.close()
+        logging.info(
+            "Dask Cluster has been shutdown."
+            )
 
 def _get_object_prefix(filepath: str, object_prefix: Optional[str]) -> str:
     """
