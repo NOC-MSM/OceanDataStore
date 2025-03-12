@@ -15,8 +15,8 @@ def create_parser():
     # Send and Update are mutually exclusive operations
     parser.add_argument(
         "action",
-        choices=["send", "update", "list"],
-        help="Specify the action: 'send' to send a file to an object store, "
+        choices=["send", "send_with_dask", "update", "list"],
+        help="Specify the action: 'send' or 'send_with_dask' to send a file to an object store, "
         "'update' to update an existing object, or 'list' to list the files in a bucket.",
     )
 
@@ -94,6 +94,41 @@ def create_parser():
         "--chunk-strategy",
         dest="chunk_strategy",
         help="Chunk strategy as a JSON string. E.g., '{\"time_counter\": 1, \"x\": 100, \"y\": 100}'",
+        type=json.loads,
+        default=None,
+    )
+
+    parser.add_argument(
+        "-dco",
+        "--dask-config",
+        dest="dask_config_kwargs",
+        help="Dask configuration as a JSON string. E.g., '{\"temporary_directory\": \"/home/users/example/\"}'",
+        type=json.loads,
+        default=None,
+    )
+
+    parser.add_argument(
+        "-dlc",
+        "--dask-local-cluster",
+        dest="dask_cluster_kwargs",
+        help="Local Cluster configuration as a JSON string. E.g., '{\"n_workers\": 5, \"threads_per_worker\": 4, \"memory_limit\": \"4GB\"}'",
+        type=json.loads,
+        default=None,
+    )
+
+    parser.add_argument(
+        "-gf",
+        "--grid-filepath",
+        dest="grid_filepath",
+        help="File path to model grid file containing domain information.",
+        default=None,
+    )
+
+    parser.add_argument(
+        "-uc",
+        "--update-coords",
+        dest="update_coords",
+        help="Coordinate dimensions to update as a JSON string. E.g., '{\"nav_lon\": \"glamt\", \"nav_lat\": \"gphit\"}'",
         type=json.loads,
         default=None,
     )
