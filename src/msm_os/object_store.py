@@ -187,14 +187,3 @@ class ObjectStoreS3(s3fs.S3FileSystem):
         )
 
         return mapper
-
-    def get_bucket_list(self) -> List[str]:
-        """
-        Get the list of buckets in the object store.
-
-        Returns
-        -------
-        bucket_list
-            List of the object store buckets.
-        """
-        return self.ls("/")
