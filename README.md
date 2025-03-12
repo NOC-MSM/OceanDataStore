@@ -1,6 +1,6 @@
-# msm-os Package
+# msm-os
 
-A library designed to streamline the transfer, update, and deletion of Zarr files within object store environments.
+A Python library designed to streamline the writing, updating, and downloading of ocean model and observational data to Zarr stores within cloud object storage.
 
 ## Installation
 
