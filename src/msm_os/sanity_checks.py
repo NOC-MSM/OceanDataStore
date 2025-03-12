@@ -1,4 +1,16 @@
-"""Module with sanity checks."""
+"""
+sanity_checks.py
+
+Description:
+This module defines sanity check functions to
+confirm data is transferred correctly to object
+storage.
+
+Authors:
+    - Joao Morado
+    - Tobias Ferreira
+    - Ollie Tooth
+"""
 
 from typing import List, Any
 import logging

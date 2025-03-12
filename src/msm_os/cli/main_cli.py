@@ -1,4 +1,15 @@
-"""Command line interface (CLI) module."""
+"""
+main_cli.py
+
+Description:
+This module defines the command line interface
+for the msm-os package.
+
+Authors:
+    - Joao Morado
+    - Tobias Ferreira
+    - Ollie Tooth
+"""
 
 import logging
 import sys

@@ -1,5 +1,15 @@
-"""Module for handling the object store."""
+"""
+object_store_handler.py
 
+Description:
+This module defines the functions to send and update data
+to an object store.
+
+Authors:
+    - Joao Morado
+    - Tobias Ferreira
+    - Ollie Tooth
+"""
 import logging
 import os
 from typing import Any, List, Optional
@@ -42,6 +52,7 @@ except ImportError:
         "Dask is not installed. Please install it to use parallel features."
     )
 
+# -- Define retry strategy -- #
 retry_strategy = retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(min=1, max=10),
@@ -51,6 +62,7 @@ retry_strategy = retry(
     reraise=True,
 )
 
+# -- Define MSM-OS Core Functions -- #
 def update(
     filepaths: List[str],
     bucket: str,
@@ -929,7 +941,7 @@ def get_files(
     bucket
         Bucket name.
     store_credentials_json
-        Path to the JSON file containing the credentials for the Object Store.#
+        Path to the JSON file containing the credentials for the Object Store.
 
     Returns
     -------

@@ -1,4 +1,15 @@
-"""Argument parser module."""
+"""
+argument_parser.py
+
+Description:
+This module defines the argument parser for the
+msm-os command line interface.
+
+Authors:
+    - Joao Morado
+    - Tobias Ferreira
+    - Ollie Tooth
+"""
 import json
 import argparse
 

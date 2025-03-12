@@ -1,4 +1,15 @@
-"""Exception classes."""
+"""
+exceptions.py
+
+Description:
+This module defines exceptions classes to be
+raised when performing sanity checks.
+
+Authors:
+    - Joao Morado
+    - Tobias Ferreira
+    - Ollie Tooth
+"""
 import logging
 
 
