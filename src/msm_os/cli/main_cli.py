@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from ..object_store_handler import get_files, send, update
+from ..object_store_handler import get_files, send, send_with_dask, update
 from .argument_parser import __version__, create_parser
 
 logger = logging.getLogger(__name__)
@@ -62,6 +62,33 @@ def process_action(args):
             rechunk=args.chunk_strategy,
             reproject=args.reproject,
             skip_integrity_check=args.skip_integrity_check,
+            to_zarr_kwargs=None,
+        )
+
+    elif args.action == "send_with_dask":
+        if args.variables is not None and "compact" in args.variables:
+            send_vars_indep = True
+        else:
+            send_vars_indep = False
+
+        if len(args.filepaths) > 1:
+            filepaths = list(args.filepaths)
+        else:
+            filepaths = args.filepaths
+
+        send_with_dask(
+            filepaths=filepaths,
+            bucket=args.bucket,
+            store_credentials_json=args.store_credentials_json,
+            variables=variables,
+            append_dim=args.append_dim,
+            send_vars_indep=not send_vars_indep,
+            grid_filepath=args.grid_filepath,
+            update_coords=args.update_coords,
+            object_prefix=args.object_prefix,
+            rechunk=args.chunk_strategy,
+            dask_config_kwargs=args.dask_config_kwargs,
+            dask_cluster_kwargs=args.dask_cluster_kwargs,
             to_zarr_kwargs=None,
         )
 
