@@ -298,7 +298,7 @@ def send_with_dask(
                 ds_grid = xr.open_dataset(grid_filepath)
             # Update coordinate variables using model grid parameters:
             for key in update_coords.keys():
-                coord_data = ds_grid[update_coords[key]].squeeze()
+                coord_data = ds_grid[update_coords[key]].squeeze(drop=True)
                 # Rechunk dimensions to user specified chunks:
                 if rechunk is not None:
                     coord_chunks = {dim: rechunk[dim] for dim in coord_data.dims}
