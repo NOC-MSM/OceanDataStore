@@ -62,6 +62,30 @@ retry_strategy = retry(
     reraise=True,
 )
 
+
+# -- Define timing context manager -- #
+class timer():
+    """
+    Timer context manager class to return time
+    taken to write variables & datasets to an
+    object store.
+
+    Parameters
+    ----------
+    dest : str
+        Destination path in the object store.
+    """
+    def __init__(self, dest : str):
+        self.dest = dest
+    def __enter__(self):
+        self.t_start = time.time()
+    def __exit__(self, type, value, traceback):
+        self.t_end = time.time()
+        logging.info(
+            f"Completed: Sent Object to s3://{self.dest} in {(self.t_end - self.t_start):.2f} seconds"
+            )
+
+
 # -- Define MSM-OS Core Functions -- #
 def update(
     filepaths: List[str],
@@ -265,28 +289,21 @@ def send_with_dask(
                 filepaths = glob.glob(filepaths)
                 filepaths.sort()
 
-        # Open multi-file dataset as dask.delayed object:
         if rechunk is None:
-            ds_filepath = xr.open_mfdataset(filepaths,
-                                            engine='netcdf4',
-                                            parallel=True,
-                                            concat_dim=append_dim,
-                                            combine='nested',
-                                            data_vars='minimal',
-                                            coords='minimal',
-                                            compat='override'
-                                            )
-        else:
-            ds_filepath = xr.open_mfdataset(filepaths,
-                                            engine='netcdf4',
-                                            chunks=rechunk,
-                                            parallel=True,
-                                            concat_dim=append_dim,
-                                            combine='nested',
-                                            data_vars='minimal',
-                                            coords='minimal',
-                                            compat='override'
-                                            )
+            # Default to dask chunks equal to on-disk chunks:
+            rechunk = {}
+
+        # Open multi-file dataset as dask.delayed object:
+        ds_filepath = xr.open_mfdataset(filepaths,
+                                        engine='netcdf4',
+                                        chunks=rechunk,
+                                        parallel=True,
+                                        concat_dim=append_dim,
+                                        combine='nested',
+                                        data_vars='minimal',
+                                        coords='minimal',
+                                        compat='override'
+                                        )
 
         if update_coords is not None:
             # === Update coordinates using model grid file === #
@@ -298,7 +315,7 @@ def send_with_dask(
                 ds_grid = xr.open_dataset(grid_filepath)
             # Update coordinate variables using model grid parameters:
             for key in update_coords.keys():
-                coord_data = ds_grid[update_coords[key]].squeeze()
+                coord_data = ds_grid[update_coords[key]].squeeze(drop=True)
                 # Rechunk dimensions to user specified chunks:
                 if rechunk is not None:
                     coord_chunks = {dim: rechunk[dim] for dim in coord_data.dims}
@@ -338,20 +355,12 @@ def send_with_dask(
                     try:
                         # Append to existing zarr store:
                         check_destination_exists(obj_store, dest)
-                        t_start = time.time()
-                        ds_filepath[var].to_zarr(mapper, append_dim=append_dim, consolidated=True)
-                        t_end = time.time()
-                        logging.info(
-                            'Completed: Sent Variable %s in %s', dest, t_end-t_start
-                            )
+                        with timer(dest):
+                            ds_filepath[var].to_zarr(mapper, append_dim=append_dim, consolidated=True)
 
                     except FileNotFoundError:
-                        t_start = time.time()
-                        ds_filepath[var].to_zarr(mapper, mode='w', consolidated=True)
-                        t_end = time.time()
-                        logging.info(
-                            'Completed: Sent Variable %s in %s', dest, t_end-t_start
-                            )
+                        with timer(dest):
+                            ds_filepath[var].to_zarr(mapper, mode='w', consolidated=True)
 
                     # Release resources to avoid memory leaks:
                     ds_filepath.close()
@@ -370,20 +379,12 @@ def send_with_dask(
                 try:
                     # Append to existing zarr store:
                     check_destination_exists(obj_store, dest)
-                    t_start = time.time()
-                    ds_filepath.to_zarr(mapper, append_dim=append_dim, consolidated=True)
-                    t_end = time.time()
-                    logging.info(
-                        'Completed: Sent Dataset to s3://%s in %s', dest, t_end-t_start
-                        )
+                    with timer(dest):
+                        ds_filepath.to_zarr(mapper, append_dim=append_dim, consolidated=True)
 
                 except FileNotFoundError:
-                    t_start = time.time()
-                    ds_filepath.to_zarr(mapper, mode='w', consolidated=True)
-                    t_end = time.time()
-                    logging.info(
-                        'Completed: Sent Dataset to s3://%s in %s', dest, t_end-t_start
-                        )
+                    with timer(dest):
+                        ds_filepath.to_zarr(mapper, mode='w', consolidated=True)
 
                 # Release resources to avoid memory leaks:
                 ds_filepath.close()
