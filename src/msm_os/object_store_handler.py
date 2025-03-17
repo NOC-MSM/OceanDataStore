@@ -352,18 +352,11 @@ def send_with_dask(
                             'Skipping: Variable exists in %s', dest
                             )
                 else:
-                    try:
-                        # Append to existing zarr store:
-                        check_destination_exists(obj_store, dest)
-                        with timer(dest):
-                            ds_filepath[var].to_zarr(mapper, append_dim=append_dim, consolidated=True)
+                    with timer(dest):
+                        ds_filepath[var].to_zarr(mapper, mode='w', consolidated=True)
 
-                    except FileNotFoundError:
-                        with timer(dest):
-                            ds_filepath[var].to_zarr(mapper, mode='w', consolidated=True)
-
-                    # Release resources to avoid memory leaks:
-                    ds_filepath.close()
+            # Release resources to avoid memory leaks:
+            ds_filepath.close()
             
         else:
             # === Send Dataset to object store === #
@@ -376,18 +369,11 @@ def send_with_dask(
                     'Skipping: Variable exists in %s', dest
                     )
             else:
-                try:
-                    # Append to existing zarr store:
-                    check_destination_exists(obj_store, dest)
-                    with timer(dest):
-                        ds_filepath.to_zarr(mapper, append_dim=append_dim, consolidated=True)
+                with timer(dest):
+                    ds_filepath.to_zarr(mapper, mode='w', consolidated=True)
 
-                except FileNotFoundError:
-                    with timer(dest):
-                        ds_filepath.to_zarr(mapper, mode='w', consolidated=True)
-
-                # Release resources to avoid memory leaks:
-                ds_filepath.close()
+            # Release resources to avoid memory leaks:
+            ds_filepath.close()
             
         # === Shutdown Dask Cluster === #
         client.shutdown()
