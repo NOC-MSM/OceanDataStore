@@ -11,25 +11,36 @@ Authors:
     - Ollie Tooth
 """
 import json
+import zarr
 import s3fs
 import fsspec
 import logging
 
-from typing import List, Union
+from typing import Union
 
 class ObjectStoreS3(s3fs.S3FileSystem):
     """
-    S3 object store.
+    Initialize S3 Object Store.
 
     Parameters
     ----------
-    s3fs
-        _description_
+    anon, bool (False)
+        Whether to use anonymous connection (public buckets only).
+    asynchronous, bool (True)
+        Whether to use asynchronous operations (instance to be used inside corountines).
+    store_credentials_json, str (None)
+        File path to object store credentials .json file.
+    secret, str (None)
+        If not anonymous, use this secret key to access object store.
+    key, str (None)
+        If not anonymous, use this key to access object store.
+    endpoint_url, str (None)
+        Endpoint URL of object store. Needed for non-AWS S3 object stores.
     """
-
     def __init__(
         self,
         anon: bool = False,
+        asynchronous: bool = False,
         store_credentials_json: Union[str, None] = None,
         secret: Union[str, None] = None,
         key: Union[str, None] = None,
@@ -37,23 +48,11 @@ class ObjectStoreS3(s3fs.S3FileSystem):
         *fs_args,
         **fs_kwargs,
     ) -> None:
-        """
-        Initialize the S3 object store.
 
-        Parameters
-        ----------
-        anon, optional
-            _description_, by default False
-        store_credentials_json, optional
-            _description_, by default None
-        secret, optional
-            _description_, by default None
-        key, optional
-            _description_, by default None
-        endpoint_url, optional
-            _description_, by default None
-        """
+        # Get object store credentials:
         self._anon = anon
+        self._asynchronous = asynchronous
+
         if store_credentials_json is None:
             logging.info(
                 "No JSON file was provided."
@@ -66,11 +65,10 @@ class ObjectStoreS3(s3fs.S3FileSystem):
             }
         else:
             logging.info("Reading object store credentials from %s", store_credentials_json)
-            self._store_credentials = self.load_store_credentials(
-                store_credentials_json
-            )
+            self._store_credentials = self.load_store_credentials(store_credentials_json)
 
-        self._remote_options = self.get_remote_options(override=True)
+        # Configure remote options:
+        self._remote_options = self.get_remote_options()
 
         super().__init__(*fs_args, **self._remote_options, **fs_kwargs)
 
@@ -89,8 +87,8 @@ class ObjectStoreS3(s3fs.S3FileSystem):
         -------
         store_credentials
             Dictionary containing the values of the `token`,
-                `secret` and `endpoint_url` keys used
-            to access the object store.
+            `secret` and `endpoint_url` keys used to access the
+            object store.
         """
         try:
             with open(path) as f:
@@ -100,7 +98,6 @@ class ObjectStoreS3(s3fs.S3FileSystem):
 
         for key in ["token", "secret", "endpoint_url"]:
             if key not in store_credentials:
-                logging.info("-" * 79)
                 logging.warning(
                     '"%s" is not a key in the JSON file provided. Its value will be set to None.',
                     key
@@ -128,35 +125,54 @@ class ObjectStoreS3(s3fs.S3FileSystem):
         except FileExistsError:
             logging.info(f"Bucket {bucket} already exists.")
 
-    def get_remote_options(self,
-                           override: bool = False
-                           ) -> dict:
-        """
-        Get the remote options of the object store.
 
-        Parameters
-        ----------
-        override
-            Create remote_options from scratch (True)
-            or retrieve the current dict (False).
+    def get_remote_options(self) -> dict:
+        """
+        Get the remote options to access the object store.
 
         Returns
         -------
         remote_options
-            Dictionary containing the remote options of the object store.
+            Dictionary containing the remote options to access the object store.
 
         """
-        if override:
-            self._remote_options = {
-                "anon": self._anon,
-                "secret": self._store_credentials["secret"],
-                "key": self._store_credentials["token"],
-                "client_kwargs": {
-                    "endpoint_url": self._store_credentials["endpoint_url"]
-                },
-            }
+        # Create remote options dict from credentials:
+        self._remote_options = {
+            "anon": self._anon,
+            "asynchronous": self._asynchronous,
+            "secret": self._store_credentials["secret"],
+            "key": self._store_credentials["token"],
+            "client_kwargs": {
+                "endpoint_url": self._store_credentials["endpoint_url"]
+            },
+        }
 
         return self._remote_options
+    
+
+    def get_store(self,
+                  path: str,
+                  **get_store_kwargs
+                  ) -> zarr.storage.FsspecStore:
+        """
+        Get a remote store in a desired bucket using fsspec.
+
+        Parameters
+        ----------
+        dest: str, default "s3://"
+            Protocol prefix to object store.
+        **get_store_kwargs
+            Kwargs for zarr.storage.FsspecStore().
+            See: https://zarr.readthedocs.io/en/stable/api/zarr/storage/index.html#zarr.storage.FsspecStore.
+
+        Returns
+        -------
+        store, FsspecStore
+            A remote store based on fsspec.
+        """
+        store = zarr.storage.FsspecStore(fs=self, path=path, **get_store_kwargs)
+
+        return store
 
 
     def get_mapper(self,
