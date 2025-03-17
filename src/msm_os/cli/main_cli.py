@@ -10,9 +10,8 @@ Authors:
     - Tobias Ferreira
     - Ollie Tooth
 """
-
-import logging
 import sys
+import logging
 
 from ..object_store_handler import get_files, send, send_with_dask, update
 from .argument_parser import __version__, create_parser
@@ -24,14 +23,14 @@ def banner():
     """Log the msm_os banner."""
     logger.info(
         f"""
-          .-~~~-.
-  .- ~ ~-(       )_ _
- /                    ~ -.
+        .-~~~-.
+.- ~ ~-(       )_ _
+/                    ~ -.
 |          msm-os         ',
- ¬                         .'
-   ~- ._ ,. ,.,.,., ,.. -~
-           '       '
-       version: {__version__}
+¬                         .'
+~- ._ ,. ,.,.,., ,.. -~
+        '       '
+    version: {__version__}
 
 """,
         extra={"simple": True},
@@ -62,18 +61,22 @@ def process_action(args):
         else:
             send_vars_indep = False
 
+        if len(args.filepaths) > 1:
+            filepaths = list(args.filepaths)
+        else:
+            filepaths = args.filepaths
+
         send(
-            filepaths=list(args.filepaths),
+            filepaths=filepaths,
             bucket=args.bucket,
             store_credentials_json=args.store_credentials_json,
             variables=variables,
             append_dim=args.append_dim,
             send_vars_indep=not send_vars_indep,
+            grid_filepath=args.grid_filepath,
+            update_coords=args.update_coords,
             object_prefix=args.object_prefix,
             rechunk=args.chunk_strategy,
-            reproject=args.reproject,
-            skip_integrity_check=args.skip_integrity_check,
-            to_zarr_kwargs=None,
         )
 
     elif args.action == "send_with_dask":
@@ -100,7 +103,6 @@ def process_action(args):
             rechunk=args.chunk_strategy,
             dask_config_kwargs=args.dask_config_kwargs,
             dask_cluster_kwargs=args.dask_cluster_kwargs,
-            to_zarr_kwargs=None,
         )
 
     elif args.action == "update":
