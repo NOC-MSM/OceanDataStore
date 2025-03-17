@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "msm_os"
-description = "A library to send files to the object store."
+description = "A Python library to write, update and download files to & from cloud object stores."
 requires-python = ">=3.10"
-keywords = ["data", "pipeline", "object store", "tookit", "data", "zarr", "pypeline", "noc"]
-authors = [{email = "joao.morado@noc.ac.uk"},{name = "Joao Morado"}]
-maintainers = [{name = "Joao Morado", email = "joao.morado@noc.ac.uk"}]
+keywords = ["data", "model", "object store", "tookit", "cloud", "zarr", "noc"]
+authors = [{name = "Ollie Tooth"}, {email = "oliver.tooth@noc.ac.uk"},{name = "Joao Morado"},{email = "joao.morado@noc.ac.uk"}]
+maintainers = [{name = "Ollie Tooth"}, {email = "oliver.tooth@noc.ac.uk"}]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Intended Audience :: Science/Research"
@@ -24,7 +24,7 @@ dependencies = [
   "numpy>=2.2.3",
   "scitools-iris>=3.9.0",
   "tenacity>=8.3.0",
-  "zarr==2.18.2",
+  "zarr>=2.18.2",
   ]
 
 dynamic = ["version"]
@@ -50,7 +50,7 @@ namespaces = true
 test = ["pytest >= 7.2.0"]
 
 [project.urls]
-repository = "https://github.com/NOC-OI/msm_os"
+repository = "https://github.com/NOC-MSM/msm_os"
 
 [project.scripts]
 msm_os = "msm_os.cli.main_cli:msm_os"
