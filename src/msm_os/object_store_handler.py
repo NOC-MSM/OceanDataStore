@@ -33,6 +33,8 @@ from .exceptions import (
     ObjectNotFound,
     DimensionNotFound,
     DimensionSizeError,
+    AppendDimensionError,
+    ChunkSizeError,
 )
 
 # -- Define timing context manager -- #
@@ -44,26 +46,35 @@ class timer():
 
     Parameters
     ----------
+    action : str
+        Action to be performed. Options are 'send' or 'update'.
     dest : str
         Destination path in the object store.
     version : int, default=3
         Zarr version to use.
     """
-    def __init__(self, dest : str, version: int = 3):
+    def __init__(self, action: str, dest : str, version: int = 3) -> None:
+        # Define class attributes:
+        if action == 'send':
+            self.action = 'Sent'
+        elif action == 'update':
+            self.action = 'Updated'
         self.dest = dest
         self.version = version
+
     def __enter__(self):
         self.t_start = time.time()
+
     def __exit__(self, type, value, traceback):
         self.t_end = time.time()
         logging.info(
-            f"Completed: Sent Zarr v{self.version} store to s3://{self.dest} in {(self.t_end - self.t_start):.2f} seconds"
+            f"Completed: {self.action} zarr v{self.version} store to s3://{self.dest} in {(self.t_end - self.t_start):.2f} seconds"
             )
 
 # -- Define MSM-OS Core Functions -- #
 async def _check_store(obj_store : ObjectStoreS3,
-                      dest : str
-                      ) -> bool:
+                       dest : str
+                       ) -> bool:
     """
     Check if a destination path exists in the
     object store.
@@ -87,6 +98,92 @@ async def _check_store(obj_store : ObjectStoreS3,
     return status
 
 
+async def _check_compatability(data: xr.DataArray | xr.Dataset,
+                               obj_store: ObjectStoreS3,
+                               dest : str,
+                               append_dim: str = "time_counter",
+                               rechunk: Optional[dict] = None,
+                               version: int = 3,
+                               ) -> None:
+    """
+    Check compatability of DataArray or Dataset to update existing
+    zarr store in Object Store.
+
+    Parameters
+    ----------
+    data: xr.DataArray | xr.Dataset
+        DataArray or DataSet to update existing zarr store with.
+    obj_store: ObjectStoreS3
+        ObjectStoreS3 remote filesystem.
+    dest: str
+        Destination path in the object store.
+    append_dim: bool, default="time_counter"
+        Name of the dimension to append to existing zarr store.
+    rechunk: Optional[dict], default=None
+        Rechunk strategy dictionary.
+    version: int, default=3
+        Zarr version to use.
+    """
+    # === Verify Inputs === #
+    if not isinstance(data, (xr.DataArray, xr.Dataset)):
+        raise TypeError("data must be a DataArray or Dataset.")
+    if not isinstance(obj_store, ObjectStoreS3):
+        raise TypeError("obj_store must be an ObjectStoreS3 instance.")
+    if not isinstance(dest, str):
+        raise TypeError("dest must be a string.")
+    if not isinstance(append_dim, str):
+        raise TypeError("append_dim must be a string.")
+    if rechunk is not None:
+        if not isinstance(rechunk, dict):
+            raise TypeError("rechunk must be a dictionary.")
+    if not isinstance(version, int):
+        raise TypeError("version must be an integer.")
+
+    # === Initialise store using fsspec === #
+    store = zarr.storage.FsspecStore(fs=obj_store, path=dest)
+
+    # 1. Check if the store exists:
+    if not await _check_store(obj_store=obj_store, dest=dest):
+        await _close_session(obj_store=obj_store)
+        raise ObjectNotFound(object_name=dest)
+    
+    # 2. Check zarr store compatibility:
+    try:
+        ds_store = xr.open_zarr(store, zarr_format=version)
+    except Exception as e:
+        await _close_session(obj_store=obj_store)
+        raise FileNotFoundError(f"zarr version {version} is not compatible with the store: {e}")
+
+    # 3. Check if the append dimension is present:
+    if append_dim not in ds_store.dims:
+        await _close_session(obj_store=obj_store)
+        raise DimensionNotFound(dim=append_dim, object_name=dest)
+    
+    # 4. Check if core dimensions exist & size are compatible:
+    dims_store = {dim : ds_store.sizes[dim] for dim in ds_store.dims if dim != append_dim}
+    for dim in dims_store:
+        if dim in data.dims:
+            if data.sizes[dim] != dims_store[dim]:
+                await _close_session(obj_store=obj_store)
+                raise DimensionSizeError(dim=dim, size=data.sizes[dim], expected_size=dims_store[dim])
+        else:
+            await _close_session(obj_store=obj_store)
+            raise DimensionNotFound(dim=dim, object_name=dest)
+
+    # 5. Check if append dimension values are compatible:
+    if not (ds_store[append_dim][-1] < data[append_dim][0]):
+        await _close_session(obj_store=obj_store)
+        raise AppendDimensionError(dim=append_dim)
+    
+    # 6. Check if specified chunks are compatible:
+    for dim in rechunk:
+        if rechunk[dim] != ds_store.chunks[dim][0]:
+            await _close_session(obj_store=obj_store)
+            raise ChunkSizeError(chunks=rechunk, store_chunks=ds_store.chunks)
+
+    await _close_session(obj_store=obj_store)
+
+
 async def _close_session(obj_store: ObjectStoreS3) -> None:
     """
     Close the current Object Store aiohttp session.
@@ -105,7 +202,8 @@ async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
                          version: int = 3,
                          ) -> None:
     """
-    Write DataArray or Dataset to zarr store in Object Store.
+    Write DataArray or Dataset to zarr store in cloud
+    object storage.
 
     Parameters
     ----------
@@ -140,13 +238,80 @@ async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
         logging.info(f"Skipping Variable: Store already exists at {dest}")
 
     else:
-        with timer(dest=dest, version=version):
+        with timer(action='send', dest=dest, version=version):
             # Catch consolidated metadata warnings:
             with warnings.catch_warnings():
                 warnings.simplefilter(action="ignore", category=UserWarning)
                 data.to_zarr(store=store, mode="w", zarr_format=version)
 
         await _close_session(obj_store=obj_store)
+
+
+async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
+                          obj_store: ObjectStoreS3,
+                          dest : str,
+                          append_dim: str = "time_counter",
+                          rechunk: Optional[dict] = None,
+                          version: int = 3,
+                          ) -> None:
+    """
+    Append DataArray or Dataset to existing zarr store in
+    cloud object storage.
+
+    Parameters
+    ----------
+    data: xr.DataArray | xr.Dataset
+        DataArray or DataSet to append to existing zarr store.
+    obj_store: ObjectStoreS3
+        ObjectStoreS3 remote filesystem.
+    dest: str
+        Destination path in the object store.
+    append_dim: str, default="time_counter"
+        Name of the dimension to append to existing zarr store.
+    rechunk: Optional[dict], default=None
+        Rechunk strategy dictionary.
+    version: int, default=3
+        Zarr version to use.
+    """
+    # === Verify Inputs === #
+    if not isinstance(data, (xr.DataArray, xr.Dataset)):
+        raise TypeError("data must be a DataArray or Dataset.")
+    if not isinstance(obj_store, ObjectStoreS3):
+        raise TypeError("obj_store must be an ObjectStoreS3 instance.")
+    if not isinstance(dest, str):
+        raise TypeError("dest must be a string.")
+    if not isinstance(append_dim, str):
+        raise TypeError("append_dim must be a string.")
+    if rechunk is not None:
+        if not isinstance(rechunk, dict):
+            raise TypeError("rechunk must be a dictionary.")
+    if not isinstance(version, int):
+        raise TypeError("version must be an integer.")
+
+    # === Initialise store using fsspec === #
+    store = zarr.storage.FsspecStore(fs=obj_store, path=dest)
+
+    # Convert DataArrays to Datasets:
+    if isinstance(data, xr.DataArray):
+        data = data.to_dataset()
+
+    # Write Dataset to Zarr store in Object Store:
+    await _check_compatability(data=data,
+                               obj_store=obj_store,
+                               dest=dest,
+                               append_dim=append_dim,
+                               rechunk=rechunk,
+                               version=version
+                               )
+    logging.info(f"Passed Compatibility Checks for {dest}.")
+
+    with timer(action='update', dest=dest, version=version):
+        # Catch consolidated metadata warnings:
+        with warnings.catch_warnings():
+            warnings.simplefilter(action="ignore", category=UserWarning)
+            data.to_zarr(store=store, mode="a-", append_dim=append_dim, zarr_format=version)
+
+    await _close_session(obj_store=obj_store)
 
 
 def _preprocess_dataset(filepaths: list[str] | str,
@@ -220,7 +385,7 @@ def _preprocess_dataset(filepaths: list[str] | str,
                                         )
     else:
         # Open single file dataset:
-        ds_filepath = xr.open_dataset(filepaths[0])
+        ds_filepath = xr.open_dataset(filepaths[0], chunks=rechunk)
 
     # === Update coordinates using model grid file === #
     if update_coords is not None:
@@ -262,7 +427,7 @@ def send(
         zarr_version: int = 3
         ) -> None:
     """
-    Write files to Zarr store in an Object Store.
+    Write data in serial to new zarr store in cloud object storage.
 
     Parameters
     ----------
@@ -358,7 +523,8 @@ def send_with_dask(
     zarr_version: int = 3
 ) -> None:
     """
-    Write files to Zarr store in object store using dask local cluster.
+    Write data in parallel to new zarr store in cloud object storage
+    using dask local cluster.
 
     Parameters
     ----------
@@ -463,6 +629,104 @@ def send_with_dask(
         client.close()
         logging.info("Dask Cluster has been shutdown.")
 
+
+def update(
+        filepaths: list[str] | str,
+        bucket: str,
+        object_prefix: str,
+        store_credentials_json: str,
+        variables: list[str] | str = 'all',
+        send_vars_indep: bool = True,
+        append_dim: str = "time_counter",
+        grid_filepath: Optional[str] = None,
+        update_coords: Optional[dict] = None,
+        rechunk: Optional[dict] = None,
+        zarr_version: int = 3
+        ) -> None:
+    """
+    Update existing zarr store in cloud object storage
+    by appending data in serial.
+
+    Parameters
+    ----------
+    filepaths: list | str
+        Regular expression or list of filepaths to write to Zarr stores.
+    bucket: str
+        Name of the bucket in the object store. Bucket names can contain only
+        lowercase letters, numbers, dots (.), and hyphens (-).
+    object_prefix: str
+        Prefix to be added to the object names in the object store.
+    store_credentials_json: str
+        Path to the JSON file containing the object store credentials.
+    variables: list, default='all'
+        List of variables to send to Zarr stores.
+        If None, all variables will be sent.
+    send_vars_indep: bool, default=True
+        Whether to send variables as separate objects.
+    append_dim: str, default='time_counter'
+        Name of the dimension to append multifile datasets.
+    grid_filepath: str, optional
+        Path to file containing model grid parameter.
+    update_coords: dict, optional
+        Dictionary of coordinate variables to update.
+    rechunk
+        Rechunk strategy dictionary.
+    zarr_version: int, default=3
+        Zarr version to use.
+    """
+    # === Initialise Asynchronous Object Store === #
+    obj_store = ObjectStoreS3(anon=False,
+                              asynchronous=True,
+                              store_credentials_json=store_credentials_json
+                              )
+
+    # === Preprocess Data === #
+    ds_filepath = _preprocess_dataset(filepaths=filepaths,
+                                      rechunk=rechunk,
+                                      append_dim=append_dim,
+                                      update_coords=update_coords,
+                                      grid_filepath=grid_filepath,
+                                      parallel=False
+                                      )
+
+    # === Update Variables in Existing Zarr Stores === #
+    if send_vars_indep:
+        if variables is None:
+            variables = list(ds_filepath.data_vars)
+
+        for var in variables:
+            logging.info(f"Updating Variable {var}")
+            dest = f"{bucket}/{object_prefix}/{var}"
+            asyncio.run(
+                _append_to_zarr(data=ds_filepath[var],
+                                obj_store=obj_store,
+                                dest=dest,
+                                append_dim=append_dim,
+                                rechunk=rechunk,
+                                version=zarr_version
+                                )
+                        )
+    
+        # Release resources to avoid memory leaks:
+        ds_filepath.close()
+        
+    else:
+        # === Update Existing Zarr Store === #
+        # Write to zarr store:
+        dest = f"{bucket}/{object_prefix}"
+        logging.info(f"Updating Dataset at {dest}")
+        asyncio.run(
+            _append_to_zarr(data=ds_filepath,
+                            obj_store=obj_store,
+                            dest=dest,
+                            append_dim=append_dim,
+                            rechunk=rechunk,
+                            version=zarr_version
+                            )
+                    )
+        
+        # Release resources to avoid memory leaks:
+        ds_filepath.close()
 
 # def update(
 #     filepaths: list[str],
