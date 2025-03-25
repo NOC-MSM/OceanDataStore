@@ -110,20 +110,10 @@ def create_parser():
     )
 
     parser.add_argument(
-        "-dco",
-        "--dask-config",
-        dest="dask_config_kwargs",
-        help="Dask configuration as a JSON string. E.g., '{\"temporary_directory\": \"/home/users/example/\"}'",
-        type=json.loads,
-        default=None,
-    )
-
-    parser.add_argument(
-        "-dlc",
-        "--dask-local-cluster",
-        dest="dask_cluster_kwargs",
-        help="Local Cluster configuration as a JSON string. E.g., '{\"n_workers\": 5, \"threads_per_worker\": 4, \"memory_limit\": \"4GB\"}'",
-        type=json.loads,
+        "-dc",
+        "--dask-configuration",
+        dest="dask_config_json",
+        help="Path to the JSON file defining the Dask Local Cluster configuration.",
         default=None,
     )
 
@@ -142,6 +132,14 @@ def create_parser():
         help="Coordinate dimensions to update as a JSON string. E.g., '{\"nav_lon\": \"glamt\", \"nav_lat\": \"gphit\"}'",
         type=json.loads,
         default=None,
+    )
+
+    parser.add_argument(
+        "-zv",
+        "--zarr-version",
+        dest="zarr_version",
+        help="Zarr version used to create the zarr store. Options are 2 (v2) or 3 (v3).",
+        default=3,
     )
 
     return parser

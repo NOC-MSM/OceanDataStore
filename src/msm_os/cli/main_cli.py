@@ -11,9 +11,10 @@ Authors:
     - Ollie Tooth
 """
 import sys
+import json
 import logging
 
-from ..object_store_handler import get_files, send, send_with_dask, update
+from ..object_store_handler import send, send_with_dask
 from .argument_parser import __version__, create_parser
 
 logger = logging.getLogger(__name__)
@@ -69,14 +70,15 @@ def process_action(args):
         send(
             filepaths=filepaths,
             bucket=args.bucket,
+            object_prefix=args.object_prefix,
             store_credentials_json=args.store_credentials_json,
             variables=variables,
             append_dim=args.append_dim,
             send_vars_indep=not send_vars_indep,
             grid_filepath=args.grid_filepath,
             update_coords=args.update_coords,
-            object_prefix=args.object_prefix,
             rechunk=args.chunk_strategy,
+            zarr_version=int(args.zarr_version),
         )
 
     elif args.action == "send_with_dask":
@@ -90,36 +92,45 @@ def process_action(args):
         else:
             filepaths = args.filepaths
 
+        if args.dask_config_json is not None:
+            dask_config = json.load(open(args.dask_config_json))
+            if "config_kwargs" not in dask_config:
+                raise ValueError("config_kwargs not found in Dask configuration.")
+            if "cluster_kwargs" not in dask_config:
+                raise ValueError("cluster_kwargs not found in Dask configuration.")
+
         send_with_dask(
             filepaths=filepaths,
             bucket=args.bucket,
+            object_prefix=args.object_prefix,
             store_credentials_json=args.store_credentials_json,
             variables=variables,
             append_dim=args.append_dim,
             send_vars_indep=not send_vars_indep,
             grid_filepath=args.grid_filepath,
             update_coords=args.update_coords,
-            object_prefix=args.object_prefix,
             rechunk=args.chunk_strategy,
-            dask_config_kwargs=args.dask_config_kwargs,
-            dask_cluster_kwargs=args.dask_cluster_kwargs,
+            dask_config_kwargs=dask_config["config_kwargs"],
+            dask_cluster_kwargs=dask_config["cluster_kwargs"],
+            zarr_version=int(args.zarr_version),
         )
 
-    elif args.action == "update":
-        update(
-            filepaths=list(args.filepaths),
-            bucket=args.bucket,
-            store_credentials_json=args.store_credentials_json,
-            variables=variables,
-            object_prefix=args.object_prefix,
-            to_zarr_kwargs=None,
-        )
+    # elif args.action == "update":
+    #     update(
+    #         filepaths=list(args.filepaths),
+    #         bucket=args.bucket,
+    #         store_credentials_json=args.store_credentials_json,
+    #         variables=variables,
+    #         object_prefix=args.object_prefix,
+    #         to_zarr_kwargs=None,
+    #     )
 
-    elif args.action == "list":
-        get_files(
-            bucket=args.bucket,
-            store_credentials_json=args.store_credentials_json,
-        )
+    # elif args.action == "list":
+    #     get_files(
+    #         bucket=args.bucket,
+    #         store_credentials_json=args.store_credentials_json,
+    #     )
+
     else:
         raise NotImplementedError(f"Action {args.action} not implemented.")
 
