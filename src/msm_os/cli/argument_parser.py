@@ -82,23 +82,6 @@ def create_parser():
         nargs="+",
         default=None,
     )
-    parser.add_argument(
-        "-r",
-        "--reproject",
-        dest="reproject",
-        action='store_true',
-        help="If present, reproject data",
-        default=False,
-    )
-    
-    parser.add_argument(
-        "-si",
-        "--skip-integrity-check",
-        dest="skip_integrity_check",
-        action='store_true',
-        help="If present, skip the integrity check of the output files",
-        default=False,
-    )
 
     parser.add_argument(
         "-cs",

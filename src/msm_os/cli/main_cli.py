@@ -14,7 +14,7 @@ import sys
 import json
 import logging
 
-from ..object_store_handler import send, send_with_dask
+from ..object_store_handler import send, send_with_dask, update
 from .argument_parser import __version__, create_parser
 
 logger = logging.getLogger(__name__)
@@ -54,18 +54,34 @@ def process_action(args):
         args.parser.print_help()
         sys.exit(0)
 
-    variables = list(args.variables) if args.variables is not None else None
+    # === Process Arguments === #
+    if args.variables is not None:
+        variables = list(args.variables)
+    else:
+        variables = None
 
+    if (args.variables is not None) and ("compact" in args.variables):
+        send_vars_indep = False
+    else:
+        send_vars_indep = True
+    
+    if len(args.filepaths) > 1:
+        filepaths = list(args.filepaths)
+    else:
+        filepaths = args.filepaths
+
+    if args.zarr_version is not None:
+        zarr_version = int(args.zarr_version)
+
+    if args.dask_config_json is not None:
+        dask_config = json.load(open(args.dask_config_json))
+        if "config_kwargs" not in dask_config:
+            raise ValueError("config_kwargs not found in Dask configuration.")
+        if "cluster_kwargs" not in dask_config:
+            raise ValueError("cluster_kwargs not found in Dask configuration.")
+
+    # === Process Actions === #
     if args.action == "send":
-        if args.variables is not None and "compact" in args.variables:
-            send_vars_indep = True
-        else:
-            send_vars_indep = False
-
-        if len(args.filepaths) > 1:
-            filepaths = list(args.filepaths)
-        else:
-            filepaths = args.filepaths
 
         send(
             filepaths=filepaths,
@@ -74,30 +90,14 @@ def process_action(args):
             store_credentials_json=args.store_credentials_json,
             variables=variables,
             append_dim=args.append_dim,
-            send_vars_indep=not send_vars_indep,
+            send_vars_indep=send_vars_indep,
             grid_filepath=args.grid_filepath,
             update_coords=args.update_coords,
             rechunk=args.chunk_strategy,
-            zarr_version=int(args.zarr_version),
+            zarr_version=zarr_version,
         )
 
     elif args.action == "send_with_dask":
-        if args.variables is not None and "compact" in args.variables:
-            send_vars_indep = True
-        else:
-            send_vars_indep = False
-
-        if len(args.filepaths) > 1:
-            filepaths = list(args.filepaths)
-        else:
-            filepaths = args.filepaths
-
-        if args.dask_config_json is not None:
-            dask_config = json.load(open(args.dask_config_json))
-            if "config_kwargs" not in dask_config:
-                raise ValueError("config_kwargs not found in Dask configuration.")
-            if "cluster_kwargs" not in dask_config:
-                raise ValueError("cluster_kwargs not found in Dask configuration.")
 
         send_with_dask(
             filepaths=filepaths,
@@ -106,24 +106,30 @@ def process_action(args):
             store_credentials_json=args.store_credentials_json,
             variables=variables,
             append_dim=args.append_dim,
-            send_vars_indep=not send_vars_indep,
+            send_vars_indep=send_vars_indep,
             grid_filepath=args.grid_filepath,
             update_coords=args.update_coords,
             rechunk=args.chunk_strategy,
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
-            zarr_version=int(args.zarr_version),
+            zarr_version=zarr_version,
         )
 
-    # elif args.action == "update":
-    #     update(
-    #         filepaths=list(args.filepaths),
-    #         bucket=args.bucket,
-    #         store_credentials_json=args.store_credentials_json,
-    #         variables=variables,
-    #         object_prefix=args.object_prefix,
-    #         to_zarr_kwargs=None,
-    #     )
+    elif args.action == "update":
+
+        update(
+            filepaths=filepaths,
+            bucket=args.bucket,
+            object_prefix=args.object_prefix,
+            store_credentials_json=args.store_credentials_json,
+            variables=variables,
+            send_vars_indep=send_vars_indep,
+            append_dim=args.append_dim,
+            grid_filepath=args.grid_filepath,
+            update_coords=args.update_coords,
+            rechunk=args.chunk_strategy,
+            zarr_version=zarr_version,
+                )
 
     # elif args.action == "list":
     #     get_files(
