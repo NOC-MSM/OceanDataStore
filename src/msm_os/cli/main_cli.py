@@ -14,7 +14,7 @@ import sys
 import json
 import logging
 
-from ..object_store_handler import send, send_with_dask, update
+from ..object_store_handler import send, send_with_dask, update, update_with_dask
 from .argument_parser import __version__, create_parser
 
 logger = logging.getLogger(__name__)
@@ -130,6 +130,24 @@ def process_action(args):
             rechunk=args.chunk_strategy,
             zarr_version=zarr_version,
                 )
+        
+    elif args.action == "update_with_dask":
+
+        update_with_dask(
+            filepaths=filepaths,
+            bucket=args.bucket,
+            object_prefix=args.object_prefix,
+            store_credentials_json=args.store_credentials_json,
+            variables=variables,
+            send_vars_indep=send_vars_indep,
+            append_dim=args.append_dim,
+            grid_filepath=args.grid_filepath,
+            update_coords=args.update_coords,
+            rechunk=args.chunk_strategy,
+            dask_config_kwargs=dask_config["config_kwargs"],
+            dask_cluster_kwargs=dask_config["cluster_kwargs"],
+            zarr_version=zarr_version,
+            )
 
     # elif args.action == "list":
     #     get_files(

@@ -26,7 +26,7 @@ def create_parser():
     # Send and Update are mutually exclusive operations
     parser.add_argument(
         "action",
-        choices=["send", "send_with_dask", "update", "list"],
+        choices=["send", "send_with_dask", "update", "update_with_dask", "list"],
         help="Specify the action: 'send' or 'send_with_dask' to send a file to an object store, "
         "'update' to update an existing object, or 'list' to list the files in a bucket.",
     )
