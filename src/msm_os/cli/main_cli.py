@@ -14,7 +14,7 @@ import sys
 import json
 import logging
 
-from ..object_store_handler import send, send_with_dask, update, update_with_dask
+from ..object_store_handler import send, send_with_dask, update, update_with_dask, list_objects
 from .argument_parser import __version__, create_parser
 
 logger = logging.getLogger(__name__)
@@ -65,10 +65,11 @@ def process_action(args):
     else:
         send_vars_indep = True
     
-    if len(args.filepaths) > 1:
-        filepaths = list(args.filepaths)
-    else:
-        filepaths = args.filepaths
+    if args.filepaths is not None:
+        if len(args.filepaths) > 1:
+            filepaths = list(args.filepaths)
+        else:
+            filepaths = args.filepaths
 
     if args.zarr_version is not None:
         zarr_version = int(args.zarr_version)
@@ -149,11 +150,17 @@ def process_action(args):
             zarr_version=zarr_version,
             )
 
-    # elif args.action == "list":
-    #     get_files(
-    #         bucket=args.bucket,
-    #         store_credentials_json=args.store_credentials_json,
-    #     )
+    elif args.action == "list":
+
+        if args.object_prefix is not None:
+            dest = f"{args.bucket}/{args.object_prefix}"
+        else:
+            dest = args.bucket
+
+        list_objects(
+            dest=dest,
+            store_credentials_json=args.store_credentials_json,
+        )
 
     else:
         raise NotImplementedError(f"Action {args.action} not implemented.")

@@ -864,27 +864,30 @@ def update_with_dask(
         logging.info("Dask Cluster has been shutdown.")
 
 
-# def get_files(
-#     bucket: str,
-#     store_credentials_json: str,
-# ) -> List[str]:
-#     """
-#     Get the list of files in the bucket.
+def list_objects(
+    dest: str,
+    store_credentials_json: str,
+    ) -> list[str]:
+    """
+    List the objects contained inside a bucket / object.
 
-#     Parameters
-#     ----------
-#     bucket
-#         Bucket name.
-#     store_credentials_json
-#         Path to the JSON file containing the credentials for the Object Store.
+    Parameters
+    ----------
+    dest: str
+        Destination path in the object store.
+    store_credentials_json: str
+        Path to the JSON file containing the object store credentials.
 
-#     Returns
-#     -------
-#     List[str]
-#         List of files in the bucket.
-#     """
-#     obj_store = ObjectStoreS3(anon=False, store_credentials_json=store_credentials_json)
-#     logging.info("Getting list of files in bucket '%s'", bucket)
-#     for file in obj_store.ls(f"{bucket}"):
-#         logging.info(file)
-#     return obj_store.ls(f"{bucket}")
+    Returns
+    -------
+    list[str]
+        List of objects contained inside the bucket / object.
+    """
+    # === Initialise synchronous object store === #
+    logging.info("Reading object store credentials from %s", store_credentials_json)
+    obj_store = ObjectStoreS3(anon=False,
+                              asynchronous=False,
+                              store_credentials_json=store_credentials_json
+                              )
+
+    logging.info(obj_store.ls(dest))
