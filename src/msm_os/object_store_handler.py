@@ -193,7 +193,8 @@ async def _close_session(obj_store: ObjectStoreS3) -> None:
     obj_store
         ObjectStoreS3 remote filesystem.
     """
-    await obj_store._s3creator._client._endpoint.http_session.close()
+    if hasattr(obj_store, '_s3creator'):
+        await obj_store._s3creator._client._endpoint.http_session.close()
 
 
 async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
@@ -214,7 +215,7 @@ async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
     dest: str
         Destination path in the object store.
     version: int, default=3
-        Zarr version to use.
+        zarr version to use.
     """
     # === Verify Inputs === #
     if not isinstance(data, (xr.DataArray, xr.Dataset)):
@@ -244,7 +245,7 @@ async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
                 warnings.simplefilter(action="ignore", category=UserWarning)
                 data.to_zarr(store=store, mode="w", zarr_format=version)
 
-        await _close_session(obj_store=obj_store)
+                await _close_session(obj_store=obj_store)
 
 
 async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
@@ -311,7 +312,7 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
             warnings.simplefilter(action="ignore", category=UserWarning)
             data.to_zarr(store=store, mode="a-", append_dim=append_dim, zarr_format=version)
 
-    await _close_session(obj_store=obj_store)
+            await _close_session(obj_store=obj_store)
 
 
 def _preprocess_dataset(filepaths: list[str] | str,
@@ -457,6 +458,7 @@ def send(
         Zarr version to use.
     """
     # === Initialise Asynchronous Object Store === #
+    logging.info("Reading object store credentials from %s", store_credentials_json)
     obj_store = ObjectStoreS3(anon=False,
                               asynchronous=True,
                               store_credentials_json=store_credentials_json
@@ -575,6 +577,7 @@ def send_with_dask(
         logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
 
         # === Initialise Asynchronous Object Store === #
+        logging.info("Reading object store credentials from %s", store_credentials_json)
         obj_store = ObjectStoreS3(anon=False,
                                   asynchronous=True,
                                   store_credentials_json=store_credentials_json
@@ -625,6 +628,7 @@ def send_with_dask(
             ds_filepath.close()
             
         # === Shutdown Store & Dask Cluster === #
+        client.run(_close_session, (obj_store), wait=True)
         client.shutdown()
         client.close()
         logging.info("Dask Cluster has been shutdown.")
@@ -675,6 +679,7 @@ def update(
         Zarr version to use.
     """
     # === Initialise Asynchronous Object Store === #
+    logging.info("Reading object store credentials from %s", store_credentials_json)
     obj_store = ObjectStoreS3(anon=False,
                               asynchronous=True,
                               store_credentials_json=store_credentials_json
@@ -728,107 +733,135 @@ def update(
         # Release resources to avoid memory leaks:
         ds_filepath.close()
 
-# def update(
-#     filepaths: list[str],
-#     bucket: str,
-#     store_credentials_json: str,
-#     variables: Optional[list[str]] = None,
-#     append_dim: str = "time_counter",
-#     object_prefix: Optional[str] = None,
-#     to_zarr_kwargs: Optional[dict] = None,
-# ) -> None:
-#     """
-#     Update/replace the object store with new data.
 
-#     Parameters
-#     ----------
-#     filepaths
-#         List of filepaths to the datasets to be updated.
-#     bucket
-#         Name of the bucket in the object store.
-#     store_credentials_json
-#         Path to the JSON file containing the object store credentials.
-#     variables
-#         List of variables to be updated. If None, all variables will be updated, by default None.
-#     append_dim
-#         Name of the append dimension, by default "time_counter".
-#     object_prefix :
-#         Prefix to be added to the object names in the object store, by default None.
-#     to_zarr_kwargs
-#         Additional keyword arguments passed to xr.Dataset.to_zarr(), by default None.
-#     """
-#     to_zarr_kwargs = to_zarr_kwargs or {}
+def update_with_dask(
+    filepaths: list[str] | str,
+    bucket: str,
+    object_prefix: str,
+    store_credentials_json: str,
+    variables: list[str] | str = 'all',
+    send_vars_indep: bool = True,
+    append_dim: str = "time_counter",
+    grid_filepath: Optional[str] = None,
+    update_coords: Optional[dict] = None,
+    rechunk: Optional[dict] = None,
+    dask_config_kwargs: Optional[dict] = None,
+    dask_cluster_kwargs: Optional[dict] = None,
+    zarr_version: int = 3
+    ) -> None:
+    """
+    Update existing zarr store in cloud object storage
+    in parallel using dask local cluster.
 
-#     obj_store = ObjectStoreS3(anon=False, store_credentials_json=store_credentials_json)
-#     check_destination_exists(obj_store, bucket)
+    Parameters
+    ----------
+    filepaths: list | str
+        Regular expression or list of filepaths to write to zarr stores.
+    bucket: str
+        Name of the bucket in the object store. Bucket names can contain only
+        lowercase letters, numbers, dots (.), and hyphens (-).
+    object_prefix: str
+        Prefix to be added to the object names in the object store.
+    store_credentials_json: str
+        Path to the JSON file containing the object store credentials.
+    variables: list, default='all'
+        List of variables to send to zarr stores.
+        If None, all variables will be sent.
+    send_vars_indep: bool, default=True
+        Whether to send variables as separate objects.
+    append_dim: str, default='time_counter'
+        Name of the dimension to append multifile datasets.
+    grid_filepath: str, optional
+        Path to file containing model grid parameter.
+    update_coords: dict, optional
+        Dictionary of coordinate variables to update.
+    rechunk
+        Rechunk strategy dictionary.
+    dask_config_kwargs: Dict[str,str], optional
+        Dask configuration settings passed to dask.config.set().
+    dask_cluster_kwargs: dict, optional
+        Dask cluster configuration settings passed to LocalCluster().
+    zarr_version: int, default=3
+        zarr version to use.
+    """
+    # === Verify Inputs === #
+    if dask_config_kwargs is not None:
+        if not isinstance(dask_config_kwargs, dict):
+            raise TypeError("dask_config_kwargs must be a dictionary.")
+    if dask_cluster_kwargs is not None:
+        if not isinstance(dask_cluster_kwargs, dict):
+            raise TypeError("dask_cluster_kwargs must be a dictionary.")
 
-#     for filepath in filepaths:
-#         logging.info("Updating using %s", filepath)
-#         object_prefix = _get_object_prefix(filepath, object_prefix)
+    # === Configure Cluster === #
+    # Update dask configuration settings:
+    if dask_config_kwargs is not None:
+        dask.config.set(dask_config_kwargs)
+        logging.info("Updated dask configuration settings.")
 
-#         ds_filepath = xr.open_dataset(filepath)
-#         variables = _get_update_variables(ds_filepath, variables)
+    # Create local dask cluster & client:
+    with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster, asynchronous=False) as client:
+        logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
 
-#         for var in variables:
-#             dest = f"{bucket}/{object_prefix}/{var}.zarr"
+        # === Initialise asynchronous object store === #
+        logging.info("Reading object store credentials from %s", store_credentials_json)
+        obj_store = ObjectStoreS3(anon=False,
+                                  asynchronous=True,
+                                  store_credentials_json=store_credentials_json
+                                  )
 
-#             check_variable_exists(ds_filepath, var)
-#             check_destination_exists(obj_store, dest)
+        # === Preprocess data === #
+        ds_filepath = _preprocess_dataset(filepaths=filepaths,
+                                          rechunk=rechunk,
+                                          append_dim=append_dim,
+                                          update_coords=update_coords,
+                                          grid_filepath=grid_filepath,
+                                          parallel=True
+                                          )
+        
+        # === Send variables to individual zarr stores === #
+        if send_vars_indep:
+            if variables is None:
+                variables = list(ds_filepath.data_vars)
 
-#             mapper = obj_store.get_mapper(dest)
-#             ds_obj_store = xr.open_zarr(mapper)
-#             check_variable_exists(ds_obj_store, var)
+            for var in variables:
+                logging.info(f"Updating Variable {var}")
+                dest = f"{bucket}/{object_prefix}/{var}"
+                asyncio.run(
+                    _append_to_zarr(data=ds_filepath[var],
+                                    obj_store=obj_store,
+                                    dest=dest,
+                                    append_dim=append_dim,
+                                    rechunk=rechunk,
+                                    version=zarr_version,
+                                    )
+                            )
 
-#             _update_data(ds_filepath, ds_obj_store, var, append_dim, mapper)
+            # Release resources to avoid memory leaks:
+            ds_filepath.close()
+            
+        else:
+            # === Send Dataset to Object Store === #
+            # Write to zarr store:
+            dest = f"{bucket}/{object_prefix}"
+            logging.info(f"Updating Dataset at {dest}")
+            asyncio.run(
+                _append_to_zarr(data=ds_filepath,
+                                obj_store=obj_store,
+                                dest=dest,
+                                append_dim=append_dim,
+                                rechunk=rechunk,
+                                version=zarr_version,
+                                )
+                        )
 
-# def _update_data(
-#     ds_filepath: xr.Dataset,
-#     ds_obj_store: xr.Dataset,
-#     var: str,
-#     append_dim: str,
-#     mapper: Any,
-# ) -> None:
-#     """
-#     Update the data in the object store.
-
-#     Parameters
-#     ----------
-#     ds_filepath
-#         Filepath to the local dataset.
-#     ds_obj_store
-#         Dataset in the object store.
-#     var
-#         Variable to be updated.
-#     append_dim
-#         Name of the append dimension.
-#     mapper
-#         Object store mapper.
-#     """
-
-#     try:
-#         ds_filepath = check_duplicates(ds_filepath, ds_obj_store, append_dim)
-#     except DuplicatedAppendDimValue:
-#         logging.info("Updating %s", mapper.root)
-#         # Define region to write to
-#         dupl = np.where(np.isin(ds_obj_store[append_dim], ds_filepath[append_dim]))
-#         dupl_max = np.max(dupl) + 1
-#         dupl_min = np.min(dupl)
-#         region = {append_dim: slice(dupl_min, dupl_max, None)}
-
-#         # Write to zarr
-#         vars_to_drop = [
-#             var
-#             for var in ds_filepath.variables
-#             if not any(size in region for size in ds_filepath[var].sizes)
-#         ]
-
-#         ds_filepath = ds_filepath.drop_vars(vars_to_drop)
-#         ds_filepath[var].to_zarr(mapper, mode="r+", region=region)
-#         logging.info("Updated %s", mapper.root)
-
-#         return
-
-#     logging.info("Skipping %s because region not found in object store", mapper.root)
+            # Release resources to avoid memory leaks:
+            ds_filepath.close()
+            
+        # === Shutdown Store & Dask Cluster === #
+        client.run(_close_session, (obj_store), wait=True)
+        client.shutdown()
+        client.close()
+        logging.info("Dask Cluster has been shutdown.")
 
 
 # def get_files(
