@@ -68,7 +68,7 @@ class timer():
     def __exit__(self, type, value, traceback):
         self.t_end = time.time()
         logging.info(
-            f"Completed: {self.action} zarr v{self.version} store to s3://{self.dest} in {(self.t_end - self.t_start):.2f} seconds"
+            f"Completed: {self.action} zarr v{self.version} store s3://{self.dest} in {(self.t_end - self.t_start):.2f} seconds"
             )
 
 # -- Define MSM-OS Core Functions -- #
@@ -304,7 +304,7 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
                                rechunk=rechunk,
                                version=version
                                )
-    logging.info(f"Passed Compatibility Checks for {dest}.")
+    logging.info(f"Passed Compatibility Checks for store {dest}")
 
     with timer(action='update', dest=dest, version=version):
         # Catch consolidated metadata warnings:
