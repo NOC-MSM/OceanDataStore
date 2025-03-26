@@ -64,7 +64,6 @@ class ObjectStoreS3(s3fs.S3FileSystem):
                 "endpoint_url": endpoint_url,
             }
         else:
-            logging.info("Reading object store credentials from %s", store_credentials_json)
             self._store_credentials = self.load_store_credentials(store_credentials_json)
 
         # Configure remote options:
