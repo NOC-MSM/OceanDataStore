@@ -10,11 +10,11 @@ Authors:
     - Tobias Ferreira
     - Ollie Tooth
 """
-
-import logging
 import sys
+import json
+import logging
 
-from ..object_store_handler import get_files, send, send_with_dask, update
+from ..object_store_handler import send, send_with_dask, update, update_with_dask, list_objects
 from .argument_parser import __version__, create_parser
 
 logger = logging.getLogger(__name__)
@@ -24,14 +24,14 @@ def banner():
     """Log the msm_os banner."""
     logger.info(
         f"""
-          .-~~~-.
-  .- ~ ~-(       )_ _
- /                    ~ -.
+        .-~~~-.
+.- ~ ~-(       )_ _
+/                    ~ -.
 |          msm-os         ',
- ¬                         .'
-   ~- ._ ,. ,.,.,., ,.. -~
-           '       '
-       version: {__version__}
+¬                         .'
+~- ._ ,. ,.,.,., ,.. -~
+        '       '
+    version: {__version__}
 
 """,
         extra={"simple": True},
@@ -54,70 +54,114 @@ def process_action(args):
         args.parser.print_help()
         sys.exit(0)
 
-    variables = list(args.variables) if args.variables is not None else None
+    # === Process Arguments === #
+    if args.variables is not None:
+        variables = list(args.variables)
+    else:
+        variables = None
 
-    if args.action == "send":
-        if args.variables is not None and "compact" in args.variables:
-            send_vars_indep = True
-        else:
-            send_vars_indep = False
-
-        send(
-            filepaths=list(args.filepaths),
-            bucket=args.bucket,
-            store_credentials_json=args.store_credentials_json,
-            variables=variables,
-            append_dim=args.append_dim,
-            send_vars_indep=not send_vars_indep,
-            object_prefix=args.object_prefix,
-            rechunk=args.chunk_strategy,
-            reproject=args.reproject,
-            skip_integrity_check=args.skip_integrity_check,
-            to_zarr_kwargs=None,
-        )
-
-    elif args.action == "send_with_dask":
-        if args.variables is not None and "compact" in args.variables:
-            send_vars_indep = True
-        else:
-            send_vars_indep = False
-
+    if (args.variables is not None) and ("compact" in args.variables):
+        send_vars_indep = False
+    else:
+        send_vars_indep = True
+    
+    if args.filepaths is not None:
         if len(args.filepaths) > 1:
             filepaths = list(args.filepaths)
         else:
             filepaths = args.filepaths
 
-        send_with_dask(
+    if args.zarr_version is not None:
+        zarr_version = int(args.zarr_version)
+
+    if args.dask_config_json is not None:
+        dask_config = json.load(open(args.dask_config_json))
+        if "config_kwargs" not in dask_config:
+            raise ValueError("config_kwargs not found in Dask configuration.")
+        if "cluster_kwargs" not in dask_config:
+            raise ValueError("cluster_kwargs not found in Dask configuration.")
+
+    # === Process Actions === #
+    if args.action == "send":
+
+        send(
             filepaths=filepaths,
             bucket=args.bucket,
+            object_prefix=args.object_prefix,
             store_credentials_json=args.store_credentials_json,
             variables=variables,
             append_dim=args.append_dim,
-            send_vars_indep=not send_vars_indep,
+            send_vars_indep=send_vars_indep,
             grid_filepath=args.grid_filepath,
             update_coords=args.update_coords,
-            object_prefix=args.object_prefix,
             rechunk=args.chunk_strategy,
-            dask_config_kwargs=args.dask_config_kwargs,
-            dask_cluster_kwargs=args.dask_cluster_kwargs,
-            to_zarr_kwargs=None,
+            zarr_version=zarr_version,
+        )
+
+    elif args.action == "send_with_dask":
+
+        send_with_dask(
+            filepaths=filepaths,
+            bucket=args.bucket,
+            object_prefix=args.object_prefix,
+            store_credentials_json=args.store_credentials_json,
+            variables=variables,
+            append_dim=args.append_dim,
+            send_vars_indep=send_vars_indep,
+            grid_filepath=args.grid_filepath,
+            update_coords=args.update_coords,
+            rechunk=args.chunk_strategy,
+            dask_config_kwargs=dask_config["config_kwargs"],
+            dask_cluster_kwargs=dask_config["cluster_kwargs"],
+            zarr_version=zarr_version,
         )
 
     elif args.action == "update":
+
         update(
-            filepaths=list(args.filepaths),
+            filepaths=filepaths,
             bucket=args.bucket,
+            object_prefix=args.object_prefix,
             store_credentials_json=args.store_credentials_json,
             variables=variables,
+            send_vars_indep=send_vars_indep,
+            append_dim=args.append_dim,
+            grid_filepath=args.grid_filepath,
+            update_coords=args.update_coords,
+            rechunk=args.chunk_strategy,
+            zarr_version=zarr_version,
+                )
+        
+    elif args.action == "update_with_dask":
+
+        update_with_dask(
+            filepaths=filepaths,
+            bucket=args.bucket,
             object_prefix=args.object_prefix,
-            to_zarr_kwargs=None,
-        )
+            store_credentials_json=args.store_credentials_json,
+            variables=variables,
+            send_vars_indep=send_vars_indep,
+            append_dim=args.append_dim,
+            grid_filepath=args.grid_filepath,
+            update_coords=args.update_coords,
+            rechunk=args.chunk_strategy,
+            dask_config_kwargs=dask_config["config_kwargs"],
+            dask_cluster_kwargs=dask_config["cluster_kwargs"],
+            zarr_version=zarr_version,
+            )
 
     elif args.action == "list":
-        get_files(
-            bucket=args.bucket,
+
+        if args.object_prefix is not None:
+            dest = f"{args.bucket}/{args.object_prefix}"
+        else:
+            dest = args.bucket
+
+        list_objects(
+            dest=dest,
             store_credentials_json=args.store_credentials_json,
         )
+
     else:
         raise NotImplementedError(f"Action {args.action} not implemented.")
 

@@ -13,31 +13,37 @@ Authors:
 import logging
 
 
-class VariableNotFound(Exception):
-    """Exception raised for when a variable is not found in the dataset."""
+class ObjectNotFound(Exception):
+    """Exception raised for when an object is not found in the object store."""
 
-    def __init__(self, variable_name):
+    def __init__(self, object_name):
         """Initialise the exception."""
-        message = f"Variable '{variable_name}' not found in the dataset."
+        message = f"Object '{object_name}' not found in the object store."
         logging.warning(message)
         super().__init__(message)
 
-class DuplicatedAppendDimValue(Exception):
-    """Exception raised for when a duplicated value is found in the append dim."""
+class AppendDimensionError(Exception):
+    """
+    Exception raised when attempting to modify values along append dimension.
+    """
 
-    def __init__(self, n_dupl, append_dim, first_dupl_value, last_dupl_value):
+    def __init__(self, dim):
         """Initialise the exception."""
-        msg_general = (
-            f"Found {n_dupl} duplicates in the append dimension '{append_dim}'."
-        )
-        msg_specific = f"Range: {first_dupl_value}--{last_dupl_value}."
-        logging.warning(msg_general)
-        logging.warning(msg_specific)
-        message = msg_general + msg_specific
+        message = f"Attempting to modify existing values along append dimension {dim}."
+        logging.warning(message)
         super().__init__(message)
 
-class DimensionMismatch(Exception):
-    """Exception raised for when a dimension mismatch is found"""
+class DimensionNotFound(Exception):
+    """Exception raised when a dimension is missing."""
+
+    def __init__(self, dim, object_name):
+        """Initialise the exception."""
+        message = f"Dimension {dim} is not found in {object_name}."
+        logging.warning(message)
+        super().__init__(message)
+
+class DimensionSizeError(Exception):
+    """Exception raised when a dimension has incorrect size."""
 
     def __init__(self, dim, size, expected_size):
         """Initialise the exception."""
@@ -45,22 +51,11 @@ class DimensionMismatch(Exception):
         logging.warning(message)
         super().__init__(message)
 
-class ExpectedAttrsNotFound(Exception):
-    """Exception raised for when expected attributes are not found in the metadata."""
+class ChunkSizeError(Exception):
+    """Exception raised when data chunks do not match zarr store chunks."""
 
-    def __init__(self, expected_attrs):
+    def __init__(self, chunks, store_chunks):
         """Initialise the exception."""
-        message = f"Expected {expected_attrs} not found in metadata."
-        logging.warning(message)
-        super().__init__(message)
-
-class CheckSumMismatch(Exception):
-    """Exception raised for when a checksum mismatch is found."""
-
-    def __init__(self, append_dim, expected_checksum, actual_checksum):
-        """Initialise the exception."""
-        message = (
-            f"Checksum mismatch for append dim {append_dim}. Expected: {expected_checksum}, Actual: {actual_checksum}"
-        )
+        message = f"Specified chunks are {chunks}, expected {store_chunks}."
         logging.warning(message)
         super().__init__(message)

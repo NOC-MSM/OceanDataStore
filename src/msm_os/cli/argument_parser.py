@@ -26,7 +26,7 @@ def create_parser():
     # Send and Update are mutually exclusive operations
     parser.add_argument(
         "action",
-        choices=["send", "send_with_dask", "update", "list"],
+        choices=["send", "send_with_dask", "update", "update_with_dask", "list"],
         help="Specify the action: 'send' or 'send_with_dask' to send a file to an object store, "
         "'update' to update an existing object, or 'list' to list the files in a bucket.",
     )
@@ -82,23 +82,6 @@ def create_parser():
         nargs="+",
         default=None,
     )
-    parser.add_argument(
-        "-r",
-        "--reproject",
-        dest="reproject",
-        action='store_true',
-        help="If present, reproject data",
-        default=False,
-    )
-    
-    parser.add_argument(
-        "-si",
-        "--skip-integrity-check",
-        dest="skip_integrity_check",
-        action='store_true',
-        help="If present, skip the integrity check of the output files",
-        default=False,
-    )
 
     parser.add_argument(
         "-cs",
@@ -110,20 +93,10 @@ def create_parser():
     )
 
     parser.add_argument(
-        "-dco",
-        "--dask-config",
-        dest="dask_config_kwargs",
-        help="Dask configuration as a JSON string. E.g., '{\"temporary_directory\": \"/home/users/example/\"}'",
-        type=json.loads,
-        default=None,
-    )
-
-    parser.add_argument(
-        "-dlc",
-        "--dask-local-cluster",
-        dest="dask_cluster_kwargs",
-        help="Local Cluster configuration as a JSON string. E.g., '{\"n_workers\": 5, \"threads_per_worker\": 4, \"memory_limit\": \"4GB\"}'",
-        type=json.loads,
+        "-dc",
+        "--dask-configuration",
+        dest="dask_config_json",
+        help="Path to the JSON file defining the Dask Local Cluster configuration.",
         default=None,
     )
 
@@ -142,6 +115,14 @@ def create_parser():
         help="Coordinate dimensions to update as a JSON string. E.g., '{\"nav_lon\": \"glamt\", \"nav_lat\": \"gphit\"}'",
         type=json.loads,
         default=None,
+    )
+
+    parser.add_argument(
+        "-zv",
+        "--zarr-version",
+        dest="zarr_version",
+        help="Zarr version used to create the zarr store. Options are 2 (v2) or 3 (v3).",
+        default=3,
     )
 
     return parser
