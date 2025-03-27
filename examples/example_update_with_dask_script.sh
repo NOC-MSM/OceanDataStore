@@ -1,14 +1,14 @@
 #!/bin/bash
 # Example script to send a batch of files to the object store using msm_os
-# send_with_dask() function.
+# update_with_dask() function.
 # Originally created by:
 # - Ollie Tooth (17/03/2025)
 
-# ----------------------------------------------------------------------------- #
-#                                                                               #
-# Example: Using send_with_dask() to create a zarr store from a batch of files  #
-#                                                                               #
-# ----------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------------- #
+#                                                                                   #
+# Example: Using update_with_dask() to create a zarr store from a batch of files    #
+#                                                                                   #
+# --------------------------------------------------------------------------------- #
 
 # -- Input arguments to msm-os -- #
 # Filepath to eORCA1 ancillary file:
@@ -59,9 +59,9 @@ fi
 
 # -- Send eORCA1 ERA-5 annual mean outputs to JASMIN OS -- # 
 echo "In Progress: Sending eORCA1 ERA-5 T1y variables to JASMIN object store..."
-msm_os send_with_dask -f $filepath_gridT -c $store_credentials_json -b $bucket -p T1y \
-                      -gf $filepath_grid -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}' \
-                      -cs '{"x":360,"y":331,"deptht":25}' \
-                      -dc $dask_config_json || { echo "Error: msm_os send_with_dask command failed."; exit 1; }
+msm_os update_with_dask -f $filepath_gridT -c $store_credentials_json -b $bucket -p T1y \
+                       -gf $filepath_grid -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}' \
+                       -cs '{"x":360,"y":331,"deptht":25}' \
+                       -dc $dask_config_json || { echo "Error: msm_os update_with_dask command failed."; exit 1; }
 
 echo "Success: Files sent to object store."

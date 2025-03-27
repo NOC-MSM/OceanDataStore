@@ -1,0 +1,11 @@
+{
+    "config_kwargs": {
+        "temporary_directory":"..../jasmin_os_tmp/",
+        "local_directory":"..../jasmin_os_tmp/"
+    },
+    "cluster_kwargs": {
+        "n_workers" : 12,
+        "threads_per_worker" : 1,
+        "memory_limit":"2GB"
+    }
+}

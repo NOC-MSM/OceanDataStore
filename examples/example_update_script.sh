@@ -1,12 +1,12 @@
 #!/bin/bash
-# Example script to send a single file to the object store using msm_os
-# send() function.
+# Example script to send a update file in the object store using msm_os
+# update() function.
 # Originally created by:
-# - Ollie Tooth (17/03/2025)
+# - Ollie Tooth (27/03/2025)
 
 # ----------------------------------------------------------------------------- #
 #                                                                               #
-#     Example: Using send() to create a zarr store from a batch of files        #
+#     Example: Using update() to create a zarr store from a batch of files      #
 #                                                                               #
 # ----------------------------------------------------------------------------- #
 
@@ -16,13 +16,16 @@ filepath_grid=/path/to/model/domain_cfg.nc
 
 # Filepath to example output file(s):
 filedir=/path/to/npd/model/data
-filepath_gridT=$filedir/eORCA1_ERA5_1y_grid_T_1976-1976.nc
+filepath_gridT=$filedir/eORCA1_ERA5_1y_grid_T_1977-1977.nc
 
 # Filepath to JASMIN OS credentials:
 store_credentials_json=.../jasmin_os_credentials.json
 
 # Bucket and object prefix:
 bucket=npd-eorca1-era5
+
+# Define append dimension:
+append_dim=time_counter
 
 # -- Python Environment -- #
 # Activate miniconda environment:
@@ -51,8 +54,9 @@ fi
 
 # -- Send eORCA1 ERA-5 annual mean outputs to object store -- # 
 echo "In Progress: Sending example eORCA1 ERA-5 T1y file to object store..."
-msm_os send -f "$filepath_gridT" -c "$store_credentials_json" -b "$bucket" -p T1y \
-            -gf "$filepath_grid" -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}' \
-            -cs '{"x":360,"y":331,"deptht":25}' || { echo "Error: msm_os send command failed."; exit 1; }
+msm_os update -f "$filepath_gridT" -c "$store_credentials_json" -b "$bucket" -p T1y \
+              -gf "$filepath_grid" -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}' \
+              -a $append_dim \
+              -cs '{"x":360,"y":331,"deptht":25}' || { echo "Error: msm_os update command failed."; exit 1; }
 
 echo "Success: File sent to object store."
