@@ -1,29 +1,34 @@
 # msm-os
 
-A Python library designed to streamline the writing, updating, and downloading of ocean model and observational data to Zarr stores within cloud object storage.
+A Python library designed to streamline the writing, updating, and downloading of ocean model and observational data to [zarr](https://zarr.dev) stores in cloud object storage.
 
 ## Installation
 
-To install this package, clone the repository first:
+To install the **msm-os** package, first clone the repository from GitHub:
 
 ```bash
 git clone git@github.com:NOC-MSM/msm-os.git
-cd msm-os
 ```
 
-Then, install it with:
+Next, install **msm-os** in editable mode by:
 
 ```bash
+cd msm-os
+
 pip install -e .
 ```
 
-## Usage
+**Note:** we strongly recommend installing **msm-os** into a new virtual environment using either ``venv`` or ``conda / mamba``.
+
+## User Guide
 
 ### Creating a Credentials File
 
-To get started using **msm-os**, users need to create a credentials .json file containing the following information:
+To get started using **msm-os**, users need to create a ``credentials.json`` file containing the following information:
 
 ```json
+# credentials.json
+
 {
     "secret": "your_secret",
     "token": "your_token",
@@ -33,64 +38,93 @@ To get started using **msm-os**, users need to create a credentials .json file c
 
 ### Sending Individual Files
 
-To send a file to an object store, use the following command:
+To create a new zarr store in an object store from a local file, use the `send` command:
 
 ```bash
-msm_os send -f eORCA025_1y_grid_T_1976-1976.nc -c credentials.json -b eorca025
+msm_os send -f /path/to/file.nc -c credentials.json -b bucket_name -v var
 ```
 
-The flags used are:
-- `-f`: Path to the NetCDF file containing the variables.
+The arguments used are:
+- `-f`: Path to the netCDF file containing the variables.
 - `-c`: Path to the JSON file containing the object store credentials.
 - `-b`: Bucket name in the object store where the variables will be stored.
+- `-v`: Variable within the netCDF file to send to the object store.
 
-In the example, without a `-p` (or `--prefix`), the variables will be stored in `eorca025/T1y/<var>.zarr`. If a `--prefix` is provided, the variables will be stored in `eorca025/<prefix>/<var>.zarr`.
+In the example above, without a `-p` (or `--prefix`), the variables will be stored in `<bucket_name>/<var>`. If a `--prefix` is provided, the variables will be stored in `<bucket_name>/<prefix>/<var>`.
 
 ### Sending Lots of Files
 
-To send a large number of files to an object store, we can use [dask](https://www.dask.org) via the following command:
+To create a new zarr store in an object store from a large number of files, we can use [dask](https://www.dask.org) via the `send_with_dask` command:
 
 ```bash
-msm_os send_with_dask -f $filepaths -c credentials.json -b eorca025 -p exp1 
-                      -gf $filepath_domain -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}'
-                      -cs '{"x":720, "y":603, "depthw":25}'
-                      -dco '{"temporary_directory":"/path/to/temp/directory/","local_directory":"/path/to/local/directory/"}'
-                      -dlc '{"n_workers":20,"threads_per_worker":1,"memory_limit":"2.5GB"}'
+msm_os send_with_dask -f filepaths -c credentials.json -b bucket_name -p prefix \
+                      -gf filepath_domain -uc '{"lat":"lat_new", "lon":"lon_new"}' \
+                      -cs '{"x":500, "y":500, "depthw":25}' \
+                      -dc dask_config.json
 ```
 
-The flags used are:
-- `-f`: Paths to the NetCDF file containing the variables (stored in variable filepaths).
+The arguments used are:
+- `-f`: Paths to the multiple netCDF files containing the variables.
 - `-c`: Path to the JSON file containing the object store credentials.
 - `-b`: Bucket name in the object store where the variables will be stored.
 - `-p`: Prefix used to define path to object (see above).
-- `gf`: Path to model grid file containing domain variables.
-- `uc`: Coordinates dimension variables to update given as a JSON string '{current_coord : new_coord}'.
+- `-gf`: Path to model grid file containing domain variables.
+- `-uc`: Coordinates dimension variables to update given as a JSON string '{current_coord : new_coord}'.
 - `-cs`: Chunk strategy used to rechunk model data.
-- `dco`: Dask configuration as a JSON string.
-- `dlc`: Dask LocalCluster configuration as a JSON string.
+- `-dc`: Path to JSON file containing Dask configuration.
 
-In the example, a LocalCluster with 20 single threaded workers, each with 2.5 GB of available memory, is used to transfer a large collection of files to an object store.
+where the contents of the ``dask_config.json`` are:
+
+```json
+{
+    "config_kwargs": {
+        "temporary_directory":"..../jasmin_os_tmp/",
+        "local_directory":"..../jasmin_os_tmp/"
+    },
+    "cluster_kwargs": {
+        "n_workers" : 12,
+        "threads_per_worker" : 1,
+        "memory_limit":"2GB"
+    }
+}
+```
+
+In the example, a LocalCluster with 12 single threaded workers, each with 2 GB of available memory, is used to transfer a large collection of files to an object store.
 
 Users are recommended to implement send_with_dask workflows using a job scheduler, such as SLURM or PBS, to run the LocalCluster on a single compute node.
 
-Note  the netCDF4 library does not support multi-threaded access to datasets, so users should ensure that ``threads_per_worker : 1`` to avoid raising CancelledError exceptions when using send_with_dask.
+**Note:** the netCDF4 library does not support multi-threaded access to datasets, so users should ensure that ``threads_per_worker : 1`` in their dask configuration .json file to avoid raising CancelledError exceptions when using send_with_dask or update_with_dask.
 
-### Updating or Replacing Files
+### Updating Existing Stores
 
-To update the values of an existing variable in an object store, use:
+To update an existing zarr store in an object store, we can use the `update` command:
 
 ```bash
-msm_os update -f eORCA025_1y_grid_T_1976-1976.nc -c credentials.json -b eorca025 -v e3t
+msm_os update -f /path/to/file.nc -c credentials.json -b bucket_name -p prefix -v var
 ```
 
-This command will locate the region with the same timestamp as `eORCA025_1y_grid_T_1976-1976.nc` and overwrite the values of `e3t` in the object store.
+This command will append the values of variable `var` stored at the local filepath to the `/bucket_name/prefix/var` store provided it already exists in the object store.
 
-An additional flag is used:
-- `-v`: The name of the variable to update.
+**Note:** compatability checks must be passed before local data will be appended to an existing store, these include chunk size & dimension compatability.
 
-## Flags
+### Updating Existing Stores With Lots of Files
 
-### Mandatory Flags
+To update an existing zarr store in an object store using a large number of files, we can use the `update_with_dask` command analogously to `send_with_dask`:
+
+```bash
+msm_os update_with_dask -f filepaths -c credentials.json -b bucket_name -p prefix \
+                        -gf filepath_domain -uc '{"lat":"lat_new", "lon":"lon_new"}' \
+                        -cs '{"x":500, "y":500, "depthw":25}' \
+                        -dc dask_config.json
+```
+
+## Examples
+
+For further examples of how to implement the commands in **msm-os** in your own workflows, see the bash scripts in the `examples` directory.
+
+## msm-os Arguments
+
+### Mandatory Arguments
 
 | Long version | Short Version | Description |
 |---|---|---|
@@ -99,38 +133,17 @@ An additional flag is used:
 | `--credentials` | `-c` | Path to the JSON file containing the credentials for the object store. |
 | `--bucket` | `-b` | Bucket name. |
 
-### Optional Flags
+### Optional Arguments
 
 | Flag | Short Version | Description |
 |---|---|---|
-| `--prefix` | `-p` | Object prefix. |
-| `--append_dim` | `-a` | Append dimension (default=`time_counter`). |
-| `--variables` | `-v` | Variables to send. If not provided, all variables will be sent. If set to `compact`, the variables will not be sent to separate Zarr files. |
-| `--reproject` | `-r` | Whether to reproject data. If not provided, the data is not reprojected. If present, reproject the data from tri-polar grid to PlateCarree.
-| `--chunk-strategy` | `-cs` | Chunk strategy in the output data. If provided, the output data will be chunked according to the specified strategy. If not provided, it will use the `auto` mode. The format is a JSON string, e.g., '{"time_counter": 1, "x": 100, "y": 100}'.
-| `--skip-integrity-check` | `-si` | Whether to skip data integrity check. If not provided, the integrity checks will be applied to the data in order to check if the uploaded data is OK.
+| `--prefix` | `-p` | Object prefix (default=`None`). |
+| `--append-dim` | `-a` | Append dimension (default=`time_counter`). |
+| `--variables` | `-v` | Variables to send (default=`None`). If `None`, all variables will be sent. If `consolidated`, the variables will be sent to a single consolidated zarr store. |
+| `--chunk-strategy` | `-cs` | Chunk strategy as a JSON string (default=`None`). E.g., '{\"time_counter\": 1, \"x\": 100, \"y\": 100}' |
+| `--dask-configuration` | `-dc` | Path to the JSON file defining the Dask Local Cluster configuration (default=`None`). |
+| `--grid-filepath` | `-gf` | File path to model grid file containing domain information (default=`None`). |
+| `--update-coords` | `-uc` | Coordinate dimensions to update as a JSON string (default=`None`). E.g., '{\"nav_lon\": \"glamt\", \"nav_lat\": \"gphit\"}' |
+| `--zarr-version` | `-zv` | Zarr version used to create the zarr store (default=`3`). Options are `2` (v2) or `3` (v3). |
 
-## Steps During Data Send/Update
-
-Whenever new data is sent or updated in the object store, the code goes through several steps:
-
-
-### Reproject Data
-
-Some oceanographic models, such as NEMO, output data in different projections (e.g., tripolar grid). For certain uses, it may be beneficial to reproject the data to a regular grid like PlateCarree. If you choose to reproject your data, both the original and reprojected data will be retained in the output file.
-
-### Chunk Strategy
-
-If a chunk strategy is specified, the output data will be chunked accordingly. If no strategy is specified, the data will be chunked using the `auto` option from the `xarray.to_zarr` function.
-
-### Check Data Integrity
-
-Every time new data is appended to an existing Zarr file, it is possible to perform some integrity checks to verify if the metadata and data match the expected format.
-
-1. Metadata check: Each new NetCDF file sent to the object store will have its metadata checked, including the number and names of variables and coordinates. If there are discrepancies, a specific error is raised.
-
-2. Data check: The checksum of the data in the NetCDF file is compared with the data in the Zarr file after upload. If they differ, an error is raised.
-
-If any errors are detected during these checks, the data is rolled back to the previous version. This rollback is performed directly in the Zarr file by updating the metadata to exclude the new data. The system will retry the upload twice more; if it fails again, a message is logged.
-
-The integrity check may take a while and slow down to upload process. Because of that, if you want to skip this check, you can add set the `skip_integrity_check` to false when you are sending a file to the object store.
+---
