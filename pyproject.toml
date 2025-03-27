@@ -24,7 +24,7 @@ dependencies = [
   "numpy>=2.2.3",
   "scitools-iris>=3.9.0",
   "tenacity>=8.3.0",
-  "zarr>=2.18.2",
+  "zarr>2.18.2",
   ]
 
 dynamic = ["version"]
