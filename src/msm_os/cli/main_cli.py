@@ -60,7 +60,7 @@ def process_action(args):
     else:
         variables = None
 
-    if (args.variables is not None) and ("compact" in args.variables):
+    if (args.variables is not None) and ("consolidated" in args.variables):
         send_vars_indep = False
     else:
         send_vars_indep = True

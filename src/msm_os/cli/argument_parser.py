@@ -38,7 +38,7 @@ def create_parser():
         dest="filepaths",
         help="Paths to the files to send.",
         nargs="+",
-        required=False,
+        required=True,
     )
 
     parser.add_argument(
