@@ -375,7 +375,7 @@ def _preprocess_dataset(filepaths: list[str] | str,
     if len(filepaths) > 1:
         # Open multi-file dataset:
         ds_filepath = xr.open_mfdataset(filepaths,
-                                        engine='netcdf4',
+                                        engine='h5netcdf',
                                         chunks=rechunk,
                                         parallel=parallel,
                                         concat_dim=append_dim,
