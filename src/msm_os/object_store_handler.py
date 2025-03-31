@@ -153,13 +153,8 @@ async def _check_compatability(data: xr.DataArray | xr.Dataset,
     except Exception as e:
         await _close_session(obj_store=obj_store)
         raise FileNotFoundError(f"zarr version {version} is not compatible with the store: {e}")
-
-    # 3. Check if the append dimension is present:
-    if append_dim not in ds_store.dims:
-        await _close_session(obj_store=obj_store)
-        raise DimensionNotFound(dim=append_dim, object_name=dest)
     
-    # 4. Check if core dimensions exist & size are compatible:
+    # 3. Check if core dimensions exist & size are compatible:
     dims_store = {dim : ds_store.sizes[dim] for dim in ds_store.dims if dim != append_dim}
     for dim in dims_store:
         if dim in data.dims:
@@ -170,12 +165,12 @@ async def _check_compatability(data: xr.DataArray | xr.Dataset,
             await _close_session(obj_store=obj_store)
             raise DimensionNotFound(dim=dim, object_name=dest)
 
-    # 5. Check if append dimension values are compatible:
+    # 4. Check if append dimension values are compatible:
     if not (ds_store[append_dim][-1] < data[append_dim][0]):
         await _close_session(obj_store=obj_store)
         raise AppendDimensionError(dim=append_dim)
     
-    # 6. Check if specified chunks are compatible:
+    # 5. Check if specified chunks are compatible:
     for dim in rechunk:
         if rechunk[dim] != ds_store.chunks[dim][0]:
             await _close_session(obj_store=obj_store)
@@ -700,17 +695,20 @@ def update(
             variables = list(ds_filepath.data_vars)
 
         for var in variables:
-            logging.info(f"Updating Variable {var}")
-            dest = f"{bucket}/{object_prefix}/{var}"
-            asyncio.run(
-                _append_to_zarr(data=ds_filepath[var],
-                                obj_store=obj_store,
-                                dest=dest,
-                                append_dim=append_dim,
-                                rechunk=rechunk,
-                                version=zarr_version
-                                )
-                        )
+            if append_dim not in ds_filepath[var].dims:
+                logging.info(f"Skipping Variable: append dimension {append_dim} not found.")
+            else:
+                logging.info(f"Updating Variable {var}")
+                dest = f"{bucket}/{object_prefix}/{var}"
+                asyncio.run(
+                    _append_to_zarr(data=ds_filepath[var],
+                                    obj_store=obj_store,
+                                    dest=dest,
+                                    append_dim=append_dim,
+                                    rechunk=rechunk,
+                                    version=zarr_version
+                                    )
+                            )
     
         # Release resources to avoid memory leaks:
         ds_filepath.close()
@@ -824,17 +822,20 @@ def update_with_dask(
                 variables = list(ds_filepath.data_vars)
 
             for var in variables:
-                logging.info(f"Updating Variable {var}")
-                dest = f"{bucket}/{object_prefix}/{var}"
-                asyncio.run(
-                    _append_to_zarr(data=ds_filepath[var],
-                                    obj_store=obj_store,
-                                    dest=dest,
-                                    append_dim=append_dim,
-                                    rechunk=rechunk,
-                                    version=zarr_version,
-                                    )
-                            )
+                if append_dim not in ds_filepath[var].dims:
+                    logging.info(f"Skipping Variable: append dimension {append_dim} not found.")
+                else:
+                    logging.info(f"Updating Variable {var}")
+                    dest = f"{bucket}/{object_prefix}/{var}"
+                    asyncio.run(
+                        _append_to_zarr(data=ds_filepath[var],
+                                        obj_store=obj_store,
+                                        dest=dest,
+                                        append_dim=append_dim,
+                                        rechunk=rechunk,
+                                        version=zarr_version
+                                        )
+                                )
 
             # Release resources to avoid memory leaks:
             ds_filepath.close()
