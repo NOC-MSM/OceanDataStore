@@ -67,7 +67,7 @@ def create_parser():
     )
 
     parser.add_argument(
-        "-a",
+        "-ad",
         "--append-dim",
         dest="append_dim",
         help="Append dimension.",
@@ -113,6 +113,15 @@ def create_parser():
         "--update-coords",
         dest="update_coords",
         help="Coordinate dimensions to update as a JSON string. E.g., '{\"nav_lon\": \"glamt\", \"nav_lat\": \"gphit\"}'",
+        type=json.loads,
+        default=None,
+    )
+
+    parser.add_argument(
+        "-at",
+        "--attributes",
+        dest="attrs",
+        help="Attributes to add to the dataset as a JSON string. E.g., '{\"title\": \"my_dataset\"}'",
         type=json.loads,
         default=None,
     )

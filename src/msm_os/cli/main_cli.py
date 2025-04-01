@@ -95,6 +95,7 @@ def process_action(args):
             grid_filepath=args.grid_filepath,
             update_coords=args.update_coords,
             rechunk=args.chunk_strategy,
+            attrs=args.attrs,
             zarr_version=zarr_version,
         )
 
@@ -111,6 +112,7 @@ def process_action(args):
             grid_filepath=args.grid_filepath,
             update_coords=args.update_coords,
             rechunk=args.chunk_strategy,
+            attrs=args.attrs,
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
             zarr_version=zarr_version,
@@ -129,6 +131,7 @@ def process_action(args):
             grid_filepath=args.grid_filepath,
             update_coords=args.update_coords,
             rechunk=args.chunk_strategy,
+            attrs=args.attrs,
             zarr_version=zarr_version,
                 )
         
@@ -145,6 +148,7 @@ def process_action(args):
             grid_filepath=args.grid_filepath,
             update_coords=args.update_coords,
             rechunk=args.chunk_strategy,
+            attrs=args.attrs,
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
             zarr_version=zarr_version,
