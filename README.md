@@ -114,7 +114,7 @@ To update an existing zarr store in an object store using a large number of file
 ```bash
 msm_os update_with_dask -f filepaths -c credentials.json -b bucket_name -p prefix \
                         -gf filepath_domain -uc '{"lat":"lat_new", "lon":"lon_new"}' \
-                        -cs '{"x":500, "y":500, "depthw":25}' \
+                        -cs '{"x":500, "y":500, "depthw":25}' -ad time \
                         -dc dask_config.json
 ```
 
@@ -138,12 +138,13 @@ For further examples of how to implement the commands in **msm-os** in your own 
 | Flag | Short Version | Description |
 |---|---|---|
 | `--prefix` | `-p` | Object prefix (default=`None`). |
-| `--append-dim` | `-a` | Append dimension (default=`time_counter`). |
+| `--append-dim` | `-ad` | Append dimension (default=`time_counter`). |
 | `--variables` | `-v` | Variables to send (default=`None`). If `None`, all variables will be sent. If `consolidated`, the variables will be sent to a single consolidated zarr store. |
 | `--chunk-strategy` | `-cs` | Chunk strategy as a JSON string (default=`None`). E.g., '{\"time_counter\": 1, \"x\": 100, \"y\": 100}' |
 | `--dask-configuration` | `-dc` | Path to the JSON file defining the Dask Local Cluster configuration (default=`None`). |
 | `--grid-filepath` | `-gf` | File path to model grid file containing domain information (default=`None`). |
 | `--update-coords` | `-uc` | Coordinate dimensions to update as a JSON string (default=`None`). E.g., '{\"nav_lon\": \"glamt\", \"nav_lat\": \"gphit\"}' |
+| `--attributes` | `-at` | Attributes to add to the dataset as a JSON string. E.g., '{\"title\": \"my_dataset\"}' |
 | `--zarr-version` | `-zv` | Zarr version used to create the zarr store (default=`3`). Options are `2` (v2) or `3` (v3). |
 
 ---
