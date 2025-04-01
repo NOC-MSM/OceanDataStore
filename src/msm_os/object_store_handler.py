@@ -171,10 +171,12 @@ async def _check_compatability(data: xr.DataArray | xr.Dataset,
         raise AppendDimensionError(dim=append_dim)
     
     # 5. Check if specified chunks are compatible:
-    for dim in rechunk:
-        if rechunk[dim] != ds_store.chunks[dim][0]:
-            await _close_session(obj_store=obj_store)
-            raise ChunkSizeError(chunks=rechunk, store_chunks=ds_store.chunks)
+    if rechunk is not None:
+        for dim in rechunk:
+            if dim in ds_store.dims:
+                if rechunk[dim] != ds_store.chunks[dim][0]:
+                    await _close_session(obj_store=obj_store)
+                    raise ChunkSizeError(chunks=rechunk, store_chunks=ds_store.chunks)
 
     await _close_session(obj_store=obj_store)
 
@@ -315,6 +317,7 @@ def _preprocess_dataset(filepaths: list[str] | str,
                         append_dim: str = "time_counter",
                         update_coords: Optional[dict] = None,
                         grid_filepath: Optional[str] = None,
+                        attrs: Optional[dict] = None,
                         parallel: bool = False,
                         ) -> xr.Dataset:
     """
@@ -350,6 +353,9 @@ def _preprocess_dataset(filepaths: list[str] | str,
     if grid_filepath is not None:
         if not isinstance(grid_filepath, str):
             raise TypeError("grid_filepath must be a string.")
+    if attrs is not None:
+        if not isinstance(attrs, dict):
+            raise TypeError("attrs must be a dictionary.")
     if not isinstance(parallel, bool):
         raise TypeError("parallel must be a boolean.")
 
@@ -406,6 +412,10 @@ def _preprocess_dataset(filepaths: list[str] | str,
                     )
         logging.info('Completed: Updated coordinate variables.')
 
+    # === Update Attributes === #
+    if attrs is not None:
+        ds_filepath = ds_filepath.assign_attrs(attrs)
+
     return ds_filepath
 
 
@@ -420,6 +430,7 @@ def send(
         grid_filepath: Optional[str] = None,
         update_coords: Optional[dict] = None,
         rechunk: Optional[dict] = None,
+        attrs: Optional[dict] = None,
         zarr_version: int = 3
         ) -> None:
     """
@@ -447,8 +458,10 @@ def send(
         Path to file containing model grid parameter.
     update_coords: dict, optional
         Dictionary of coordinate variables to update.
-    rechunk
+    rechunk: dict, optional
         Rechunk strategy dictionary.
+    attrs: dict, optional
+        Attributes to add to the dataset.
     zarr_version: int, default=3
         Zarr version to use.
     """
@@ -465,7 +478,8 @@ def send(
                                       append_dim=append_dim,
                                       update_coords=update_coords,
                                       grid_filepath=grid_filepath,
-                                      parallel=False
+                                      attrs=attrs,
+                                      parallel=False,
                                       )
 
     # === Send Variables to Individual Zarr Stores === #
@@ -515,6 +529,7 @@ def send_with_dask(
     grid_filepath: Optional[str] = None,
     update_coords: Optional[dict] = None,
     rechunk: Optional[dict] = None,
+    attrs: Optional[dict] = None,
     dask_config_kwargs: Optional[dict] = None,
     dask_cluster_kwargs: Optional[dict] = None,
     zarr_version: int = 3
@@ -544,8 +559,10 @@ def send_with_dask(
         Path to file containing model grid parameter.
     update_coords: dict, optional
         Dictionary of coordinate variables to update.
-    rechunk
+    rechunk: dict, optional
         Rechunk strategy dictionary, by default None.
+    attrs: dict, optional
+        Attributes to add to the dataset.
     dask_config_kwargs: Dict[str,str], optional
         Dask configuration settings passed to dask.config.set().
     dask_cluster_kwargs: dict, optional
@@ -584,7 +601,8 @@ def send_with_dask(
                                           append_dim=append_dim,
                                           update_coords=update_coords,
                                           grid_filepath=grid_filepath,
-                                          parallel=True
+                                          attrs=attrs,
+                                          parallel=True,
                                           )
         
         # === Send Variables to Individual Zarr Stores === #
@@ -640,6 +658,7 @@ def update(
         grid_filepath: Optional[str] = None,
         update_coords: Optional[dict] = None,
         rechunk: Optional[dict] = None,
+        attrs: Optional[dict] = None,
         zarr_version: int = 3
         ) -> None:
     """
@@ -668,8 +687,10 @@ def update(
         Path to file containing model grid parameter.
     update_coords: dict, optional
         Dictionary of coordinate variables to update.
-    rechunk
+    rechunk: dict, optional
         Rechunk strategy dictionary.
+    attrs: dict, optional
+        Attributes to add to the dataset.
     zarr_version: int, default=3
         Zarr version to use.
     """
@@ -686,6 +707,7 @@ def update(
                                       append_dim=append_dim,
                                       update_coords=update_coords,
                                       grid_filepath=grid_filepath,
+                                      attrs=attrs,
                                       parallel=False
                                       )
 
@@ -743,6 +765,7 @@ def update_with_dask(
     grid_filepath: Optional[str] = None,
     update_coords: Optional[dict] = None,
     rechunk: Optional[dict] = None,
+    attrs: Optional[dict] = None,
     dask_config_kwargs: Optional[dict] = None,
     dask_cluster_kwargs: Optional[dict] = None,
     zarr_version: int = 3
@@ -773,8 +796,10 @@ def update_with_dask(
         Path to file containing model grid parameter.
     update_coords: dict, optional
         Dictionary of coordinate variables to update.
-    rechunk
+    rechunk: dict, optional
         Rechunk strategy dictionary.
+    attrs: dict, optional
+        Attributes to add to the dataset.
     dask_config_kwargs: Dict[str,str], optional
         Dask configuration settings passed to dask.config.set().
     dask_cluster_kwargs: dict, optional
@@ -813,6 +838,7 @@ def update_with_dask(
                                           append_dim=append_dim,
                                           update_coords=update_coords,
                                           grid_filepath=grid_filepath,
+                                          attrs=attrs,
                                           parallel=True
                                           )
         
