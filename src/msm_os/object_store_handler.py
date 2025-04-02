@@ -25,6 +25,7 @@ import xarray as xr
 
 import dask
 from dask.distributed import Client, LocalCluster
+from dask.distributed.diagnostics.plugin import WorkerPlugin
 
 # -- Import MSM-OS Modules -- #
 from .object_store import ObjectStoreS3
@@ -36,6 +37,14 @@ from .exceptions import (
     AppendDimensionError,
     ChunkSizeError,
 )
+
+# -- Define WorkerPlugin -- #
+class CaptureWarningsPlugin(WorkerPlugin):
+    def setup(self, worker):
+        # Used to catch UserWarnings when rechunking:
+        logging.captureWarnings(True)
+    def teardown(self, worker):
+        logging.captureWarnings(False)
 
 # -- Define timing context manager -- #
 class timer():
@@ -588,6 +597,10 @@ def send_with_dask(
     with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster, asynchronous=False) as client:
         logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
 
+        # === Register Dask Worker Plugin === #
+        # Catch UserWarnings when rechunking:
+        client.register_worker_plugin(CaptureWarningsPlugin())
+
         # === Initialise Asynchronous Object Store === #
         logging.info("Reading object store credentials from %s", store_credentials_json)
         obj_store = ObjectStoreS3(anon=False,
@@ -824,6 +837,10 @@ def update_with_dask(
     # Create local dask cluster & client:
     with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster, asynchronous=False) as client:
         logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
+
+        # === Register Dask Worker Plugin === #
+        # Catch UserWarnings when rechunking:
+        client.register_worker_plugin(CaptureWarningsPlugin())
 
         # === Initialise asynchronous object store === #
         logging.info("Reading object store credentials from %s", store_credentials_json)
