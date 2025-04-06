@@ -85,7 +85,7 @@ def process_action(args):
     if args.action == "send":
 
         send(
-            filepaths=filepaths,
+            file=filepaths,
             bucket=args.bucket,
             object_prefix=args.object_prefix,
             store_credentials_json=args.store_credentials_json,
@@ -102,7 +102,7 @@ def process_action(args):
     elif args.action == "send_with_dask":
 
         send_with_dask(
-            filepaths=filepaths,
+            file=filepaths,
             bucket=args.bucket,
             object_prefix=args.object_prefix,
             store_credentials_json=args.store_credentials_json,
@@ -121,7 +121,7 @@ def process_action(args):
     elif args.action == "update":
 
         update(
-            filepaths=filepaths,
+            file=filepaths,
             bucket=args.bucket,
             object_prefix=args.object_prefix,
             store_credentials_json=args.store_credentials_json,
@@ -138,7 +138,7 @@ def process_action(args):
     elif args.action == "update_with_dask":
 
         update_with_dask(
-            filepaths=filepaths,
+            file=filepaths,
             bucket=args.bucket,
             object_prefix=args.object_prefix,
             store_credentials_json=args.store_credentials_json,

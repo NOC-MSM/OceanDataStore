@@ -11,16 +11,14 @@ Authors:
     - Joao Morado
 """
 # -- Import Python Modules -- #
-import os
 import glob
 import time
 import logging
 import asyncio
 import warnings
-from typing import Any, Optional
+from typing import Optional
 
 import zarr
-import numpy as np
 import xarray as xr
 
 import dask
@@ -175,7 +173,7 @@ async def _check_compatability(data: xr.DataArray | xr.Dataset,
             raise DimensionNotFound(dim=dim, object_name=dest)
 
     # 4. Check if append dimension values are compatible:
-    if not (ds_store[append_dim][-1] < data[append_dim][0]):
+    if (data[append_dim][0] < ds_store[append_dim][0]):
         await _close_session(obj_store=obj_store)
         raise AppendDimensionError(dim=append_dim)
     
@@ -321,7 +319,7 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
             await _close_session(obj_store=obj_store)
 
 
-def _preprocess_dataset(filepaths: list[str] | str,
+def _preprocess_dataset(file: list[str] | str | xr.Dataset,
                         rechunk: Optional[dict] = None,
                         append_dim: str = "time_counter",
                         update_coords: Optional[dict] = None,
@@ -335,21 +333,21 @@ def _preprocess_dataset(filepaths: list[str] | str,
     Returns
     -------
     xr.Dataset
-        Preprocessed (multifile) dataset following optional
-        updating of coordinates & rechunking.
+        Preprocessed (multifile) dataset with optionally
+        updated coordinates, chunksizes and attributes.
 
     """
     # == Verify Inputs == #
-    if not isinstance(filepaths, (list, str)):
-        raise TypeError("filepaths must be a list or a string.")
-    if isinstance(filepaths, list):
-        for fpath in filepaths:
+    if not isinstance(file, (list, str, xr.Dataset)):
+        raise TypeError("filepaths must be a list, a string or an xarray Dataset.")
+    if isinstance(file, list):
+        for fpath in file:
             if not isinstance(fpath, str):
                 raise TypeError("filepaths must be a list of strings.")
             if not fpath.endswith('.nc'):
                 raise ValueError("Invalid file extension: only .nc files are supported.")
-    else:
-        if not filepaths.endswith('.nc'):
+    elif isinstance(file, str):
+        if not file.endswith('.nc'):
             raise ValueError("Invalid file extension: only .nc files are supported.")
     if rechunk is not None:
         if not isinstance(rechunk, dict):
@@ -373,30 +371,39 @@ def _preprocess_dataset(filepaths: list[str] | str,
         # Default to dask chunks equal to on-disk chunks:
         rechunk = {}
 
-    # Extract all files in given expression:
-    if isinstance(filepaths, str):
-        if '*' in filepaths:
-            filepaths = sorted(glob.glob(filepaths))
+    # File names from str / regular expression:
+    if isinstance(file, str):
+        if '*' in file:
+            filepaths = sorted(glob.glob(file))
             if len(filepaths) == 0:
                 raise FileNotFoundError(f"No files found at {filepaths}")
         else:
-            filepaths = [filepaths]
+            filepaths = [file]
+    # File names from list:
+    elif isinstance(file, list):
+        filepaths = file
 
-    if len(filepaths) > 1:
-        # Open multi-file dataset:
-        ds_filepath = xr.open_mfdataset(filepaths,
-                                        engine='h5netcdf',
-                                        chunks=rechunk,
-                                        parallel=parallel,
-                                        concat_dim=append_dim,
-                                        combine='nested',
-                                        data_vars='minimal',
-                                        coords='minimal',
-                                        compat='override'
-                                        )
+    # Use input dataset:
+    if isinstance(file, xr.Dataset):
+        ds_filepath = file
+        if rechunk is not None:
+            ds_filepath = ds_filepath.chunk(rechunk)
     else:
-        # Open single file dataset:
-        ds_filepath = xr.open_dataset(filepaths[0], chunks=rechunk)
+        # Open multi-file dataset:
+        if len(filepaths) > 1:
+            ds_filepath = xr.open_mfdataset(filepaths,
+                                            engine='h5netcdf',
+                                            chunks=rechunk,
+                                            parallel=parallel,
+                                            concat_dim=append_dim,
+                                            combine='nested',
+                                            data_vars='minimal',
+                                            coords='minimal',
+                                            compat='override'
+                                            )
+        else:
+            # Open single file dataset:
+            ds_filepath = xr.open_dataset(filepaths[0], chunks=rechunk)
 
     # === Update coordinates using model grid file === #
     if update_coords is not None:
@@ -429,7 +436,7 @@ def _preprocess_dataset(filepaths: list[str] | str,
 
 
 def send(
-        filepaths: list[str] | str,
+        file: list[str] | str | xr.Dataset,
         bucket: str,
         object_prefix: str,
         store_credentials_json: str,
@@ -447,8 +454,9 @@ def send(
 
     Parameters
     ----------
-    filepaths: list | str
-        Regular expression or list of filepaths to write to Zarr stores.
+    file: list | str | xarray.Dataset
+        Regular expression or list of filepaths to netCDF file(s).
+        Alternatively, users can pass an xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -482,7 +490,7 @@ def send(
                               )
 
     # === Preprocess Data === #
-    ds_filepath = _preprocess_dataset(filepaths=filepaths,
+    ds_filepath = _preprocess_dataset(file=file,
                                       rechunk=rechunk,
                                       append_dim=append_dim,
                                       update_coords=update_coords,
@@ -528,7 +536,7 @@ def send(
 
 
 def send_with_dask(
-    filepaths: list[str] | str,
+    file: list[str] | str,
     bucket: str,
     object_prefix: str,
     store_credentials_json: str,
@@ -549,8 +557,8 @@ def send_with_dask(
 
     Parameters
     ----------
-    filepaths: list | str
-        Regular expression or list of filepaths to the datasets to be sent.
+    file: list | str
+        Regular expression or list of filepaths to netCDF file(s).
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -609,7 +617,7 @@ def send_with_dask(
                                   )
 
         # === Preprocess Data === #
-        ds_filepath = _preprocess_dataset(filepaths=filepaths,
+        ds_filepath = _preprocess_dataset(file=file,
                                           rechunk=rechunk,
                                           append_dim=append_dim,
                                           update_coords=update_coords,
@@ -661,7 +669,7 @@ def send_with_dask(
 
 
 def update(
-        filepaths: list[str] | str,
+        file: list[str] | str,
         bucket: str,
         object_prefix: str,
         store_credentials_json: str,
@@ -680,8 +688,8 @@ def update(
 
     Parameters
     ----------
-    filepaths: list | str
-        Regular expression or list of filepaths to write to Zarr stores.
+    file: list | str
+        Regular expression or list of filepaths to netCDF file(s).
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -715,7 +723,7 @@ def update(
                               )
 
     # === Preprocess Data === #
-    ds_filepath = _preprocess_dataset(filepaths=filepaths,
+    ds_filepath = _preprocess_dataset(file=file,
                                       rechunk=rechunk,
                                       append_dim=append_dim,
                                       update_coords=update_coords,
@@ -768,7 +776,7 @@ def update(
 
 
 def update_with_dask(
-    filepaths: list[str] | str,
+    file: list[str] | str,
     bucket: str,
     object_prefix: str,
     store_credentials_json: str,
@@ -789,8 +797,8 @@ def update_with_dask(
 
     Parameters
     ----------
-    filepaths: list | str
-        Regular expression or list of filepaths to write to zarr stores.
+    file: list | str
+        Regular expression or list of filepaths to netCDF file(s).
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -850,7 +858,7 @@ def update_with_dask(
                                   )
 
         # === Preprocess data === #
-        ds_filepath = _preprocess_dataset(filepaths=filepaths,
+        ds_filepath = _preprocess_dataset(file=file,
                                           rechunk=rechunk,
                                           append_dim=append_dim,
                                           update_coords=update_coords,
