@@ -29,7 +29,7 @@ class AppendDimensionError(Exception):
 
     def __init__(self, dim):
         """Initialise the exception."""
-        message = f"Attempting to modify existing values along append dimension {dim}."
+        message = f"Cannot prepend to existing values along append dimension {dim}."
         logging.warning(message)
         super().__init__(message)
 
