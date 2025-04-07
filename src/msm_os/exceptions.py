@@ -51,6 +51,15 @@ class DimensionSizeError(Exception):
         logging.warning(message)
         super().__init__(message)
 
+class AppendDimensionSizeError(Exception):
+    """Exception raised when an append dimension has incorrect size."""
+
+    def __init__(self, dim, size, expected_size):
+        """Initialise the exception."""
+        message = f"Append dimension {dim} has {size} overlapping values, expected {expected_size}."
+        logging.warning(message)
+        super().__init__(message)
+
 class ChunkSizeError(Exception):
     """Exception raised when data chunks do not match zarr store chunks."""
 
