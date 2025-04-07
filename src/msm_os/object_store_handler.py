@@ -19,6 +19,7 @@ import warnings
 from typing import Optional
 
 import zarr
+import numpy as np
 import xarray as xr
 
 import dask
@@ -33,6 +34,7 @@ from .exceptions import (
     DimensionNotFound,
     DimensionSizeError,
     AppendDimensionError,
+    AppendDimensionSizeError,
     ChunkSizeError,
 )
 
@@ -64,8 +66,12 @@ class timer():
         # Define class attributes:
         if action == 'send':
             self.action = 'Sent'
-        elif action == 'update':
+        elif action == 'replace':
             self.action = 'Updated'
+        elif action == 'append':
+            self.action = 'Appended to'
+        else:
+            raise ValueError("Invalid action: must be 'send', 'replace' or 'append'.")
         self.dest = dest
         self.version = version
 
@@ -79,8 +85,8 @@ class timer():
             )
 
 # -- Define MSM-OS Core Functions -- #
-async def _check_store(obj_store : ObjectStoreS3,
-                       dest : str
+async def _check_store(obj_store: ObjectStoreS3,
+                       dest: str
                        ) -> bool:
     """
     Check if a destination path exists in the
@@ -105,15 +111,15 @@ async def _check_store(obj_store : ObjectStoreS3,
     return status
 
 
-async def _check_compatability(data: xr.DataArray | xr.Dataset,
+async def _check_compatibility(data: xr.DataArray | xr.Dataset,
                                obj_store: ObjectStoreS3,
-                               dest : str,
+                               dest: str,
                                append_dim: str = "time_counter",
                                rechunk: Optional[dict] = None,
                                version: int = 3,
                                ) -> None:
     """
-    Check compatability of DataArray or Dataset to update existing
+    Check compatibility of DataArray or Dataset to update existing
     zarr store in Object Store.
 
     Parameters
@@ -131,21 +137,6 @@ async def _check_compatability(data: xr.DataArray | xr.Dataset,
     version: int, default=3
         Zarr version to use.
     """
-    # === Verify Inputs === #
-    if not isinstance(data, (xr.DataArray, xr.Dataset)):
-        raise TypeError("data must be a DataArray or Dataset.")
-    if not isinstance(obj_store, ObjectStoreS3):
-        raise TypeError("obj_store must be an ObjectStoreS3 instance.")
-    if not isinstance(dest, str):
-        raise TypeError("dest must be a string.")
-    if not isinstance(append_dim, str):
-        raise TypeError("append_dim must be a string.")
-    if rechunk is not None:
-        if not isinstance(rechunk, dict):
-            raise TypeError("rechunk must be a dictionary.")
-    if not isinstance(version, int):
-        raise TypeError("version must be an integer.")
-
     # === Initialise store using fsspec === #
     store = zarr.storage.FsspecStore(fs=obj_store, path=dest)
 
@@ -203,7 +194,7 @@ async def _close_session(obj_store: ObjectStoreS3) -> None:
 
 async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
                          obj_store: ObjectStoreS3,
-                         dest : str,
+                         dest: str,
                          version: int = 3,
                          ) -> None:
     """
@@ -254,9 +245,8 @@ async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
 
 async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
                           obj_store: ObjectStoreS3,
-                          dest : str,
+                          dest: str,
                           append_dim: str = "time_counter",
-                          rechunk: Optional[dict] = None,
                           version: int = 3,
                           ) -> None:
     """
@@ -272,6 +262,83 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
     dest: str
         Destination path in the object store.
     append_dim: str, default="time_counter"
+        Name of the dimension to append to existing zarr store.
+    version: int, default=3
+        Zarr version to use.
+    """
+    # === Initialise store using fsspec === #
+    store = zarr.storage.FsspecStore(fs=obj_store, path=dest)
+
+    with timer(action='append', dest=dest, version=version):
+        # Catch consolidated metadata warnings:
+        with warnings.catch_warnings():
+            warnings.simplefilter(action="ignore", category=UserWarning)
+            data.to_zarr(store=store, append_dim=append_dim, zarr_format=version)
+
+            await _close_session(obj_store=obj_store)
+
+
+async def _replace_in_zarr(data: xr.DataArray | xr.Dataset,
+                           obj_store: ObjectStoreS3,
+                           dest: str,
+                           region: dict,
+                           version: int = 3,
+                           ) -> None:
+    """
+    Append DataArray or Dataset to existing zarr store in
+    cloud object storage.
+
+    Parameters
+    ----------
+    data: xr.DataArray | xr.Dataset
+        DataArray or DataSet to append to existing zarr store.
+    obj_store: ObjectStoreS3
+        ObjectStoreS3 remote filesystem.
+    dest: str
+        Destination path in the object store.
+    region: dict
+        Region of existing zarr store to overwrite defined by
+        a dictionary of coordinate slices.
+    version: int, default=3
+        Zarr version to use.
+    """
+    # === Initialise store using fsspec === #
+    store = zarr.storage.FsspecStore(fs=obj_store, path=dest)
+
+    # Drop variables w/o append dimension:
+    append_dim = list(region.keys())[0]
+    drop_list = [var for var in data.variables if append_dim not in data[var].dims]
+    data = data.drop_vars(drop_list)
+
+    with timer(action='replace', dest=dest, version=version):
+        # Catch consolidated metadata warnings:
+        with warnings.catch_warnings():
+            warnings.simplefilter(action="ignore", category=UserWarning)
+            data.to_zarr(store=store, region=region, zarr_format=version)
+
+            await _close_session(obj_store=obj_store)
+
+
+async def _update_zarr(data: xr.DataArray | xr.Dataset,
+                       obj_store: ObjectStoreS3,
+                       dest: str,
+                       append_dim: str = "time_counter",
+                       rechunk: Optional[dict] = None,
+                       version: int = 3,
+                       ) -> None:
+    """
+    Update an existing zarr store in object storage by replacing
+    existing values and/or appending new values.
+
+    Parameters
+    ----------
+    data: xr.DataArray | xr.Dataset
+        DataArray or DataSet to update existing zarr store with.
+    obj_store: ObjectStoreS3
+        ObjectStoreS3 remote filesystem.
+    dest: str
+        Destination path in the object store.
+    append_dim: bool, default="time_counter"
         Name of the dimension to append to existing zarr store.
     rechunk: Optional[dict], default=None
         Rechunk strategy dictionary.
@@ -293,15 +360,15 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
     if not isinstance(version, int):
         raise TypeError("version must be an integer.")
 
-    # === Initialise store using fsspec === #
+    # === Store compatability checks === #
     store = zarr.storage.FsspecStore(fs=obj_store, path=dest)
 
     # Convert DataArrays to Datasets:
     if isinstance(data, xr.DataArray):
-        data = data.to_dataset()
+        ds_source = data.to_dataset()
 
-    # Write Dataset to Zarr store in Object Store:
-    await _check_compatability(data=data,
+    # Check source Dataset compatibility with existing store:
+    await _check_compatibility(data=ds_source,
                                obj_store=obj_store,
                                dest=dest,
                                append_dim=append_dim,
@@ -310,13 +377,59 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
                                )
     logging.info(f"Passed Compatibility Checks for store {dest}")
 
-    with timer(action='update', dest=dest, version=version):
-        # Catch consolidated metadata warnings:
-        with warnings.catch_warnings():
-            warnings.simplefilter(action="ignore", category=UserWarning)
-            data.to_zarr(store=store, mode="a-", append_dim=append_dim, zarr_format=version)
+    # === Updating existing zarr store === #
+    # Extract source & target append dimension values:
+    ds_target = xr.open_zarr(store, zarr_format=version)
+    target_append_dim = ds_target[append_dim].values
+    source_append_dim = ds_source[append_dim].values
 
-            await _close_session(obj_store=obj_store)
+    # Determine intersection between source & target append dimensions:
+    intersect_append_dim = np.intersect1d(source_append_dim, target_append_dim)
+
+    if intersect_append_dim.size != 0:
+        # == Intersection exists -> replace overlapping values in target store == #
+
+        # Ensure all overlapping values exist along target append dimension:
+        overlap_append_dim = (source_append_dim <= target_append_dim[-1]).sum()
+        if intersect_append_dim.size != overlap_append_dim:
+            raise AppendDimensionSizeError(dim=append_dim, size=overlap_append_dim, expected_size=intersect_append_dim.size)
+        
+        # Determine source and target append dimension indices of overlap:
+        target_ind_min = np.flatnonzero(target_append_dim == source_append_dim[0])[0]
+        target_ind_max = target_append_dim.size
+        source_ind_min = 0
+        source_ind_max = target_ind_max - target_ind_min
+        source_ind_size = source_append_dim.size
+
+        # 1. Replace overlapping values in target store:
+        logging.info(f"Updating {dest} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}.")
+        await _replace_in_zarr(data=ds_source.isel({append_dim : slice(source_ind_min, source_ind_max)}),
+                               obj_store=obj_store,
+                               dest=dest,
+                               region={append_dim : slice(target_ind_min, target_ind_max)},
+                               version=version,
+                               )
+
+        # 2. Append new values to target store:
+        if source_ind_size > source_ind_max:
+            logging.info(f"Appending to {dest} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}.")
+            await _append_to_zarr(data=ds_source.isel({append_dim : slice(source_ind_max, source_ind_size)}),
+                                  obj_store=obj_store,
+                                  dest=dest,
+                                  append_dim=append_dim,
+                                  version=version,
+                                  )
+
+    else:
+        # == No intersection -> append all source values to target store == #
+        await _append_to_zarr(data=ds_source,
+                              obj_store=obj_store,
+                              dest=dest,
+                              append_dim=append_dim,
+                              version=version,
+                              )
+
+    await _close_session(obj_store=obj_store)
 
 
 def _preprocess_dataset(file: list[str] | str | xr.Dataset,
@@ -744,13 +857,13 @@ def update(
                 logging.info(f"Updating Variable {var}")
                 dest = f"{bucket}/{object_prefix}/{var}"
                 asyncio.run(
-                    _append_to_zarr(data=ds_filepath[var],
-                                    obj_store=obj_store,
-                                    dest=dest,
-                                    append_dim=append_dim,
-                                    rechunk=rechunk,
-                                    version=zarr_version
-                                    )
+                    _update_zarr(data=ds_filepath[var],
+                                 obj_store=obj_store,
+                                 dest=dest,
+                                 append_dim=append_dim,
+                                 rechunk=rechunk,
+                                 version=zarr_version
+                                )
                             )
     
         # Release resources to avoid memory leaks:
@@ -762,13 +875,13 @@ def update(
         dest = f"{bucket}/{object_prefix}"
         logging.info(f"Updating Dataset at {dest}")
         asyncio.run(
-            _append_to_zarr(data=ds_filepath,
-                            obj_store=obj_store,
-                            dest=dest,
-                            append_dim=append_dim,
-                            rechunk=rechunk,
-                            version=zarr_version
-                            )
+            _update_zarr(data=ds_filepath,
+                         obj_store=obj_store,
+                         dest=dest,
+                         append_dim=append_dim,
+                         rechunk=rechunk,
+                         version=zarr_version
+                        )
                     )
         
         # Release resources to avoid memory leaks:
@@ -879,13 +992,13 @@ def update_with_dask(
                     logging.info(f"Updating Variable {var}")
                     dest = f"{bucket}/{object_prefix}/{var}"
                     asyncio.run(
-                        _append_to_zarr(data=ds_filepath[var],
-                                        obj_store=obj_store,
-                                        dest=dest,
-                                        append_dim=append_dim,
-                                        rechunk=rechunk,
-                                        version=zarr_version
-                                        )
+                        _update_zarr(data=ds_filepath[var],
+                                     obj_store=obj_store,
+                                     dest=dest,
+                                     append_dim=append_dim,
+                                     rechunk=rechunk,
+                                     version=zarr_version
+                                    )
                                 )
 
             # Release resources to avoid memory leaks:
@@ -897,13 +1010,13 @@ def update_with_dask(
             dest = f"{bucket}/{object_prefix}"
             logging.info(f"Updating Dataset at {dest}")
             asyncio.run(
-                _append_to_zarr(data=ds_filepath,
-                                obj_store=obj_store,
-                                dest=dest,
-                                append_dim=append_dim,
-                                rechunk=rechunk,
-                                version=zarr_version,
-                                )
+                _update_zarr(data=ds_filepath,
+                             obj_store=obj_store,
+                             dest=dest,
+                             append_dim=append_dim,
+                             rechunk=rechunk,
+                             version=zarr_version
+                            )
                         )
 
             # Release resources to avoid memory leaks:
