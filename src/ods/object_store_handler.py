@@ -26,7 +26,7 @@ import dask
 from dask.distributed import Client, LocalCluster
 from dask.distributed.diagnostics.plugin import WorkerPlugin
 
-# -- Import MSM-OS Modules -- #
+# -- Import OceanDataStore Modules -- #
 from .object_store import ObjectStoreS3
 
 from .exceptions import (
@@ -84,7 +84,7 @@ class timer():
             f"Completed: {self.action} zarr v{self.version} store s3://{self.dest} in {(self.t_end - self.t_start):.2f} seconds"
             )
 
-# -- Define MSM-OS Core Functions -- #
+# -- Define OceanDataStore Core Functions -- #
 async def _check_store(obj_store: ObjectStoreS3,
                        dest: str
                        ) -> bool:

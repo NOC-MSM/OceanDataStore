@@ -3,7 +3,7 @@ argument_parser.py
 
 Description:
 This module defines the argument parser for the
-msm-os command line interface.
+OceanDataStore command line interface.
 
 Authors:
     - Joao Morado
@@ -19,7 +19,7 @@ from ..__init__ import __version__
 def create_parser():
     """Create the argument parser."""
     parser = argparse.ArgumentParser(
-        description=f"msm-os {__version__} command line interface",
+        description=f"OceanDataStore {__version__} command line interface",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 

@@ -3,7 +3,7 @@ main_cli.py
 
 Description:
 This module defines the command line interface
-for the msm-os package.
+for the OceanDataStore package.
 
 Authors:
     - Joao Morado
@@ -21,15 +21,15 @@ logger = logging.getLogger(__name__)
 
 
 def banner():
-    """Log the msm_os banner."""
+    """Log the OceanDataStore banner."""
     logger.info(
         f"""
-        .-~~~-.
-.- ~ ~-(       )_ _
-/                    ~ -.
-|          msm-os         ',
-¬                         .'
-~- ._ ,. ,.,.,., ,.. -~
+          .-~~~-.
+  .- ~ ~-(       )_ _
+ /                    ~ -.
+~      OceanDataStore     ',
+\                         .'
+ - ._ ,. ,.,.,., ,.. -~ ~ '
         '       '
     version: {__version__}
 
@@ -42,7 +42,7 @@ def initialise_logging():
     """Initialise logging configuration."""
     logging.basicConfig(
         stream=sys.stdout,
-        format="☁  msm_os ☁  | %(levelname)10s | %(asctime)s | %(message)s",
+        format="☁  OceanDataStore  ☁  | %(levelname)10s | %(asctime)s | %(message)s",
         level=logging.INFO,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
@@ -170,8 +170,8 @@ def process_action(args):
         raise NotImplementedError(f"Action {args.action} not implemented.")
 
 
-def msm_os():
-    """Run the msm_os cli."""
+def ods():
+    """Run the OceanDataStore CLI."""
     initialise_logging()
     banner()
 
@@ -180,5 +180,5 @@ def msm_os():
 
     process_action(args)
 
-    logging.info("✔ msm_os terminated successfully ✔")
+    logging.info("✔ OceanDataStore terminated successfully ✔")
     sys.exit(0)
