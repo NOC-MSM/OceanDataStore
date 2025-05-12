@@ -1,18 +1,31 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools>=42", "setuptools-scm>=7"]
 
 [project]
 name = "OceanDataStore"
 description = "A Python library to write, update & access ocean data stored in cloud object storage."
-requires-python = ">=3.10"
 keywords = ["data", "model", "object store", "tookit", "cloud", "zarr", "noc"]
+readme = "README.md"
+dynamic = ["version"]
 authors = [{name = "Ollie Tooth"}, {email = "oliver.tooth@noc.ac.uk"},{name = "Joao Morado"},{email = "joao.morado@noc.ac.uk"}]
 maintainers = [{name = "Ollie Tooth"}, {email = "oliver.tooth@noc.ac.uk"}]
+license = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.10"
+
 classifiers = [
-  "Programming Language :: Python :: 3",
-  "Intended Audience :: Science/Research"
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
+
 dependencies = [
   "dask[distributed]>=2025.2.0",
   "aiobotocore==2.17.0",
@@ -28,30 +41,12 @@ dependencies = [
   "zarr>2.18.2",
   ]
 
-dynamic = ["version"]
-
-[project.readme]
-file = "README.md"
-content-type = "text/markdown"
-
-[project.license]
-file = "LICENSE.md"
-content-type = "text/markdown"
-
-[tool.setuptools.dynamic]
-version = {attr = "ods.__init__.__version__"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["*"]
-exclude = ["*__pycache__*"]
-namespaces = true
-
 [project.optional-dependencies]
 test = ["pytest >= 7.2.0"]
 
 [project.urls]
-repository = "https://github.com/NOC-MSM/OceanDataStore"
+Home = "https://github.com/NOC-MSM/OceanDataStore"
+Documentation = "https://noc-msm.github.io/OceanDataStore/"
 
 [project.scripts]
 ods = "ods.cli.main_cli:ods"
