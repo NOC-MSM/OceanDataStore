@@ -1,34 +1,32 @@
-# msm-os
+# OceanDataStore
 
-A Python library designed to streamline the writing, updating, and downloading of ocean model and observational data to [zarr](https://zarr.dev) stores in cloud object storage.
+A Python library designed to streamline writing, updating & accessing ocean model and observational data stored in cloud object storage.
 
 ## Installation
 
-To install the **msm-os** package, first clone the repository from GitHub:
+To install the **OceanDataStore** package, first clone the repository from GitHub:
 
 ```bash
-git clone git@github.com:NOC-MSM/msm-os.git
+git clone git@github.com:NOC-MSM/OceanDataStore.git
 ```
 
-Next, install **msm-os** in editable mode by:
+Next, install **OceanDataStore** in editable mode by:
 
 ```bash
-cd msm-os
+cd OceanDataStore
 
 pip install -e .
 ```
 
-**Note:** we strongly recommend installing **msm-os** into a new virtual environment using either ``venv`` or ``conda / mamba``.
+**Note:** we strongly recommend installing **OceanDataStore** into a new virtual environment using either ``venv`` or ``conda / mamba``.
 
 ## User Guide
 
 ### Creating a Credentials File
 
-To get started using **msm-os**, users need to create a ``credentials.json`` file containing the following information:
+To get started using **OceanDataStore**, users need to create a ``credentials.json`` file containing the following information:
 
 ```json
-# credentials.json
-
 {
     "secret": "your_secret",
     "token": "your_token",
@@ -41,7 +39,7 @@ To get started using **msm-os**, users need to create a ``credentials.json`` fil
 To create a new zarr store in an object store from a local file, use the `send` command:
 
 ```bash
-msm_os send -f /path/to/file.nc -c credentials.json -b bucket_name -v var
+ods send -f /path/to/file.nc -c credentials.json -b bucket_name -v var
 ```
 
 The arguments used are:
@@ -57,7 +55,7 @@ In the example above, without a `-p` (or `--prefix`), the variables will be stor
 To create a new zarr store in an object store from a large number of files, we can use [dask](https://www.dask.org) via the `send_with_dask` command:
 
 ```bash
-msm_os send_with_dask -f filepaths -c credentials.json -b bucket_name -p prefix \
+ods send_with_dask -f filepaths -c credentials.json -b bucket_name -p prefix \
                       -gf filepath_domain -uc '{"lat":"lat_new", "lon":"lon_new"}' \
                       -cs '{"x":500, "y":500, "depthw":25}' \
                       -dc dask_config.json
@@ -100,7 +98,7 @@ Users are recommended to implement send_with_dask workflows using a job schedule
 To update an existing zarr store in an object store, we can use the `update` command:
 
 ```bash
-msm_os update -f /path/to/file.nc -c credentials.json -b bucket_name -p prefix -v var
+ods update -f /path/to/file.nc -c credentials.json -b bucket_name -p prefix -v var
 ```
 
 This command will append the values of variable `var` stored at the local filepath to the `/bucket_name/prefix/var` store provided it already exists in the object store.
@@ -112,7 +110,7 @@ This command will append the values of variable `var` stored at the local filepa
 To update an existing zarr store in an object store using a large number of files, we can use the `update_with_dask` command analogously to `send_with_dask`:
 
 ```bash
-msm_os update_with_dask -f filepaths -c credentials.json -b bucket_name -p prefix \
+ods update_with_dask -f filepaths -c credentials.json -b bucket_name -p prefix \
                         -gf filepath_domain -uc '{"lat":"lat_new", "lon":"lon_new"}' \
                         -cs '{"x":500, "y":500, "depthw":25}' -ad time \
                         -dc dask_config.json
@@ -120,9 +118,9 @@ msm_os update_with_dask -f filepaths -c credentials.json -b bucket_name -p prefi
 
 ## Examples
 
-For further examples of how to implement the commands in **msm-os** in your own workflows, see the bash scripts in the `examples` directory.
+For further examples of how to implement the commands in **OceanDataStore** in your own workflows, see the bash scripts in the `examples` directory.
 
-## msm-os Arguments
+## OceanDataStore Arguments
 
 ### Mandatory Arguments
 
