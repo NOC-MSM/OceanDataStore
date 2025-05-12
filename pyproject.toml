@@ -3,8 +3,8 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "msm_os"
-description = "A Python library to write, update and download files to & from cloud object stores."
+name = "OceanDataStore"
+description = "A Python library to write, update & access ocean data stored in cloud object storage."
 requires-python = ">=3.10"
 keywords = ["data", "model", "object store", "tookit", "cloud", "zarr", "noc"]
 authors = [{name = "Ollie Tooth"}, {email = "oliver.tooth@noc.ac.uk"},{name = "Joao Morado"},{email = "joao.morado@noc.ac.uk"}]
@@ -39,7 +39,7 @@ file = "LICENSE.md"
 content-type = "text/markdown"
 
 [tool.setuptools.dynamic]
-version = {attr = "msm_os.__init__.__version__"}
+version = {attr = "ods.__init__.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -51,7 +51,7 @@ namespaces = true
 test = ["pytest >= 7.2.0"]
 
 [project.urls]
-repository = "https://github.com/NOC-MSM/msm_os"
+repository = "https://github.com/NOC-MSM/OceanDataStore"
 
 [project.scripts]
-msm_os = "msm_os.cli.main_cli:msm_os"
+ods = "ods.cli.main_cli:ods"
