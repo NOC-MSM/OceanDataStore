@@ -10,7 +10,7 @@ To install the **OceanDataStore** package, first clone the repository from GitHu
 git clone git@github.com:NOC-MSM/OceanDataStore.git
 ```
 
-Next, install **OceanDataStore** in editable mode by:
+Next, install **OceanDataStore** in editable mode as follows:
 
 ```bash
 cd OceanDataStore
@@ -36,10 +36,10 @@ To get started using **OceanDataStore**, users need to create a ``credentials.js
 
 ### Sending Individual Files
 
-To create a new zarr store in an object store from a local file, use the `send` command:
+To create a new zarr store in an object store from a local file, use the `send_to_zarr` command:
 
 ```bash
-ods send -f /path/to/file.nc -c credentials.json -b bucket_name -v var
+ods send_to_zarr -f /path/to/file.nc -c credentials.json -b bucket_name -v var
 ```
 
 The arguments used are:
@@ -52,13 +52,13 @@ In the example above, without a `-p` (or `--prefix`), the variables will be stor
 
 ### Sending Lots of Files
 
-To create a new zarr store in an object store from a large number of files, we can use [dask](https://www.dask.org) via the `send_with_dask` command:
+To create a new zarr store in an object store using a large number of files, we can use [dask](https://www.dask.org) with the `send_to_zarr` command by passing a dask configuration JSON file:
 
 ```bash
-ods send_with_dask -f filepaths -c credentials.json -b bucket_name -p prefix \
-                      -gf filepath_domain -uc '{"lat":"lat_new", "lon":"lon_new"}' \
-                      -cs '{"x":500, "y":500, "depthw":25}' \
-                      -dc dask_config.json
+ods send_to_zarr -f filepaths -c credentials.json -b bucket_name -p prefix \
+                 -gf filepath_domain -uc '{"lat":"lat_new", "lon":"lon_new"}' \
+                 -cs '{"x":500, "y":500, "depthw":25}' \
+                 -dc dask_config.json
 ```
 
 The arguments used are:
@@ -89,31 +89,31 @@ where the contents of the ``dask_config.json`` are:
 
 In the example, a LocalCluster with 12 single threaded workers, each with 2 GB of available memory, is used to transfer a large collection of files to an object store.
 
-Users are recommended to implement send_with_dask workflows using a job scheduler, such as SLURM or PBS, to run the LocalCluster on a single compute node.
+Users are strongly recommended to implement `send_to_zarr` workflows using a job scheduler, such as SLURM or PBS, to either run the LocalCluster on a single compute node or to use an existing the SLURMCluster or PBSCluster (dask job queue).
 
-**Note:** the netCDF4 library does not support multi-threaded access to datasets, so users should ensure that ``threads_per_worker : 1`` in their dask configuration .json file to avoid raising CancelledError exceptions when using send_with_dask or update_with_dask.
+**Note:** the netCDF4 library does not support multi-threaded access to datasets, so users should ensure that ``threads_per_worker : 1`` in their dask configuration JSON file to avoid raising CancelledError exceptions when using ``send_to_zarr`` or `update_zarr`.
 
 ### Updating Existing Stores
 
-To update an existing zarr store in an object store, we can use the `update` command:
+To update an existing zarr store in an object store, we can use the `update_zarr` command:
 
 ```bash
-ods update -f /path/to/file.nc -c credentials.json -b bucket_name -p prefix -v var
+ods update_zarr -f /path/to/file.nc -c credentials.json -b bucket_name -p prefix -v var
 ```
 
-This command will append the values of variable `var` stored at the local filepath to the `/bucket_name/prefix/var` store provided it already exists in the object store.
+This command will replace and/or append the values of variable `var` stored at the local filepath to the `/bucket_name/prefix/var` store provided it already exists in the object store.
 
 **Note:** compatability checks must be passed before local data will be appended to an existing store, these include chunk size & dimension compatability.
 
 ### Updating Existing Stores With Lots of Files
 
-To update an existing zarr store in an object store using a large number of files, we can use the `update_with_dask` command analogously to `send_with_dask`:
+To update an existing zarr store in an object store using a large number of files, we can use [dask](https://www.dask.org) via the `update_zarr` command analogously to `send_to_zarr`:
 
 ```bash
-ods update_with_dask -f filepaths -c credentials.json -b bucket_name -p prefix \
-                        -gf filepath_domain -uc '{"lat":"lat_new", "lon":"lon_new"}' \
-                        -cs '{"x":500, "y":500, "depthw":25}' -ad time \
-                        -dc dask_config.json
+ods update_zarr -f filepaths -c credentials.json -b bucket_name -p prefix \
+                -gf filepath_domain -uc '{"lat":"lat_new", "lon":"lon_new"}' \
+                -cs '{"x":500, "y":500, "depthw":25}' -ad time \
+                -dc dask_config.json
 ```
 
 ## Examples
