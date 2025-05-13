@@ -14,7 +14,7 @@ import sys
 import json
 import logging
 
-from ..object_store_handler import send, send_with_dask, update, update_with_dask, list_objects
+from ..object_store_handler import send_to_zarr, update_zarr, update, update_with_dask, list_objects
 from .argument_parser import __version__, create_parser
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,12 @@ def process_action(args):
     if args.zarr_version is not None:
         zarr_version = int(args.zarr_version)
 
-    if args.dask_config_json is not None:
+    if args.dask_config_json is None:
+        dask_config = {
+            "config_kwargs": None,
+            "cluster_kwargs": None,
+        }
+    else:
         dask_config = json.load(open(args.dask_config_json))
         if "config_kwargs" not in dask_config:
             raise ValueError("config_kwargs not found in Dask configuration.")
@@ -82,26 +87,9 @@ def process_action(args):
             raise ValueError("cluster_kwargs not found in Dask configuration.")
 
     # === Process Actions === #
-    if args.action == "send":
+    if args.action == "send_to_zarr":
 
-        send(
-            file=filepaths,
-            bucket=args.bucket,
-            object_prefix=args.object_prefix,
-            store_credentials_json=args.store_credentials_json,
-            variables=variables,
-            append_dim=args.append_dim,
-            send_vars_indep=send_vars_indep,
-            grid_filepath=args.grid_filepath,
-            update_coords=args.update_coords,
-            rechunk=args.chunk_strategy,
-            attrs=args.attrs,
-            zarr_version=zarr_version,
-        )
-
-    elif args.action == "send_with_dask":
-
-        send_with_dask(
+        send_to_zarr(
             file=filepaths,
             bucket=args.bucket,
             object_prefix=args.object_prefix,
@@ -117,6 +105,25 @@ def process_action(args):
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
             zarr_version=zarr_version,
         )
+    
+    elif args.action == "update_zarr":
+
+        update_zarr(
+            file=filepaths,
+            bucket=args.bucket,
+            object_prefix=args.object_prefix,
+            store_credentials_json=args.store_credentials_json,
+            variables=variables,
+            send_vars_indep=send_vars_indep,
+            append_dim=args.append_dim,
+            grid_filepath=args.grid_filepath,
+            update_coords=args.update_coords,
+            rechunk=args.chunk_strategy,
+            attrs=args.attrs,
+            dask_config_kwargs=dask_config["config_kwargs"],
+            dask_cluster_kwargs=dask_config["cluster_kwargs"],
+            zarr_version=zarr_version,
+            )
 
     elif args.action == "update":
 

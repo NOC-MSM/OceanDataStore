@@ -1,13 +1,14 @@
 #!/bin/bash
-# Example script to send a update file in the object store using msm_os
-# update() function.
-# Originally created by:
-# - Ollie Tooth (27/03/2025)
 
 # ----------------------------------------------------------------------------- #
-#                                                                               #
-#     Example: Using update() to create a zarr store from a batch of files      #
-#                                                                               #
+#
+# Example 3: Using update_zarr() to update a zarr store using single file.
+#
+# Description: Example script to update an existing zarr store in an object store
+# using update_zarr() function.
+#
+# Created by: Ollie Tooth (oliver.tooth@noc.ac.uk) on 17/03/2025
+#
 # ----------------------------------------------------------------------------- #
 
 # -- Input arguments to msm-os -- #
@@ -54,9 +55,9 @@ fi
 
 # -- Send eORCA1 ERA-5 annual mean outputs to object store -- # 
 echo "In Progress: Sending example eORCA1 ERA-5 T1y file to object store..."
-msm_os update -f "$filepath_gridT" -c "$store_credentials_json" -b "$bucket" -p T1y \
-              -gf "$filepath_grid" -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}' \
-              -a $append_dim \
-              -cs '{"x":360,"y":331,"deptht":25}' || { echo "Error: msm_os update command failed."; exit 1; }
+ods update_zarr -f "$filepath_gridT" -c "$store_credentials_json" -b "$bucket" -p T1y \
+                -gf "$filepath_grid" -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}' \
+                -a $append_dim \
+                -cs '{"x":360,"y":331,"deptht":25}' || { echo "Error: ods update command failed."; exit 1; }
 
-echo "Success: File sent to object store."
+echo "Success: Updated eORCA1 ERA-5 T1y zarr store."

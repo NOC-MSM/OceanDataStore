@@ -569,7 +569,7 @@ def send(
     ----------
     file: list | str | xarray.Dataset
         Regular expression or list of filepaths to netCDF file(s).
-        Alternatively, users can pass an xarray.Dataset directly.
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -649,7 +649,7 @@ def send(
 
 
 def send_with_dask(
-    file: list[str] | str,
+    file: list[str] | str | xr.Dataset,
     bucket: str,
     object_prefix: str,
     store_credentials_json: str,
@@ -663,15 +663,16 @@ def send_with_dask(
     dask_config_kwargs: Optional[dict] = None,
     dask_cluster_kwargs: Optional[dict] = None,
     zarr_version: int = 3
-) -> None:
+    ) -> None:
     """
     Write data in parallel to new zarr store in cloud object storage
-    using dask local cluster.
+    using dask.
 
     Parameters
     ----------
-    file: list | str
+    file: list | str | xarray.Dataset
         Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -700,14 +701,6 @@ def send_with_dask(
     zarr_version: int, default=3
         Zarr version to use.
     """
-    # == Verify Inputs == #
-    if dask_config_kwargs is not None:
-        if not isinstance(dask_config_kwargs, dict):
-            raise TypeError("dask_config_kwargs must be a dictionary.")
-    if dask_cluster_kwargs is not None:
-        if not isinstance(dask_cluster_kwargs, dict):
-            raise TypeError("dask_cluster_kwargs must be a dictionary.")
-
     # === Configure Cluster === #
     # Update dask configuration settings:
     if dask_config_kwargs is not None:
@@ -781,8 +774,96 @@ def send_with_dask(
         logging.info("Dask Cluster has been shutdown.")
 
 
+def send_to_zarr(
+    file: list[str] | str | xr.Dataset,
+    bucket: str,
+    object_prefix: str,
+    store_credentials_json: str,
+    variables: list[str] | str = 'all',
+    send_vars_indep: bool = True,
+    append_dim: str = "time_counter",
+    grid_filepath: Optional[str] = None,
+    update_coords: Optional[dict] = None,
+    rechunk: Optional[dict] = None,
+    attrs: Optional[dict] = None,
+    dask_config_kwargs: Optional[dict] = None,
+    dask_cluster_kwargs: Optional[dict] = None,
+    zarr_version: int = 3
+    ) -> None:
+    """
+    Send files to new zarr store in cloud object storage
+    in serial or in parallel using a dask local cluster.
+
+    Parameters
+    ----------
+    file: list | str | xarray.Dataset
+        Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
+    bucket: str
+        Name of the bucket in the object store. Bucket names can contain only
+        lowercase letters, numbers, dots (.), and hyphens (-).
+    object_prefix: str
+        Prefix to be added to the object names in the object store.
+    store_credentials_json: str
+        Path to the JSON file containing the object store credentials.
+    variables: list | str, default="all"
+        List of variables to send. If None, all variables will be sent.
+    send_vars_indep: bool, default=True
+        Whether to send variables as separate objects, by default True.
+    append_dim: str, default="time_counter"
+        Name of the append dimension, by default "time_counter".
+    grid_filepath: str, optional
+        Path to file containing model grid parameter.
+    update_coords: dict, optional
+        Dictionary of coordinate variables to update.
+    rechunk: dict, optional
+        Rechunk strategy dictionary, by default None.
+    attrs: dict, optional
+        Attributes to add to the dataset.
+    dask_config_kwargs: Dict[str,str], optional
+        Dask configuration settings passed to dask.config.set().
+    dask_cluster_kwargs: dict, optional
+        Dask cluster configuration settings passed to LocalCluster().
+    zarr_version: int, default=3
+        Zarr version to use.
+    """
+    # == Send files to zarr store without dask == #
+    if (dask_config_kwargs is None) and (dask_cluster_kwargs is None):
+        send(file,
+             bucket,
+             object_prefix,
+             store_credentials_json,
+             variables,
+             send_vars_indep,
+             append_dim,
+             grid_filepath,
+             update_coords,
+             rechunk,
+             attrs,
+             zarr_version
+             )
+
+    # == Send files to zarr store with dask == #
+    else:
+        send_with_dask(file,
+                       bucket,
+                       object_prefix,
+                       store_credentials_json,
+                       variables,
+                       send_vars_indep,
+                       append_dim,
+                       grid_filepath,
+                       update_coords,
+                       rechunk,
+                       attrs,
+                       dask_config_kwargs,
+                       dask_cluster_kwargs,
+                       zarr_version
+                       )
+
+
 def update(
-        file: list[str] | str,
+        file: list[str] | str | xr.Dataset,
         bucket: str,
         object_prefix: str,
         store_credentials_json: str,
@@ -797,12 +878,13 @@ def update(
         ) -> None:
     """
     Update existing zarr store in cloud object storage
-    by appending data in serial.
+    by replacing and/or appending data.
 
     Parameters
     ----------
     file: list | str
         Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -845,7 +927,7 @@ def update(
                                       parallel=False
                                       )
 
-    # === Update Variables in Existing Zarr Stores === #
+    # === Update Variables in Existing Zarr Store === #
     if send_vars_indep:
         if variables is None:
             variables = list(ds_filepath.data_vars)
@@ -889,7 +971,7 @@ def update(
 
 
 def update_with_dask(
-    file: list[str] | str,
+    file: list[str] | str | xr.Dataset,
     bucket: str,
     object_prefix: str,
     store_credentials_json: str,
@@ -906,12 +988,13 @@ def update_with_dask(
     ) -> None:
     """
     Update existing zarr store in cloud object storage
-    in parallel using dask local cluster.
+    in parallel using dask.
 
     Parameters
     ----------
-    file: list | str
+    file: list | str | xarray.Dataset
         Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -934,21 +1017,13 @@ def update_with_dask(
         Rechunk strategy dictionary.
     attrs: dict, optional
         Attributes to add to the dataset.
-    dask_config_kwargs: Dict[str,str], optional
+    dask_config_kwargs: dict, optional
         Dask configuration settings passed to dask.config.set().
     dask_cluster_kwargs: dict, optional
         Dask cluster configuration settings passed to LocalCluster().
     zarr_version: int, default=3
         zarr version to use.
     """
-    # === Verify Inputs === #
-    if dask_config_kwargs is not None:
-        if not isinstance(dask_config_kwargs, dict):
-            raise TypeError("dask_config_kwargs must be a dictionary.")
-    if dask_cluster_kwargs is not None:
-        if not isinstance(dask_cluster_kwargs, dict):
-            raise TypeError("dask_cluster_kwargs must be a dictionary.")
-
     # === Configure Cluster === #
     # Update dask configuration settings:
     if dask_config_kwargs is not None:
@@ -1027,6 +1102,94 @@ def update_with_dask(
         client.shutdown()
         client.close()
         logging.info("Dask Cluster has been shutdown.")
+
+
+def update_zarr(
+    file: list[str] | str | xr.Dataset,
+    bucket: str,
+    object_prefix: str,
+    store_credentials_json: str,
+    variables: list[str] | str = 'all',
+    send_vars_indep: bool = True,
+    append_dim: str = "time_counter",
+    grid_filepath: Optional[str] = None,
+    update_coords: Optional[dict] = None,
+    rechunk: Optional[dict] = None,
+    attrs: Optional[dict] = None,
+    dask_config_kwargs: Optional[dict] = None,
+    dask_cluster_kwargs: Optional[dict] = None,
+    zarr_version: int = 3
+    ) -> None:
+    """
+    Update existing zarr store in cloud object storage
+    in serial or in parallel using a dask local cluster.
+
+    Parameters
+    ----------
+    file: list | str | xarray.Dataset
+        Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
+    bucket: str
+        Name of the bucket in the object store. Bucket names can contain only
+        lowercase letters, numbers, dots (.), and hyphens (-).
+    object_prefix: str
+        Prefix to be added to the object names in the object store.
+    store_credentials_json: str
+        Path to the JSON file containing the object store credentials.
+    variables: list, default='all'
+        List of variables to send to zarr stores.
+        If None, all variables will be sent.
+    send_vars_indep: bool, default=True
+        Whether to send variables as separate objects.
+    append_dim: str, default='time_counter'
+        Name of the dimension to append multifile datasets.
+    grid_filepath: str, optional
+        Path to file containing model grid parameter.
+    update_coords: dict, optional
+        Dictionary of coordinate variables to update.
+    rechunk: dict, optional
+        Rechunk strategy dictionary.
+    attrs: dict, optional
+        Attributes to add to the dataset.
+    dask_config_kwargs: Dict[str,str], optional
+        Dask configuration settings passed to dask.config.set().
+    dask_cluster_kwargs: dict, optional
+        Dask cluster configuration settings passed to LocalCluster().
+    zarr_version: int, default=3
+        zarr version to use.
+    """
+    # === Update zarr store without dask === #
+    if (dask_config_kwargs is None) and (dask_cluster_kwargs is None):
+        update(file,
+               bucket,
+               object_prefix,
+               store_credentials_json,
+               variables,
+               send_vars_indep,
+               append_dim,
+               grid_filepath,
+               update_coords,
+               rechunk,
+               attrs,
+               zarr_version
+               )
+    # === Update zarr store with dask === #
+    else:
+        update_with_dask(file,
+                         bucket,
+                         object_prefix,
+                         store_credentials_json,
+                         variables,
+                         send_vars_indep,
+                         append_dim,
+                         grid_filepath,
+                         update_coords,
+                         rechunk,
+                         attrs,
+                         dask_config_kwargs,
+                         dask_cluster_kwargs,
+                         zarr_version
+                         )
 
 
 def list_objects(
