@@ -2,7 +2,7 @@
 
 # ----------------------------------------------------------------------------- #
 #
-# Example 4: Using update_zarr() to update a zarr store using mulitple files.
+# Example 4: Using update_zarr() to update a zarr store using multiple files.
 #
 # Description: Example script to update an existing zarr store in an object store
 # using update_zarr() function.
