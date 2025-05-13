@@ -48,5 +48,8 @@ test = ["pytest >= 7.2.0"]
 Home = "https://github.com/NOC-MSM/OceanDataStore"
 Documentation = "https://noc-msm.github.io/OceanDataStore/"
 
+[tool.setuptools.dynamic]
+version = {attr = "ods.__init__.__version__"}
+
 [project.scripts]
 ods = "ods.cli.main_cli:ods"
