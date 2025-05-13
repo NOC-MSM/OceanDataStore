@@ -569,7 +569,7 @@ def send(
     ----------
     file: list | str | xarray.Dataset
         Regular expression or list of filepaths to netCDF file(s).
-        Alternatively, users can pass an xarray.Dataset directly.
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -649,7 +649,7 @@ def send(
 
 
 def send_with_dask(
-    file: list[str] | str,
+    file: list[str] | str | xr.Dataset,
     bucket: str,
     object_prefix: str,
     store_credentials_json: str,
@@ -666,12 +666,13 @@ def send_with_dask(
     ) -> None:
     """
     Write data in parallel to new zarr store in cloud object storage
-    using dask local cluster.
+    using dask.
 
     Parameters
     ----------
-    file: list | str
+    file: list | str | xarray.Dataset
         Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -774,7 +775,7 @@ def send_with_dask(
 
 
 def send_to_zarr(
-    file: list[str] | str,
+    file: list[str] | str | xr.Dataset,
     bucket: str,
     object_prefix: str,
     store_credentials_json: str,
@@ -795,8 +796,9 @@ def send_to_zarr(
 
     Parameters
     ----------
-    file: list | str
+    file: list | str | xarray.Dataset
         Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -861,7 +863,7 @@ def send_to_zarr(
 
 
 def update(
-        file: list[str] | str,
+        file: list[str] | str | xr.Dataset,
         bucket: str,
         object_prefix: str,
         store_credentials_json: str,
@@ -876,12 +878,13 @@ def update(
         ) -> None:
     """
     Update existing zarr store in cloud object storage
-    by appending data in serial.
+    by replacing and/or appending data.
 
     Parameters
     ----------
     file: list | str
         Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -968,7 +971,7 @@ def update(
 
 
 def update_with_dask(
-    file: list[str] | str,
+    file: list[str] | str | xr.Dataset,
     bucket: str,
     object_prefix: str,
     store_credentials_json: str,
@@ -985,12 +988,13 @@ def update_with_dask(
     ) -> None:
     """
     Update existing zarr store in cloud object storage
-    in parallel using dask local cluster.
+    in parallel using dask.
 
     Parameters
     ----------
-    file: list | str
+    file: list | str | xarray.Dataset
         Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
@@ -1013,21 +1017,13 @@ def update_with_dask(
         Rechunk strategy dictionary.
     attrs: dict, optional
         Attributes to add to the dataset.
-    dask_config_kwargs: Dict[str,str], optional
+    dask_config_kwargs: dict, optional
         Dask configuration settings passed to dask.config.set().
     dask_cluster_kwargs: dict, optional
         Dask cluster configuration settings passed to LocalCluster().
     zarr_version: int, default=3
         zarr version to use.
     """
-    # === Verify Inputs === #
-    if dask_config_kwargs is not None:
-        if not isinstance(dask_config_kwargs, dict):
-            raise TypeError("dask_config_kwargs must be a dictionary.")
-    if dask_cluster_kwargs is not None:
-        if not isinstance(dask_cluster_kwargs, dict):
-            raise TypeError("dask_cluster_kwargs must be a dictionary.")
-
     # === Configure Cluster === #
     # Update dask configuration settings:
     if dask_config_kwargs is not None:
@@ -1109,7 +1105,7 @@ def update_with_dask(
 
 
 def update_zarr(
-    file: list[str] | str,
+    file: list[str] | str | xr.Dataset,
     bucket: str,
     object_prefix: str,
     store_credentials_json: str,
@@ -1130,8 +1126,9 @@ def update_zarr(
 
     Parameters
     ----------
-    file: list | str
+    file: list | str | xarray.Dataset
         Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
     bucket: str
         Name of the bucket in the object store. Bucket names can contain only
         lowercase letters, numbers, dots (.), and hyphens (-).
