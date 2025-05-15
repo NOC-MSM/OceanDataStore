@@ -26,9 +26,9 @@ def create_parser():
     # Send and Update are mutually exclusive operations
     parser.add_argument(
         "action",
-        choices=["send_to_zarr", "update_zarr", "update", "update_with_dask", "list"],
-        help="Specify the action: 'send' or 'send_with_dask' to send a file to an object store, "
-        "'update' to update an existing object, or 'list' to list the files in a bucket.",
+        choices=["send_to_zarr", "update_zarr", "send_to_icechunk", "list"],
+        help="Specify the action: 'send_to_zarr' or 'send_to_icechunk' to send a file(s) to an object store, "
+        "'update_zarr' or 'update_icechunk' to update an existing object, or 'list' to list the files in a bucket.",
     )
 
     # Always required
@@ -132,6 +132,30 @@ def create_parser():
         dest="zarr_version",
         help="Zarr version used to create the zarr store. Options are 2 (v2) or 3 (v3).",
         default=3,
+    )
+
+    parser.add_argument(
+        "-br",
+        "--branch",
+        dest="branch",
+        help="Branch of Icechunk repository to commit changes to.",
+        default="main",
+    )
+
+    parser.add_argument(
+        "-cm",
+        "--commit_message",
+        dest="commit_message",
+        help="Commit message to be recorded when committing changes to Icechunk repository.",
+        default="Commit to Icechunk repository",
+    )
+
+    parser.add_argument(
+        "-ic",
+        "--icechunk-configuration",
+        dest="icechunk_config_json",
+        help="Path to the JSON file defining the Icechunk storage and repository configurations.",
+        default=None,
     )
 
     return parser

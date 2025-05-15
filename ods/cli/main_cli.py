@@ -14,7 +14,7 @@ import sys
 import json
 import logging
 
-from ..object_store_handler import send_to_zarr, update_zarr, update, update_with_dask, list_objects
+from ..object_store_handler import send_to_zarr, send_to_icechunk, update_zarr, list_objects
 from .argument_parser import __version__, create_parser
 
 logger = logging.getLogger(__name__)
@@ -75,12 +75,29 @@ def process_action(args):
         zarr_version = int(args.zarr_version)
 
     if args.dask_config_json is None:
+        # No Dask configuration by default:
         dask_config = {
             "config_kwargs": None,
             "cluster_kwargs": None,
         }
     else:
+        # Load Dask configuration from JSON file
         dask_config = json.load(open(args.dask_config_json))
+        if "config_kwargs" not in dask_config:
+            raise ValueError("config_kwargs not found in Dask configuration.")
+        if "cluster_kwargs" not in dask_config:
+            raise ValueError("cluster_kwargs not found in Dask configuration.")
+
+    if args.icechunk_config_json is None:
+        # Default Icechunk configuration for JASMIN OS:
+        icechunk_config = {
+            "storage_config_kwargs": {"region": "", "force_path_style": True},
+            "repository_config_kwargs": {},
+            "storage_settings_kwargs": {"unsafe_use_conditional_update": False, "unsafe_use_conditional_create": False},
+        }
+    else:
+        # Load Icechunk configuration from JSON file
+        icechunk_config = json.load(open(args.icechunk_config_json))
         if "config_kwargs" not in dask_config:
             raise ValueError("config_kwargs not found in Dask configuration.")
         if "cluster_kwargs" not in dask_config:
@@ -125,9 +142,9 @@ def process_action(args):
             zarr_version=zarr_version,
             )
 
-    elif args.action == "update":
+    elif args.action == "send_to_icechunk":
 
-        update(
+        send_to_icechunk(
             file=filepaths,
             bucket=args.bucket,
             object_prefix=args.object_prefix,
@@ -139,26 +156,11 @@ def process_action(args):
             update_coords=args.update_coords,
             rechunk=args.chunk_strategy,
             attrs=args.attrs,
-            zarr_version=zarr_version,
-                )
-        
-    elif args.action == "update_with_dask":
-
-        update_with_dask(
-            file=filepaths,
-            bucket=args.bucket,
-            object_prefix=args.object_prefix,
-            store_credentials_json=args.store_credentials_json,
-            variables=variables,
-            send_vars_indep=send_vars_indep,
-            append_dim=args.append_dim,
-            grid_filepath=args.grid_filepath,
-            update_coords=args.update_coords,
-            rechunk=args.chunk_strategy,
-            attrs=args.attrs,
+            branch=args.branch,
+            commit_message=args.commit_message,
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
-            zarr_version=zarr_version,
+            icechunk_config=icechunk_config,
             )
 
     elif args.action == "list":
