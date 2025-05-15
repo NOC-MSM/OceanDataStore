@@ -14,6 +14,7 @@ import json
 import zarr
 import s3fs
 import fsspec
+import icechunk
 import logging
 
 from typing import Union
@@ -202,3 +203,119 @@ class ObjectStoreS3(s3fs.S3FileSystem):
         )
 
         return mapper
+
+
+    def create_icechunk_repo(self,
+                             bucket: str,
+                             prefix: str,
+                             storage_config_kwargs: dict = {},
+                             repository_config_kwargs: dict = {},
+                             storage_settings_kwargs: dict = {},
+                             ) -> icechunk.Repository:
+        """
+        Create a new Icechunk repository in cloud object storage.
+
+        Parameters
+        ----------
+        bucket: str
+            Name of bucket in s3 object store.
+        prefix: str
+            Name of prefix within bucket to store object.
+        storage_config_kwargs
+            Kwargs for icechunk.s3_storage().
+            See: https://icechunk.io/en/latest/icechunk-python/storage/.
+        repository_config_kwargs
+            Kwargs for icechunk.RepositoryConfig().
+            See: https://icechunk.io/en/latest/icechunk-python/configuration/.
+        storage_settings_kwargs
+            Kwargs for icechunk.StorageSettings().
+            See: https://icechunk.io/en/latest/icechunk-python/configuration/#storage.
+
+        Returns
+        -------
+        repo, icechunk.Repository
+            Icechunk repository.
+        """
+        # -- Define S3 storage -- #
+        storage = icechunk.s3_storage(
+            bucket=bucket,
+            prefix=prefix,
+            access_key_id=self._store_credentials["token"],
+            secret_access_key=self._store_credentials['secret'],
+            endpoint_url=self._store_credentials['endpoint_url'],
+            **storage_config_kwargs
+            )
+
+        # -- Define Icechunk repo config -- #
+        repo_config = icechunk.RepositoryConfig(
+                        storage = icechunk.StorageSettings(
+                            **storage_settings_kwargs,
+                            ),
+                        **repository_config_kwargs,
+                        )
+
+        # -- Create Icechunk repo -- #
+        repo = icechunk.Repository.create(
+            storage=storage,
+            config=repo_config
+            )
+
+        return repo
+
+
+    def open_icechunk_repo(self,
+                           bucket: str,
+                           prefix: str,
+                           storage_config_kwargs: dict = {'region': '', 'force_path_style': True},
+                           repository_config_kwargs: dict = {},
+                           storage_settings_kwargs: dict = {'unsafe_use_conditional_update': False, 'unsafe_use_conditional_create': False},
+                           ) -> icechunk.Repository:
+        """
+        Open an existing Icechunk repository in cloud object storage.
+
+        Parameters
+        ----------
+        bucket: str
+            Name of bucket in s3 object store.
+        prefix: str
+            Name of prefix within bucket to store object.
+        storage_config_kwargs
+            Kwargs for icechunk.s3_storage().
+            See: https://icechunk.io/en/latest/icechunk-python/storage/.
+        repository_config_kwargs
+            Kwargs for icechunk.RepositoryConfig().
+            See: https://icechunk.io/en/latest/icechunk-python/configuration/.
+        storage_settings_kwargs
+            Kwargs for icechunk.StorageSettings().
+            See: https://icechunk.io/en/latest/icechunk-python/configuration/#storage.
+
+        Returns
+        -------
+        repo, icechunk.Repository
+            Icechunk repository.
+        """
+        # -- Define S3 storage -- #
+        storage = icechunk.s3_storage(
+            bucket=bucket,
+            prefix=prefix,
+            access_key_id=self._store_credentials["token"],
+            secret_access_key=self._store_credentials['secret'],
+            endpoint_url=self._store_credentials['endpoint_url'],
+            **storage_config_kwargs
+            )
+
+        # -- Define Icechunk repo config -- #
+        repo_config = icechunk.RepositoryConfig(
+                        storage = icechunk.StorageSettings(
+                            **storage_settings_kwargs,
+                            ),
+                        **repository_config_kwargs,
+                        )
+
+        # -- Open existing Icechunk repo -- #
+        repo = icechunk.Repository.open(
+            storage=storage,
+            config=repo_config
+            )
+
+        return repo
