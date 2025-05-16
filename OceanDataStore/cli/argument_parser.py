@@ -26,7 +26,7 @@ def create_parser():
     # Send and Update are mutually exclusive operations
     parser.add_argument(
         "action",
-        choices=["send_to_zarr", "update_zarr", "send_to_icechunk", "list"],
+        choices=["send_to_zarr", "update_zarr", "send_to_icechunk", "update_icechunk", "list"],
         help="Specify the action: 'send_to_zarr' or 'send_to_icechunk' to send a file(s) to an object store, "
         "'update_zarr' or 'update_icechunk' to update an existing object, or 'list' to list the files in a bucket.",
     )
@@ -78,9 +78,17 @@ def create_parser():
         "-v",
         "--variables",
         dest="variables",
-        help="Variables to send.",
+        help="Variables to send to store. Default None will send all variables.",
         nargs="+",
         default=None,
+    )
+
+    parser.add_argument(
+        "-vs",
+        "--variable-stores",
+        dest="var_stores",
+        action="store_true",
+        help="Send variables to independent stores.",
     )
 
     parser.add_argument(
@@ -147,7 +155,15 @@ def create_parser():
         "--commit_message",
         dest="commit_message",
         help="Commit message to be recorded when committing changes to Icechunk repository.",
-        default="Commit to Icechunk repository",
+        default="Add new data to my Icechunk repository",
+    )
+
+    parser.add_argument(
+        "-vc",
+        "--variable-commits",
+        dest="var_commits",
+        action="store_true",
+        help="Send variables to Icechunk repository using independent commits.",
     )
 
     parser.add_argument(
