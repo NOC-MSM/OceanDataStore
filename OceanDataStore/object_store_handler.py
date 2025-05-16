@@ -61,15 +61,26 @@ class timer():
         Action to be performed. Options are 'send' or 'update'.
     dest : str
         Destination path in the object store.
+    var : Optional[str], default=None
+        Name of variable to be sent or updated to store.
     """
-    def __init__(self, action: str, dest : str) -> None:
+    def __init__(self, action: str, dest: str, var: Optional[str] = None) -> None:
         # Define class attributes:
         if action == 'send':
-            self.action = 'Sent data to'
+            if var is not None:
+                self.action = f'Sent {var} to'
+            else:
+                self.action = 'Sent dataset to'
         elif action == 'replace':
-            self.action = 'Updated'
+            if var is not None:
+                self.action = f'Updated {var} in'
+            else:
+                self.action = 'Updated'
         elif action == 'append':
-            self.action = 'Appended to'
+            if var is not None:
+                self.action = f'Appended {var} to'
+            else:
+                self.action = 'Appended to'
         else:
             raise ValueError("Invalid action: must be 'send', 'replace' or 'append'.")
         self.dest = dest
@@ -84,33 +95,33 @@ class timer():
             )
 
 # -- Define OceanDataStore Core Functions -- #
-async def _check_store(obj_store: ObjectStoreS3,
-                       dest: str
-                       ) -> bool:
+async def _check_zarr_store(obj_store: ObjectStoreS3,
+                            path: str
+                            ) -> bool:
     """
-    Check if a destination path exists in the
-    object store.
+    Check if a zarr store exists at a specified path
+    in the object store.
 
     Parameters
     ----------
     obj_store
         ObjectStoreS3 remote filesystem.
-    dest
-        Destination path in the object store.
+    path
+        Path to zarr store in the object store.
     
     Returns
     -------
     bool
         True if the store exists, False otherwise.
     """
-    store = zarr.storage.FsspecStore(fs=obj_store, path=dest)
+    store = zarr.storage.FsspecStore(fs=obj_store, path=path)
     status = await store.exists("")
     await _close_session(obj_store=obj_store)
 
     return status
 
 
-async def _check_compatibility(data: xr.DataArray | xr.Dataset,
+async def _check_zarr_compatibility(data: xr.DataArray | xr.Dataset,
                                obj_store: ObjectStoreS3,
                                dest: str,
                                append_dim: str = "time_counter",
@@ -119,7 +130,7 @@ async def _check_compatibility(data: xr.DataArray | xr.Dataset,
                                ) -> None:
     """
     Check compatibility of DataArray or Dataset to update existing
-    zarr store in Object Store.
+    zarr store in cloud object storage.
 
     Parameters
     ----------
@@ -130,9 +141,9 @@ async def _check_compatibility(data: xr.DataArray | xr.Dataset,
     dest: str
         Destination path in the object store.
     append_dim: bool, default="time_counter"
-        Name of the dimension to append to existing zarr store.
+        Dimension to append data to existing zarr store.
     rechunk: Optional[dict], default=None
-        Rechunk strategy dictionary.
+        Mapping to rechunk dimensions.
     version: int, default=3
         Zarr version to use.
     """
@@ -140,7 +151,7 @@ async def _check_compatibility(data: xr.DataArray | xr.Dataset,
     store = zarr.storage.FsspecStore(fs=obj_store, path=dest)
 
     # 1. Check if the store exists:
-    if not await _check_store(obj_store=obj_store, dest=dest):
+    if not await _check_zarr_store(obj_store=obj_store, path=dest):
         await _close_session(obj_store=obj_store)
         raise ObjectNotFound(object_name=dest)
     
@@ -178,6 +189,62 @@ async def _check_compatibility(data: xr.DataArray | xr.Dataset,
     await _close_session(obj_store=obj_store)
 
 
+def _check_icechunk_compatibility(data: xr.DataArray | xr.Dataset,
+                                  dest: str,
+                                  repo: icechunk.Repository,
+                                  branch: str,
+                                  append_dim: str,
+                                  rechunk: dict,
+                                  ) -> None:
+    """
+    Check compatibility of DataArray or Dataset to update existing
+    IcechunkStore in cloud object storage.
+
+    Parameters
+    ----------
+    data: xr.DataArray | xr.Dataset
+        DataArray or DataSet to update existing zarr store with.
+    dest: str
+        Path to Icechunk repository in the object store.
+    repo: icechunk.Repository
+        Icechunk repository in which to write data to IcechunkStore.
+    branch: str
+        Branch on which to write data to IcechunkStore.
+    append_dim: str
+        Dimension to append data to existing IcechunkStore.
+    rechunk: dict
+        Mapping to rechunk dimensions.
+    """
+    # === Initialise IcechunkStore from session === #
+    store = repo.readonly_session(branch=branch).store
+
+    # 1. Check if IcechunkStore exists:
+    try:
+        ds_store = xr.open_zarr(store, consolidated=False)
+    except Exception as e:
+        raise FileNotFoundError(f"IcechunkStore not found in repository: {e}")
+
+    # 2. Check if core dimensions exist in IcechunkStore & sizes are consistent:
+    dims_data = {dim : data.sizes[dim] for dim in data.dims if dim != append_dim}
+    for dim in dims_data:
+        if dim in ds_store.dims:
+            if dims_data[dim] != ds_store.sizes[dim]:
+                raise DimensionSizeError(dim=dim, size=data.sizes[dim], expected_size=ds_store.sizes[dim])
+        else:
+            raise DimensionNotFound(dim=dim, object_name=dest)
+
+    # 3. Check if append dimension values are consistent:
+    if (data[append_dim][0] < ds_store[append_dim][0]):
+        raise AppendDimensionError(dim=append_dim)
+    
+    # 4. Check if specified chunks are consistent:
+    if rechunk is not None:
+        for dim in rechunk:
+            if dim in ds_store.dims:
+                if rechunk[dim] != ds_store.chunks[dim][0]:
+                    raise ChunkSizeError(chunks=rechunk, store_chunks=ds_store.chunks)
+
+
 async def _close_session(obj_store: ObjectStoreS3) -> None:
     """
     Close the current Object Store aiohttp session.
@@ -207,9 +274,9 @@ async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
     obj_store: ObjectStoreS3
         ObjectStoreS3 remote filesystem.
     dest: str
-        Destination path in the object store.
+        Path to zarr store in the object store.
     version: int, default=3
-        zarr version to use.
+        Zarr version to use.
     """
     # === Verify Inputs === #
     if not isinstance(data, (xr.DataArray, xr.Dataset)):
@@ -226,14 +293,17 @@ async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
 
     # Convert DataArrays to Datasets:
     if isinstance(data, xr.DataArray):
+        var = data.name
         data = data.to_dataset()
+    else:
+        var = None
 
     # Write Dataset to Zarr store in Object Store:
-    if await _check_store(obj_store=obj_store, dest=dest):
+    if await _check_zarr_store(obj_store=obj_store, path=dest):
         logging.info(f"Skipping Variable: Store already exists at {dest}")
 
     else:
-        with timer(action='send', dest=dest):
+        with timer(action='send', dest=dest, var=var):
             # Catch consolidated metadata warnings:
             with warnings.catch_warnings():
                 warnings.simplefilter(action="ignore", category=UserWarning)
@@ -266,20 +336,17 @@ def _write_to_icechunk(data: xr.DataArray | xr.Dataset,
     branch: str, default="main"
         Branch on which to write data to IcechunkStore.
     """
-    # === Verify Inputs === #
-    if not isinstance(data, (xr.DataArray, xr.Dataset)):
-        raise TypeError("data must be a DataArray or Dataset.")
-    if not isinstance(repo, icechunk.Repository):
-        raise TypeError("repo must be an Icechunk repository.")
-
-    # Convert DataArrays to Datasets:
+    # === Convert DataArrays to Datasets === #
     if isinstance(data, xr.DataArray):
+        var = data.name
         data = data.to_dataset()
+    else:
+        var = None
 
     # === Write Data to IcechunkStore & Commit === #
-    with timer(action='send', dest=dest):
+    with timer(action='send', dest=dest, var=var):
         session = repo.writable_session(branch=branch)
-        icechunk_xr.to_icechunk(data, session)
+        icechunk_xr.to_icechunk(data, session, mode='a')
         session.commit(message=commit_message)
 
 
@@ -300,9 +367,9 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
     obj_store: ObjectStoreS3
         ObjectStoreS3 remote filesystem.
     dest: str
-        Destination path in the object store.
+        Path to zarr store in the object store.
     append_dim: str, default="time_counter"
-        Name of the dimension to append to existing zarr store.
+        Dimension to append data to existing zarr store.
     version: int, default=3
         Zarr version to use.
     """
@@ -316,6 +383,44 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
             data.to_zarr(store=store, append_dim=append_dim, zarr_format=version)
 
             await _close_session(obj_store=obj_store)
+
+
+def _append_to_icechunk(data: xr.DataArray | xr.Dataset,
+                        dest: str,
+                        repo: icechunk.Repository,
+                        commit_message: str,
+                        branch: Optional[str] = "main",
+                        append_dim: str = "time_counter",
+                        ) -> None:
+    """
+    Append DataArray or Dataset to existing IcechunkStore in
+    cloud object storage.
+
+    Parameters
+    ----------
+    data: xr.DataArray | xr.Dataset
+        DataArray or DataSet to append to existing IcechunkStore.
+    dest: str
+        Path to Icechunk repository in the object store.
+    repo: icechunk.Repository
+        Icechunk repository in which to write data to
+        IcechunkStore.
+    commit_message: str
+        Commit message when updating the Icechunk repository.
+    branch: str, default="main"
+        Branch on which to write data to IcechunkStore.
+    append_dim: str, default="time_counter"
+        Dimension to append data to existing IcechunkStore.
+    """
+    # === Convert DataArrays to Datasets === #
+    if isinstance(data, xr.DataArray):
+        data = data.to_dataset()
+
+    # === Append Data to IcechunkStore & Commit === #
+    with timer(action='append', dest=dest):
+        session = repo.writable_session(branch=branch)
+        icechunk_xr.to_icechunk(obj=data, session=session, append_dim=append_dim)
+        session.commit(message=commit_message)
 
 
 async def _replace_in_zarr(data: xr.DataArray | xr.Dataset,
@@ -335,10 +440,9 @@ async def _replace_in_zarr(data: xr.DataArray | xr.Dataset,
     obj_store: ObjectStoreS3
         ObjectStoreS3 remote filesystem.
     dest: str
-        Destination path in the object store.
+        Path to zarr store in the object store.
     region: dict
-        Region of existing zarr store to overwrite defined by
-        a dictionary of coordinate slices.
+        Region of existing zarr store to replace data.
     version: int, default=3
         Zarr version to use.
     """
@@ -359,6 +463,47 @@ async def _replace_in_zarr(data: xr.DataArray | xr.Dataset,
             await _close_session(obj_store=obj_store)
 
 
+def _replace_in_icechunk(data: xr.DataArray | xr.Dataset,
+                         dest: str,
+                         region: dict,
+                         repo: icechunk.Repository,
+                         commit_message: str,
+                         branch: Optional[str] = "main",
+                         ) -> None:
+    """
+    Replace data in existing IcechunkStore in cloud object storage.
+
+    Parameters
+    ----------
+    data: xr.DataArray | xr.Dataset
+        DataArray or Dataset used to replace data in existing IcechunkStore.
+    dest: str
+        Path to Icechunk repository in the object store.
+    region: dict
+        Region of existing IcechunkStore to replace data.
+    repo: icechunk.Repository
+        Icechunk repository in which to replace data in IcechunkStore.
+    commit_message: str
+        Commit message when updating the Icechunk repository.
+    branch: str, default="main"
+        Branch on which to write data to IcechunkStore.
+    """
+    # === Convert DataArrays to Datasets === #
+    if isinstance(data, xr.DataArray):
+        data = data.to_dataset()
+
+    # Drop variables w/o append dimension:
+    append_dim = list(region.keys())[0]
+    drop_list = [var for var in data.variables if append_dim not in data[var].dims]
+    data = data.drop_vars(drop_list)
+
+    # === Write Data to IcechunkStore & Commit === #
+    with timer(action='replace', dest=dest):
+        session = repo.writable_session(branch=branch)
+        icechunk_xr.to_icechunk(obj=data, session=session, region=region)
+        session.commit(message=commit_message)
+
+
 async def _update_zarr(data: xr.DataArray | xr.Dataset,
                        obj_store: ObjectStoreS3,
                        dest: str,
@@ -377,11 +522,11 @@ async def _update_zarr(data: xr.DataArray | xr.Dataset,
     obj_store: ObjectStoreS3
         ObjectStoreS3 remote filesystem.
     dest: str
-        Destination path in the object store.
+        Path to zarr store in the object store.
     append_dim: bool, default="time_counter"
-        Name of the dimension to append to existing zarr store.
+        Dimension to append data to existing zarr store.
     rechunk: Optional[dict], default=None
-        Rechunk strategy dictionary.
+        Mapping to rechunk dimensions.
     version: int, default=3
         Zarr version to use.
     """
@@ -408,13 +553,13 @@ async def _update_zarr(data: xr.DataArray | xr.Dataset,
         ds_source = data.to_dataset()
 
     # Check source Dataset compatibility with existing store:
-    await _check_compatibility(data=ds_source,
-                               obj_store=obj_store,
-                               dest=dest,
-                               append_dim=append_dim,
-                               rechunk=rechunk,
-                               version=version
-                               )
+    await _check_zarr_compatibility(data=ds_source,
+                                    obj_store=obj_store,
+                                    dest=dest,
+                                    append_dim=append_dim,
+                                    rechunk=rechunk,
+                                    version=version
+                                    )
     logging.info(f"Passed Compatibility Checks for store {dest}")
 
     # === Updating existing zarr store === #
@@ -470,6 +615,119 @@ async def _update_zarr(data: xr.DataArray | xr.Dataset,
                               )
 
     await _close_session(obj_store=obj_store)
+
+
+def _update_icechunk_store(data: xr.DataArray | xr.Dataset,
+                           dest: str,
+                           repo: icechunk.Repository,
+                           commit_message: str,
+                           branch: Optional[str] = "main",
+                           append_dim: str = "time_counter",
+                           rechunk: Optional[dict] = None,
+                           ) -> None:
+    """
+    Update an existing IcechunkStore in object storage by replacing
+    existing values and/or appending new values.
+
+    Parameters
+    ----------
+    data: xr.DataArray | xr.Dataset
+        DataArray or DataSet to append to existing IcechunkStore.
+    dest: str
+        Path to Icechunk repository in the object store.
+    repo: icechunk.Repository
+        Icechunk repository in which to write data to
+        IcechunkStore.
+    commit_message: str
+        Commit message when updating the Icechunk repository.
+    branch: str, default="main"
+        Branch on which to write data to IcechunkStore.
+    append_dim: bool, default="time_counter"
+        Dimension to append data to existing IcechunkStore.
+    rechunk: Optional[dict], default=None
+        Mapping to rechunk dimensions.
+    """
+    # Convert DataArrays to Datasets:
+    if isinstance(data, xr.DataArray):
+        var = data.name
+        ds_source = data.to_dataset()
+    else:
+        var = None
+
+    # Check source Dataset compatibility with existing store:
+    _check_icechunk_compatibility(data=ds_source,
+                                  dest=dest,
+                                  repo=repo,
+                                  branch=branch,
+                                  append_dim=append_dim,
+                                  rechunk=rechunk,
+                                  )
+    logging.info(f"Passed Compatibility Checks for IcechunkStore {dest}")
+
+    # === Updating existing IcechunkStore === #
+    # Extract source & target append dimension values:
+    store = repo.readonly_session(branch=branch).store
+    ds_target = xr.open_zarr(store, consolidated=False)
+    target_append_dim = ds_target[append_dim].values
+    source_append_dim = ds_source[append_dim].values
+
+    # Determine intersection between source & target append dimensions:
+    intersect_append_dim = np.intersect1d(source_append_dim, target_append_dim)
+
+    if intersect_append_dim.size != 0:
+        # == Intersection exists -> replace overlapping values in target store == #
+
+        # Ensure all overlapping values exist along target append dimension:
+        overlap_append_dim = (source_append_dim <= target_append_dim[-1]).sum()
+        if intersect_append_dim.size != overlap_append_dim:
+            raise AppendDimensionSizeError(dim=append_dim, size=overlap_append_dim, expected_size=intersect_append_dim.size)
+        
+        # Determine source and target append dimension indices of overlap:
+        target_ind_min = np.flatnonzero(target_append_dim == source_append_dim[0])[0]
+        target_ind_max = target_append_dim.size
+        source_ind_min = 0
+        source_ind_max = target_ind_max - target_ind_min
+        source_ind_size = source_append_dim.size
+
+        # 1. Replace overlapping values in target IcechunkStore:
+        logging.info(f"Updating {dest} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}.")
+        if var is not None:
+            rep_commit_message = f"{commit_message} -> Updated {var} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}."
+        else:
+            rep_commit_message = f"{commit_message} -> Updated {dest} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}."
+
+        _replace_in_icechunk(data=ds_source.isel({append_dim : slice(source_ind_min, source_ind_max)}),
+                             repo=repo,
+                             dest=dest,
+                             region={append_dim : slice(target_ind_min, target_ind_max)},
+                             commit_message=rep_commit_message,
+                             branch=branch
+                             )
+
+        # 2. Append new values to target IcechunkStore:
+        if source_ind_size > source_ind_max:
+            logging.info(f"Appending to {dest} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}.")
+            if var is not None:
+                app_commit_message = f"{commit_message} -> Appended to {var} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}."
+            else:
+                app_commit_message = f"{commit_message} -> Appended to {dest} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}."
+
+            _append_to_icechunk(data=ds_source.isel({append_dim : slice(source_ind_max, source_ind_size)}),
+                                repo=repo,
+                                dest=dest,
+                                commit_message=app_commit_message,
+                                branch=branch,
+                                append_dim=append_dim
+                                )
+    else:
+        # == No intersection -> append all source values to target IcechunkStore == #
+        _append_to_icechunk(data=ds_source,
+                            repo=repo,
+                            dest=dest,
+                            commit_message=commit_message,
+                            branch=branch,
+                            append_dim=append_dim
+                            )
 
 
 def _preprocess_dataset(file: list[str] | str | xr.Dataset,
@@ -651,12 +909,11 @@ def send(
                                       attrs=attrs,
                                       parallel=False,
                                       )
+    if variables is None:
+        variables = list(ds_filepath.data_vars)
 
     # === Send Variables to Individual Zarr Stores === #
     if send_vars_indep:
-        if variables is None:
-            variables = list(ds_filepath.data_vars)
-
         for var in variables:
             logging.info(f"Sending Variable {var}")
             dest = f"{bucket}/{object_prefix}/{var}"
@@ -677,7 +934,7 @@ def send(
         dest = f"{bucket}/{object_prefix}"
         logging.info(f"Sending Dataset to {dest}")
         asyncio.run(
-            _write_to_zarr(data=ds_filepath,
+            _write_to_zarr(data=ds_filepath[variables],
                            obj_store=obj_store,
                            dest=dest,
                            version=zarr_version
@@ -771,12 +1028,11 @@ def send_with_dask(
                                           attrs=attrs,
                                           parallel=True,
                                           )
+        if variables is None:
+            variables = list(ds_filepath.data_vars)
         
         # === Send Variables to Individual Zarr Stores === #
         if send_vars_indep:
-            if variables is None:
-                variables = list(ds_filepath.data_vars)
-
             for var in variables:
                 logging.info(f"Sending Variable {var}")
                 dest = f"{bucket}/{object_prefix}/{var}"
@@ -797,7 +1053,7 @@ def send_with_dask(
             dest = f"{bucket}/{object_prefix}"
             logging.info(f"Sending Dataset to {dest}")
             asyncio.run(
-                _write_to_zarr(data=ds_filepath,
+                _write_to_zarr(data=ds_filepath[variables],
                                obj_store=obj_store,
                                dest=dest,
                                version=zarr_version
@@ -915,7 +1171,8 @@ def _send_to_icechunk(
     rechunk: Optional[dict] = None,
     attrs: Optional[dict] = None,
     branch: str = "main",
-    commit_message: str = "Initial commit",
+    commit_message: str = "Add new data to my Icechunk repository",
+    variable_commits: bool = False,
     icechunk_config: Optional[dict] = None,
     ) -> None:
     """
@@ -951,6 +1208,9 @@ def _send_to_icechunk(
         Branch on which to write data to IcechunkStore.
     commit_message: str, default="Initial commit"
         Commit message when updating the Icechunk repository.
+    variable_commits: bool, default=False
+        Whether to write each variable to Icechunk repository using
+        separate commits.
     icechunk_config: dict, optional
         Icechunk repository configuration.
     """
@@ -977,11 +1237,16 @@ def _send_to_icechunk(
                                       parallel=True,
                                       )
 
+    # Consider variables with append dimension only:
+    if variables is None:
+        variables = list(ds_filepath.data_vars)
+    variables = [var for var in variables if append_dim in ds_filepath[var].dims]
+
+    # Extract append dimension values:
+    source_append_dim = ds_filepath[append_dim].values
+
     # === Send Variables to Individual Icechunk Repos === #
     if send_vars_indep:
-        if variables is None:
-            variables = list(ds_filepath.data_vars)
-
         for var in variables:
             logging.info(f"Sending Variable {var}")
             try:
@@ -993,38 +1258,55 @@ def _send_to_icechunk(
                                                       storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
                                                       )
                 # Write data and commit to the repo:
+                snd_commit_message = f"{commit_message} -> Sent {var} along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
                 _write_to_icechunk(data=ds_filepath[var],
                                    dest=f"{bucket}/{object_prefix}/{var}",
                                    repo=repo,
-                                   commit_message=commit_message,
+                                   commit_message=snd_commit_message,
                                    branch=branch,
                                    )
             except icechunk.IcechunkError:
-                logging.info(f"Skipping Variable: Store already exists at {bucket}/{object_prefix}/{var}")
+                logging.info(f"Skipping Variable: Icechunk repository already exists at {bucket}/{object_prefix}/{var}")
 
         # Release resources to avoid memory leaks:
         ds_filepath.close()
 
     else:
-        # === Send Dataset to Single Icechunk Repo === #
-        logging.info(f"Sending Dataset {object_prefix}")
+        # === Send Variables to Single Icechunk Repo === #
         try:
             # Create new Icechunk repo:
             repo = obj_store.create_icechunk_repo(bucket=bucket,
-                                                  prefix=object_prefix,
-                                                  storage_config_kwargs=icechunk_config["storage_config_kwargs"],
-                                                  repository_config_kwargs=icechunk_config["repository_config_kwargs"],
-                                                  storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
-                                                  )
-            # Write data and commit to the repo:
-            _write_to_icechunk(data=ds_filepath,
-                               dest=f"{bucket}/{object_prefix}",
-                               repo=repo,
-                               commit_message=commit_message,
-                               branch=branch,
-                               )
+                                                prefix=object_prefix,
+                                                storage_config_kwargs=icechunk_config["storage_config_kwargs"],
+                                                repository_config_kwargs=icechunk_config["repository_config_kwargs"],
+                                                storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
+                                                )
+            if variable_commits:
+                for var in variables:
+                    logging.info(f"Sending Variable {var}")
+                    snd_commit_message = f"{commit_message} -> Sent {var} along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
+                    # Write each variable using separate commits to the repo:
+                    _write_to_icechunk(data=ds_filepath[var],
+                                       dest=f"{bucket}/{object_prefix}",
+                                       repo=repo,
+                                       commit_message=snd_commit_message,
+                                       branch=branch,
+                                       )
+            else:
+                # Write all variables using single commit to the repo:
+                logging.info(f"Sending Dataset {object_prefix}")
+                snd_commit_message = f"{commit_message} -> Sent dataset along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
+                _write_to_icechunk(data=ds_filepath[variables],
+                                   dest=f"{bucket}/{object_prefix}",
+                                   repo=repo,
+                                   commit_message=snd_commit_message,
+                                   branch=branch,
+                                   )
         except icechunk.IcechunkError:
-            logging.info(f"Skipping Dataset: Store already exists at {bucket}/{object_prefix}")
+            if variable_commits:
+                logging.info(f"Skipping Dataset: Icechunk repository already exists at {bucket}/{object_prefix}/{var}")
+            else:
+                logging.info(f"Skipping Dataset: Icechunk repository already exists at {bucket}/{object_prefix}")
 
         # Release resources to avoid memory leaks:
         ds_filepath.close()
@@ -1035,7 +1317,7 @@ def send_to_icechunk(
     bucket: str,
     object_prefix: str,
     store_credentials_json: str,
-    variables: list[str] | str = 'all',
+    variables: Optional[list[str]] = None,
     send_vars_indep: bool = True,
     append_dim: Optional[str] = 'time_counter',
     grid_filepath: Optional[str] = None,
@@ -1043,14 +1325,15 @@ def send_to_icechunk(
     rechunk: Optional[dict] = None,
     attrs: Optional[dict] = None,
     branch: str = "main",
-    commit_message: str = "Initial commit",
+    commit_message: str = "Add new data to my Icechunk repository",
+    variable_commits: bool = False,
     dask_config_kwargs: Optional[dict] = None,
     dask_cluster_kwargs: Optional[dict] = None,
     icechunk_config: Optional[dict] = None,
     ) -> None:
     """
-    Write data in parallel to new icechunk repository in
-    cloud object storage with or without dask.
+    Write data to new Icechunk repository in cloud object storage with
+    option of using dask.
 
     Parameters
     ----------
@@ -1064,7 +1347,7 @@ def send_to_icechunk(
         Prefix to be added to the object names in the object store.
     store_credentials_json: str
         Path to the JSON file containing the object store credentials.
-    variables: list | str, default="all"
+    variables: list[str], default=None
         List of variables to send. If None, all variables will be sent.
     send_vars_indep: bool, default=True
         Whether to send variables as separate objects, by default True.
@@ -1082,6 +1365,9 @@ def send_to_icechunk(
         Branch on which to write data to IcechunkStore.
     commit_message: str, default="Initial commit"
         Commit message when updating the Icechunk repository.
+    variable_commits: bool, default=False
+        Whether to write each variable to Icechunk repository using
+        separate commits.
     dask_config_kwargs: dict, optional
         Dask configuration settings passed to dask.config.set().
     dask_cluster_kwargs: dict, optional
@@ -1089,7 +1375,7 @@ def send_to_icechunk(
     icechunk_config: dict, optional
         Icechunk repository configuration.
     """
-    # === Send to Icechunk with Dask === #
+    # === Send to Icechunk repo(s) with Dask === #
     if dask_cluster_kwargs is not None:
         if dask_config_kwargs is not None:
             dask.config.set(dask_config_kwargs)
@@ -1099,11 +1385,9 @@ def send_to_icechunk(
         with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster) as client:
             logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
 
-            # --- Register Dask Worker Plugin --- #
             # Catch UserWarnings when rechunking data:
             client.register_worker_plugin(CaptureWarningsPlugin())
 
-            # --- Send Data to new Icechunk repo --- #
             _send_to_icechunk(file=file,
                               bucket=bucket,
                               object_prefix=object_prefix,
@@ -1117,6 +1401,7 @@ def send_to_icechunk(
                               attrs=attrs,
                               branch=branch,
                               commit_message=commit_message,
+                              variable_commits=variable_commits,
                               icechunk_config=icechunk_config
                               )
 
@@ -1126,7 +1411,7 @@ def send_to_icechunk(
             logging.info("Dask Cluster has been shutdown.")
     
     else:
-        # === Send to Icechunk without Dask === #
+        # === Send to Icechunk repo(s) without Dask === #
         _send_to_icechunk(file=file,
                           bucket=bucket,
                           object_prefix=object_prefix,
@@ -1140,6 +1425,7 @@ def send_to_icechunk(
                           attrs=attrs,
                           branch=branch,
                           commit_message=commit_message,
+                          variable_commits=variable_commits,
                           icechunk_config=icechunk_config
                           )
 
@@ -1471,6 +1757,253 @@ def update_zarr(
                          dask_config_kwargs,
                          dask_cluster_kwargs,
                          zarr_version
+                         )
+
+
+def _update_icechunk(
+    file: list[str] | str | xr.Dataset,
+    bucket: str,
+    object_prefix: str,
+    store_credentials_json: str,
+    variables: list[str] | str = 'all',
+    send_vars_indep: bool = True,
+    append_dim: Optional[str] = 'time_counter',
+    grid_filepath: Optional[str] = None,
+    update_coords: Optional[dict] = None,
+    rechunk: Optional[dict] = None,
+    attrs: Optional[dict] = None,
+    branch: str = "main",
+    commit_message: str = "Update data in my Icechunk repository",
+    icechunk_config: Optional[dict] = None,
+    ) -> None:
+    """
+    Update data in existing Icechunk repository in cloud object storage.
+
+    Parameters
+    ----------
+    file: list | str | xarray.Dataset
+        Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
+    bucket: str
+        Name of the bucket in the object store. Bucket names can contain only
+        lowercase letters, numbers, dots (.), and hyphens (-).
+    object_prefix: str
+        Prefix to be added to the object names in the object store.
+    store_credentials_json: str
+        Path to the JSON file containing the object store credentials.
+    variables: list | str, default="all"
+        List of variables to send. If None, all variables will be sent.
+    send_vars_indep: bool, default=True
+        Whether to send variables as separate objects, by default True.
+    append_dim: str, default='time_counter'
+        Name of the dimension to append multifile datasets.
+    grid_filepath: str, optional
+        Path to file containing model grid parameter.
+    update_coords: dict, optional
+        Dictionary of coordinate variables to update.
+    rechunk: dict, optional
+        Rechunk strategy dictionary, by default None.
+    attrs: dict, optional
+        Attributes to add to the dataset.
+    branch: str, default="main"
+        Branch on which to write data to IcechunkStore.
+    commit_message: str, default="Update commit"
+        Commit message when updating the Icechunk repository.
+    icechunk_config: dict, optional
+        Icechunk repository configuration.
+    """
+    # === Initialise Synchronous Object Store === #
+    logging.info("Reading object store credentials from %s", store_credentials_json)
+    obj_store = ObjectStoreS3(anon=False,
+                              asynchronous=False,
+                              store_credentials_json=store_credentials_json
+                              )
+
+    if icechunk_config is None:
+        icechunk_config = {"storage_config_kwargs":{},
+                           "repository_config_kwargs":{},
+                           "storage_settings_kwargs":{}
+                           }
+
+    # === Preprocess Data === #
+    ds_filepath = _preprocess_dataset(file=file,
+                                      rechunk=rechunk,
+                                      append_dim=append_dim,
+                                      update_coords=update_coords,
+                                      grid_filepath=grid_filepath,
+                                      attrs=attrs,
+                                      parallel=True,
+                                      )
+
+    if variables is None:
+        variables = list(ds_filepath.data_vars)
+    # Consider variables with append dimension only:
+    variables = [var for var in variables if append_dim in ds_filepath[var].dims]
+
+    # === Update Variables in Individual Icechunk Repos === #
+    if send_vars_indep:
+        for var in variables:
+            logging.info(f"Updating Variable {var}")
+            try:
+                # Open existing Icechunk repo:
+                repo = obj_store.open_icechunk_repo(bucket=bucket,
+                                                    prefix=f"{object_prefix}/{var}",
+                                                    storage_config_kwargs=icechunk_config["storage_config_kwargs"],
+                                                    repository_config_kwargs=icechunk_config["repository_config_kwargs"],
+                                                    storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
+                                                    )
+                # Update and commit to the repo:
+                _update_icechunk_store(data=ds_filepath[var],
+                                       dest=f"{bucket}/{object_prefix}/{var}",
+                                       repo=repo,
+                                       commit_message=commit_message,
+                                       branch=branch,
+                                       append_dim=append_dim,
+                                       rechunk=rechunk,
+                                       )
+            except icechunk.IcechunkError:
+                logging.info(f"Skipping Variable: Icechunk repository does not exist at {bucket}/{object_prefix}/{var}")
+
+        # Release resources to avoid memory leaks:
+        ds_filepath.close()
+
+    else:
+        # === Update Variables in Single Icechunk Repo === #
+        try:
+            # Open existing Icechunk repo:
+            repo = obj_store.open_icechunk_repo(bucket=bucket,
+                                                prefix=object_prefix,
+                                                storage_config_kwargs=icechunk_config["storage_config_kwargs"],
+                                                repository_config_kwargs=icechunk_config["repository_config_kwargs"],
+                                                storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
+                                                )
+
+            # Update dataset using single commit to the repo:
+            logging.info(f"Updating Dataset {object_prefix}")
+            _update_icechunk_store(data=ds_filepath,
+                                    dest=f"{bucket}/{object_prefix}",
+                                    repo=repo,
+                                    commit_message=commit_message,
+                                    branch=branch,
+                                    append_dim=append_dim,
+                                    rechunk=rechunk,
+                                    )
+        except icechunk.IcechunkError:
+            logging.info(f"Skipping Dataset: Icechunk repository does not exist at {bucket}/{object_prefix}/{var}")
+
+        # Release resources to avoid memory leaks:
+        ds_filepath.close()
+
+
+def update_icechunk(
+    file: list[str] | str | xr.Dataset,
+    bucket: str,
+    object_prefix: str,
+    store_credentials_json: str,
+    variables: list[str] | str = 'all',
+    send_vars_indep: bool = True,
+    append_dim: Optional[str] = 'time_counter',
+    grid_filepath: Optional[str] = None,
+    update_coords: Optional[dict] = None,
+    rechunk: Optional[dict] = None,
+    attrs: Optional[dict] = None,
+    branch: str = "main",
+    commit_message: str = "Update data in my Icechunk repository",
+    dask_config_kwargs: Optional[dict] = None,
+    dask_cluster_kwargs: Optional[dict] = None,
+    icechunk_config: Optional[dict] = None,
+    ) -> None:
+    """
+    Update data in existing Icechunk repository in cloud object
+    storage with option of using dask.
+
+    Parameters
+    ----------
+    file: list | str | xarray.Dataset
+        Regular expression or list of filepaths to netCDF file(s).
+        Users can also pass a single xarray.Dataset directly.
+    bucket: str
+        Name of the bucket in the object store. Bucket names can contain only
+        lowercase letters, numbers, dots (.), and hyphens (-).
+    object_prefix: str
+        Prefix to be added to the object names in the object store.
+    store_credentials_json: str
+        Path to the JSON file containing the object store credentials.
+    variables: list | str, default="all"
+        List of variables to send. If None, all variables will be sent.
+    send_vars_indep: bool, default=True
+        Whether to send variables as separate objects, by default True.
+    append_dim: str, default='time_counter'
+        Name of the dimension to append multifile datasets.
+    grid_filepath: str, optional
+        Path to file containing model grid parameter.
+    update_coords: dict, optional
+        Dictionary of coordinate variables to update.
+    rechunk: dict, optional
+        Rechunk strategy dictionary, by default None.
+    attrs: dict, optional
+        Attributes to add to the dataset.
+    branch: str, default="main"
+        Branch on which to write data to IcechunkStore.
+    commit_message: str, default="Initial commit"
+        Commit message when updating the Icechunk repository.
+    dask_config_kwargs: dict, optional
+        Dask configuration settings passed to dask.config.set().
+    dask_cluster_kwargs: dict, optional
+        Dask cluster configuration settings passed to LocalCluster().
+    icechunk_config: dict, optional
+        Icechunk repository configuration.
+    """
+    # === Update Icechunk repo(s) with Dask === #
+    if dask_cluster_kwargs is not None:
+        if dask_config_kwargs is not None:
+            dask.config.set(dask_config_kwargs)
+            logging.info("Updated dask configuration settings.")
+
+        # Create local dask cluster & client:
+        with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster) as client:
+            logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
+
+            # Catch UserWarnings when rechunking data:
+            client.register_worker_plugin(CaptureWarningsPlugin())
+
+            _update_icechunk(file=file,
+                             bucket=bucket,
+                             object_prefix=object_prefix,
+                             store_credentials_json=store_credentials_json,
+                             variables=variables,
+                             send_vars_indep=send_vars_indep,
+                             append_dim=append_dim,
+                             grid_filepath=grid_filepath,
+                             update_coords=update_coords,
+                             rechunk=rechunk,
+                             attrs=attrs,
+                             branch=branch,
+                             commit_message=commit_message,
+                             icechunk_config=icechunk_config
+                             )
+
+            # --- Shutdown Store & Dask Cluster --- #
+            client.shutdown()
+            client.close()
+            logging.info("Dask Cluster has been shutdown.")
+    
+    else:
+        # === Update Icechunk repo(s) without Dask === #
+        _update_icechunk(file=file,
+                         bucket=bucket,
+                         object_prefix=object_prefix,
+                         store_credentials_json=store_credentials_json,
+                         variables=variables,
+                         send_vars_indep=send_vars_indep,
+                         append_dim=append_dim,
+                         grid_filepath=grid_filepath,
+                         update_coords=update_coords,
+                         rechunk=rechunk,
+                         attrs=attrs,
+                         branch=branch,
+                         commit_message=commit_message,
+                         icechunk_config=icechunk_config
                          )
 
 
