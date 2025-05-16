@@ -24,6 +24,7 @@ store_credentials_json=.../jasmin_os_credentials.json
 
 # Bucket and object prefix:
 bucket=npd-eorca1-era5
+prefix=T1y
 
 # Define append dimension:
 append_dim=time_counter
@@ -54,10 +55,9 @@ if [ ! -f "$store_credentials_json" ]; then
 fi
 
 # -- Send eORCA1 ERA-5 annual mean outputs to object store -- # 
-echo "In Progress: Sending example eORCA1 ERA-5 T1y file to object store..."
-ods update_zarr -f "$filepath_gridT" -c "$store_credentials_json" -b "$bucket" -p T1y \
+echo "In Progress: Updating example eORCA1 ERA-5 T1y dataset in single store..."
+ods update_zarr -f "$filepath_gridT" -c "$store_credentials_json" -b "$bucket" -p $prefix \
                 -gf "$filepath_grid" -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}' \
-                -a $append_dim \
-                -cs '{"x":360,"y":331,"deptht":25}' || { echo "Error: ods update command failed."; exit 1; }
+                -a $append_dim -cs '{"x":360,"y":331,"deptht":25}' || { echo "Error: ods update_zarr command failed."; exit 1; }
 
 echo "Success: Updated eORCA1 ERA-5 T1y zarr store."

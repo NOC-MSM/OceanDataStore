@@ -137,7 +137,8 @@ For further examples of how to implement the commands in **OceanDataStore** in y
 |---|---|---|
 | `--prefix` | `-p` | Object prefix (default=`None`). |
 | `--append-dim` | `-ad` | Append dimension (default=`time_counter`). |
-| `--variables` | `-v` | Variables to send (default=`None`). If `None`, all variables will be sent. If `consolidated`, the variables will be sent to a single consolidated zarr store. |
+| `--variables` | `-v` | Variables to send (default=`None`). If `None`, all variables will be sent. |
+| `--variable-stores` | `-vs` | Flag to send variables to independent stores. |
 | `--chunk-strategy` | `-cs` | Chunk strategy as a JSON string (default=`None`). E.g., '{\"time_counter\": 1, \"x\": 100, \"y\": 100}' |
 | `--dask-configuration` | `-dc` | Path to the JSON file defining the Dask Local Cluster configuration (default=`None`). |
 | `--grid-filepath` | `-gf` | File path to model grid file containing domain information (default=`None`). |
