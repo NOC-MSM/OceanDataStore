@@ -653,6 +653,7 @@ def _update_icechunk_store(data: xr.DataArray | xr.Dataset,
         ds_source = data.to_dataset()
     else:
         var = None
+        ds_source = data
 
     # Check source Dataset compatibility with existing store:
     _check_icechunk_compatibility(data=ds_source,
@@ -671,63 +672,75 @@ def _update_icechunk_store(data: xr.DataArray | xr.Dataset,
     target_append_dim = ds_target[append_dim].values
     source_append_dim = ds_source[append_dim].values
 
-    # Determine intersection between source & target append dimensions:
-    intersect_append_dim = np.intersect1d(source_append_dim, target_append_dim)
+    # === Update existing variable in IcechunkStore === #
+    if (var in ds_target.data_vars) or (var is None):
+        # Determine intersection between source & target append dimensions:
+        intersect_append_dim = np.intersect1d(source_append_dim, target_append_dim)
 
-    if intersect_append_dim.size != 0:
-        # == Intersection exists -> replace overlapping values in target store == #
+        if intersect_append_dim.size != 0:
+            # == Intersection exists -> replace overlapping values in target store == #
 
-        # Ensure all overlapping values exist along target append dimension:
-        overlap_append_dim = (source_append_dim <= target_append_dim[-1]).sum()
-        if intersect_append_dim.size != overlap_append_dim:
-            raise AppendDimensionSizeError(dim=append_dim, size=overlap_append_dim, expected_size=intersect_append_dim.size)
-        
-        # Determine source and target append dimension indices of overlap:
-        target_ind_min = np.flatnonzero(target_append_dim == source_append_dim[0])[0]
-        target_ind_max = target_append_dim.size
-        source_ind_min = 0
-        source_ind_max = target_ind_max - target_ind_min
-        source_ind_size = source_append_dim.size
+            # Ensure all overlapping values exist along target append dimension:
+            overlap_append_dim = (source_append_dim <= target_append_dim[-1]).sum()
+            if intersect_append_dim.size != overlap_append_dim:
+                raise AppendDimensionSizeError(dim=append_dim, size=overlap_append_dim, expected_size=intersect_append_dim.size)
+            
+            # Determine source and target append dimension indices of overlap:
+            target_ind_min = np.flatnonzero(target_append_dim == source_append_dim[0])[0]
+            target_ind_max = target_append_dim.size
+            source_ind_min = 0
+            source_ind_max = target_ind_max - target_ind_min
+            source_ind_size = source_append_dim.size
 
-        # 1. Replace overlapping values in target IcechunkStore:
-        logging.info(f"Updating {dest} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}.")
-        if var is not None:
-            rep_commit_message = f"{commit_message} -> Updated {var} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}."
-        else:
-            rep_commit_message = f"{commit_message} -> Updated {dest} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}."
-
-        _replace_in_icechunk(data=ds_source.isel({append_dim : slice(source_ind_min, source_ind_max)}),
-                             repo=repo,
-                             dest=dest,
-                             region={append_dim : slice(target_ind_min, target_ind_max)},
-                             commit_message=rep_commit_message,
-                             branch=branch
-                             )
-
-        # 2. Append new values to target IcechunkStore:
-        if source_ind_size > source_ind_max:
-            logging.info(f"Appending to {dest} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}.")
+            # 1. Replace overlapping values in target IcechunkStore:
+            logging.info(f"Updating {dest} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}.")
             if var is not None:
-                app_commit_message = f"{commit_message} -> Appended to {var} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}."
+                rep_commit_message = f"{commit_message} -> Updated {var} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}."
             else:
-                app_commit_message = f"{commit_message} -> Appended to {dest} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}."
+                rep_commit_message = f"{commit_message} -> Updated {dest} along {append_dim} from {target_append_dim[target_ind_min]} to {target_append_dim[target_ind_max - 1]}."
 
-            _append_to_icechunk(data=ds_source.isel({append_dim : slice(source_ind_max, source_ind_size)}),
+            _replace_in_icechunk(data=ds_source.isel({append_dim : slice(source_ind_min, source_ind_max)}),
                                 repo=repo,
                                 dest=dest,
-                                commit_message=app_commit_message,
+                                region={append_dim : slice(target_ind_min, target_ind_max)},
+                                commit_message=rep_commit_message,
+                                branch=branch
+                                )
+
+            # 2. Append new values to target IcechunkStore:
+            if source_ind_size > source_ind_max:
+                logging.info(f"Appending to {dest} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}.")
+                if var is not None:
+                    app_commit_message = f"{commit_message} -> Appended to {var} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}."
+                else:
+                    app_commit_message = f"{commit_message} -> Appended to {dest} along {append_dim} from {source_append_dim[source_ind_max]} to {source_append_dim[source_ind_size - 1]}."
+
+                _append_to_icechunk(data=ds_source.isel({append_dim : slice(source_ind_max, source_ind_size)}),
+                                    repo=repo,
+                                    dest=dest,
+                                    commit_message=app_commit_message,
+                                    branch=branch,
+                                    append_dim=append_dim
+                                    )
+        else:
+            # == No intersection -> append all source values to target IcechunkStore == #
+            _append_to_icechunk(data=ds_source,
+                                repo=repo,
+                                dest=dest,
+                                commit_message=commit_message,
                                 branch=branch,
                                 append_dim=append_dim
                                 )
     else:
-        # == No intersection -> append all source values to target IcechunkStore == #
-        _append_to_icechunk(data=ds_source,
-                            repo=repo,
-                            dest=dest,
-                            commit_message=commit_message,
-                            branch=branch,
-                            append_dim=append_dim
-                            )
+        # == Add new variable to IcechunkStore == #
+        logging.info(f"Sending Variable {var}")
+        snd_commit_message = f"{commit_message} -> Sent {var} along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
+        _write_to_icechunk(data=ds_source,
+                           dest=dest,
+                           repo=repo,
+                           commit_message=snd_commit_message,
+                           branch=branch,
+                           )
 
 
 def _preprocess_dataset(file: list[str] | str | xr.Dataset,
@@ -1774,6 +1787,7 @@ def _update_icechunk(
     attrs: Optional[dict] = None,
     branch: str = "main",
     commit_message: str = "Update data in my Icechunk repository",
+    variable_commits: bool = False,
     icechunk_config: Optional[dict] = None,
     ) -> None:
     """
@@ -1809,6 +1823,9 @@ def _update_icechunk(
         Branch on which to write data to IcechunkStore.
     commit_message: str, default="Update commit"
         Commit message when updating the Icechunk repository.
+    variable_commits: bool, default=False
+        Whether to write each variable to Icechunk repository using
+        separate commits.
     icechunk_config: dict, optional
         Icechunk repository configuration.
     """
@@ -1878,16 +1895,30 @@ def _update_icechunk(
                                                 storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
                                                 )
 
-            # Update dataset using single commit to the repo:
-            logging.info(f"Updating Dataset {object_prefix}")
-            _update_icechunk_store(data=ds_filepath,
-                                    dest=f"{bucket}/{object_prefix}",
-                                    repo=repo,
-                                    commit_message=commit_message,
-                                    branch=branch,
-                                    append_dim=append_dim,
-                                    rechunk=rechunk,
-                                    )
+            if variable_commits:
+                for var in variables:
+                    logging.info(f"Updating Variable {var}")
+                    # Update each variable using separate commits to the repo:
+                    _update_icechunk_store(data=ds_filepath[var],
+                                           dest=f"{bucket}/{object_prefix}",
+                                           repo=repo,
+                                           commit_message=commit_message,
+                                           branch=branch,
+                                           append_dim=append_dim,
+                                           rechunk=rechunk,
+                                           )
+            else:
+                # Update dataset using single commit to the repo:
+                logging.info(f"Updating Dataset {object_prefix}")
+                _update_icechunk_store(data=ds_filepath,
+                                       dest=f"{bucket}/{object_prefix}",
+                                       repo=repo,
+                                       commit_message=commit_message,
+                                       branch=branch,
+                                       append_dim=append_dim,
+                                       rechunk=rechunk,
+                                       )
+
         except icechunk.IcechunkError:
             logging.info(f"Skipping Dataset: Icechunk repository does not exist at {bucket}/{object_prefix}/{var}")
 
@@ -1909,6 +1940,7 @@ def update_icechunk(
     attrs: Optional[dict] = None,
     branch: str = "main",
     commit_message: str = "Update data in my Icechunk repository",
+    variable_commits: bool = False,
     dask_config_kwargs: Optional[dict] = None,
     dask_cluster_kwargs: Optional[dict] = None,
     icechunk_config: Optional[dict] = None,
@@ -1947,6 +1979,9 @@ def update_icechunk(
         Branch on which to write data to IcechunkStore.
     commit_message: str, default="Initial commit"
         Commit message when updating the Icechunk repository.
+    variable_commits: bool, default=False
+        Whether to write each variable to Icechunk repository using
+        separate commits.
     dask_config_kwargs: dict, optional
         Dask configuration settings passed to dask.config.set().
     dask_cluster_kwargs: dict, optional
@@ -1980,6 +2015,7 @@ def update_icechunk(
                              attrs=attrs,
                              branch=branch,
                              commit_message=commit_message,
+                             variable_commits=variable_commits,
                              icechunk_config=icechunk_config
                              )
 
@@ -2003,6 +2039,7 @@ def update_icechunk(
                          attrs=attrs,
                          branch=branch,
                          commit_message=commit_message,
+                         variable_commits=variable_commits,
                          icechunk_config=icechunk_config
                          )
 

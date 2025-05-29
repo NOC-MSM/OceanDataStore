@@ -174,6 +174,7 @@ def process_action(args):
             attrs=args.attrs,
             branch=args.branch,
             commit_message=args.commit_message,
+            variable_commits=args.var_commits,
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
             icechunk_config=icechunk_config,
