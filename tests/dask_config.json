@@ -1,0 +1,10 @@
+{
+    "config_kwargs": {
+        "temporary_directory":"/dssgfs01/working/otooth/AtlantiS/jasmin_os/OceanDataStore/tests/", "local_directory":"/dssgfs01/working/otooth/AtlantiS/jasmin_os/OceanDataStore/tests/"
+    },
+    "cluster_kwargs": {
+        "n_workers" : 10,
+        "threads_per_worker" : 1,
+        "memory_limit":"2.5GB"
+    }
+}
