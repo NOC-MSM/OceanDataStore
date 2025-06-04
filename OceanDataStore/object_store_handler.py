@@ -655,17 +655,6 @@ def _update_icechunk_store(data: xr.DataArray | xr.Dataset,
         var = None
         ds_source = data
 
-    # Check source Dataset compatibility with existing store:
-    _check_icechunk_compatibility(data=ds_source,
-                                  dest=dest,
-                                  repo=repo,
-                                  branch=branch,
-                                  append_dim=append_dim,
-                                  rechunk=rechunk,
-                                  )
-    logging.info(f"Passed Compatibility Checks for IcechunkStore {dest}")
-
-    # === Updating existing IcechunkStore === #
     # Extract source & target append dimension values:
     store = repo.readonly_session(branch=branch).store
     ds_target = xr.open_zarr(store, consolidated=False)
@@ -674,6 +663,16 @@ def _update_icechunk_store(data: xr.DataArray | xr.Dataset,
 
     # === Update existing variable in IcechunkStore === #
     if (var in ds_target.data_vars) or (var is None):
+        # Check source Dataset compatibility with existing store:
+        _check_icechunk_compatibility(data=ds_source,
+                                    dest=dest,
+                                    repo=repo,
+                                    branch=branch,
+                                    append_dim=append_dim,
+                                    rechunk=rechunk,
+                                    )
+        logging.info(f"Passed Compatibility Checks for IcechunkStore {dest}")
+
         # Determine intersection between source & target append dimensions:
         intersect_append_dim = np.intersect1d(source_append_dim, target_append_dim)
 
