@@ -48,7 +48,7 @@ class OceanDataCatalog:
                  catalog_url: str = None
                  ):
         # Define the URL to the NOC STAC root catalog:
-        self._stac_url = catalog_url or f"https://raw.githubusercontent.com/NOC-MSM/OceanDataStore/6-add-basic-catalogs-to-access-data-stores/catalogs/{catalog_name}/catalog.json"
+        self._stac_url = catalog_url or f"https://raw.githubusercontent.com/NOC-MSM/OceanDataStore/dev/catalogs/{catalog_name}/catalog.json"
         # Store the root catalog as a class attribute:
         self.Catalog = pystac.read_file(self._stac_url)
 
