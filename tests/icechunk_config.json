@@ -1,0 +1,11 @@
+{
+    "storage_config_kwargs": {
+        "region": "",
+        "force_path_style": "True"
+    },
+    "repository_config_kwargs": {},
+    "storage_settings_kwargs": {
+        "unsafe_use_conditional_update": "False",
+        "unsafe_use_conditional_create": "False"
+    }
+}

@@ -1,0 +1,29 @@
+{
+  "type": "Catalog",
+  "id": "noc-model-stac",
+  "stac_version": "1.1.0",
+  "description": "National Oceanography Centre Spatio-Temporal Asset Catalog for Ocean Model Data",
+  "links": [
+    {
+      "rel": "root",
+      "href": "./catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "child",
+      "href": "./noc-npd/collection.json",
+      "type": "application/json",
+      "title": "NOC Near-Present Day Collection"
+    }
+  ],
+  "created": "2025-07-09T16:01:12.077681",
+  "last_update": "2025-07-09T16:01:12.077718",
+  "catalog_version": "0.1.0",
+  "contacts": [
+    "Oliver Tooth (oliver.tooth@noc.ac.uk)",
+    "Adam Blaker (atb299@noc.ac.uk)",
+    "Andrew Coward (acc@noc.ac.uk)"
+  ],
+  "title": "NOC Model STAC Catalog"
+}

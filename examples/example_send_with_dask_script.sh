@@ -27,6 +27,10 @@ dask_config_json=..../dask_config.json
 
 # Bucket and object prefix:
 bucket=npd-eorca1-era5
+prefix=T1y
+
+# Define append dimension:
+append_dim=time_counter
 
 # -- Python Environment -- #
 # Activate miniconda environment:
@@ -59,10 +63,10 @@ if [ ! -f "$dask_config_json" ]; then
 fi
 
 # -- Send eORCA1 ERA-5 annual mean outputs to JASMIN OS -- # 
-echo "In Progress: Sending eORCA1 ERA-5 T1y variables to JASMIN object store..."
-ods send_to_zarr -f $filepath_gridT -c $store_credentials_json -b $bucket -p T1y \
+echo "In Progress: Sending eORCA1 ERA-5 T1y variables to independent stores..."
+ods send_to_zarr -f $filepath_gridT -c $store_credentials_json -b $bucket -p $prefix \
                  -gf $filepath_grid -uc '{"nav_lon":"glamt", "nav_lat":"gphit"}' \
-                 -cs '{"x":360,"y":331,"deptht":25}' \
+                 -cs '{"x":360,"y":331,"deptht":25}' -ad $append_dim -vs \
                  -dc $dask_config_json || { echo "Error: ods send_to_zarr command failed."; exit 1; }
 
-echo "Success: Sent files to eORCA1 ERA-5 T1y zarr store."
+echo "Success: Sent files to eORCA1 ERA-5 T1y zarr stores."

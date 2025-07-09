@@ -1,7 +1,5 @@
-dask[complete]>=2023.3.0
-xarray[io,accel,viz]>=2023.3.0
-s3fs>=2023.3.0
-fsspec>=2023.1.0
-scitools-iris>=3.9.0
-tenacity>=8.3.0
-intake
+pystac
+xarray
+icechunk
+pytest
+numpy
