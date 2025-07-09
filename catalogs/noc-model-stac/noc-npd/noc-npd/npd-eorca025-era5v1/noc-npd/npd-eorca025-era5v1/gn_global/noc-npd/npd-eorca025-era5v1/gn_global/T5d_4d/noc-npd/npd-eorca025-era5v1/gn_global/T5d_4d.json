@@ -41,21 +41,21 @@
     "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics 5-day mean outputs defined at T-points.",
     "platform": "gn_global",
     "variables": [
-      "e3t",
       "so_abs",
-      "rsdo",
-      "vohflisf",
-      "time_counter_bounds",
-      "vowflisf",
-      "vohfcisf",
       "time_centered_bounds",
-      "thetao_con"
+      "e3t",
+      "time_counter_bounds",
+      "rsdo",
+      "vowflisf",
+      "thetao_con",
+      "vohfcisf",
+      "vohflisf"
     ],
     "dimensions": [
       "y",
       "x",
-      "deptht",
       "time_counter",
+      "deptht",
       "axis_nbounds"
     ],
     "operation": "mean",
@@ -64,7 +64,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-07-09T12:04:13.889810",
+    "latest_data_update": "2025-07-09T16:02:12.825705",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
@@ -86,7 +86,7 @@
   "assets": {
     "T5d_4d": {
       "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-era5v1/gn_global/T5d_4d",
-      "type": "application/vnd+zarr",
+      "type": "application/icechunk",
       "title": "eORCA025 ERA5v1 NPD T5d_4d Icechunk repository",
       "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics 5-day mean outputs defined at T-points.",
       "bucket": "npd-eorca025-era5v1",

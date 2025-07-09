@@ -41,19 +41,19 @@
     "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics 5-day mean outputs defined at V-points.",
     "platform": "gn_global",
     "variables": [
+      "time_counter_bounds",
       "time_centered_bounds",
       "vmo",
       "vo",
-      "vo_eiv",
-      "time_counter_bounds",
       "e3v",
-      "v2o"
+      "v2o",
+      "vo_eiv"
     ],
     "dimensions": [
-      "time_counter",
-      "axis_nbounds",
       "y",
       "x",
+      "time_counter",
+      "axis_nbounds",
       "depthv"
     ],
     "operation": "mean",
@@ -62,7 +62,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-07-09T12:04:20.922193",
+    "latest_data_update": "2025-07-09T16:02:19.672875",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
@@ -84,7 +84,7 @@
   "assets": {
     "V5d_4d": {
       "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-era5v1/gn_global/V5d_4d",
-      "type": "application/vnd+zarr",
+      "type": "application/icechunk",
       "title": "eORCA025 ERA5v1 NPD V5d_4d Icechunk repository",
       "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics 5-day mean outputs defined at V-points.",
       "bucket": "npd-eorca025-era5v1",
