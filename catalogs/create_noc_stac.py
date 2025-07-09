@@ -97,7 +97,7 @@ def create_item_with_asset(ds: xr.Dataset,
         href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{platform}/{prefix}",
         title=f"{config} {prefix} Icechunk repository",
         description=description,
-        media_type=pystac.MediaType.ZARR,
+        media_type="application/icechunk",
         extra_fields=dict(
             bucket=bucket,
             prefix=prefix,
