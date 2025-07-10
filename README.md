@@ -1,21 +1,16 @@
 # OceanDataStore
 
+[**Documentation**](https://noc-msm.github.io/OceanDataStore/)
+
 A Python library designed to streamline writing, updating & accessing ocean model and observational data stored in cloud object storage.
 
 ## Installation
 
-To install the **OceanDataStore** package, first clone the repository from GitHub:
+We recommend downloading and installing **OceanDataStore** into a new virtual environment via GitHub.
 
-```bash
-git clone git@github.com:NOC-MSM/OceanDataStore.git
-```
-
-Next, install **OceanDataStore** in editable mode as follows:
-
-```bash
-cd OceanDataStore
-
-pip install -e .
+After activating a new virtual environment, pip install **OceanDataStore** from GitHub:
+```{bash}
+pip install git+https://github.com/NOC-MSM/OceanDataStore.git
 ```
 
 **Note:** we strongly recommend installing **OceanDataStore** into a new virtual environment using either ``venv`` or ``conda / mamba``.
