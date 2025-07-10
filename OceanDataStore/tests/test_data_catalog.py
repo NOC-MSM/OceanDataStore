@@ -13,7 +13,7 @@ Authors:
 import pytest
 import numpy as np
 import xarray as xr
-from OceanDataStore import OceanDataCatalog
+from ..data_catalog import OceanDataCatalog
 
 # Fixture to instantiate catalog using the default URL
 @pytest.fixture(scope="module")
