@@ -28,7 +28,7 @@ class OceanDataCatalog:
 
     Parameters
     ----------
-    catalog_name : str, default="noc-model-stac"
+    catalog_name : str, optional
         Name of the NOC STAC catalog to use.
     catalog_url : str, optional
         Path or URL to the root STAC catalog. If not provided,
@@ -116,8 +116,8 @@ class OceanDataCatalog:
         """
         Search the NOC STAC Catalog for Items matching the specified criteria.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         collection : str, optional
             Collection name to search for. Default is None,
             which searches the entire root Catalog.
@@ -154,37 +154,37 @@ class OceanDataCatalog:
         Open a dataset from a STAC Item asset using
         xarray and Icechunk.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         id : str
             Item ID to open asset.
-        variables : Sequence[str], default=None
+        variables : Sequence[str], optional
             Variable or list of variables to be parsed from the dataset.
             All variables are included by default.
-        start_datetime : str, default=None
+        start_datetime : str, optional
             Start datetime used to subset the dataset. Should be a string
             in ISO format (e.g., "1976-01-01T00:00:00Z"). The Item
             start_datetime is used by default.
-        end_datetime : str, default=None
+        end_datetime : str, optional
             End datetime used to subset the dataset. Should be a string
             in ISO format (e.g., "2024-12-31T00:00:00Z"). The Item
             end_datetime is used by default.
-        bbox : Tuple[float, float, float, float], default=None
+        bbox : Tuple[float, float, float, float], optional
             Spatial bounding box used to subset the dataset. Should be a list of four floats
             representing the bounding box in the format: (min_lon, min_lat, max_lon, max_lat).
             The Item bbox is used by default.
-        branch : str, default="main"
+        branch : str, optional
             Branch of the Icechunk repository to use. The "main" branch is used by default.
-        asset_key : str, default=None
+        asset_key : str, optional
             Key of the asset to open. The key is inferred from the Item ID by default.
 
-        Returns:
-        --------
+        Returns
+        -------
         xarray.Dataset
             Dataset read from Item asset.
 
-        Raises:
-        -------
+        Raises
+        ------
         ValueError
             If the Item ID or asset key is not found in the catalog.
         ValueError
