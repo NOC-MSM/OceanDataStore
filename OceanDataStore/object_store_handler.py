@@ -723,10 +723,16 @@ def _update_icechunk_store(data: xr.DataArray | xr.Dataset,
                                     )
         else:
             # == No intersection -> append all source values to target IcechunkStore == #
+            logging.info(f"Appending to {dest} along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}.")
+            if var is not None:
+                app_commit_message = f"{commit_message} -> Appended {var} along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
+            else:
+                app_commit_message = f"{commit_message} -> Appended to {dest} along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
+
             _append_to_icechunk(data=ds_source,
                                 repo=repo,
                                 dest=dest,
-                                commit_message=commit_message,
+                                commit_message=app_commit_message,
                                 branch=branch,
                                 append_dim=append_dim
                                 )
