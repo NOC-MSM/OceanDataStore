@@ -1909,7 +1909,7 @@ def _update_icechunk(
             else:
                 # Update dataset using single commit to the repo:
                 logging.info(f"Updating Dataset {object_prefix}")
-                _update_icechunk_store(data=ds_filepath,
+                _update_icechunk_store(data=ds_filepath[variables],
                                        dest=f"{bucket}/{object_prefix}",
                                        repo=repo,
                                        commit_message=commit_message,
