@@ -273,6 +273,42 @@ for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_
     # Add item to the eORCA025 ERA5v1 NPD global native model grid catalog:
     gn_eorca025_era5v1.add_item(item)
 
+# -- Add Items to NOC Near-Present Day eORCA12 ERA5v1 Sub-Catalog -- #
+# Define the store credentials for the eORCA12 ERA5v1 NPD data:
+for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
+               "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
+               ]:
+    # Define S3 storage to read eORCA12 ERA5v1 NPD data:
+    storage = icechunk.s3_storage(
+    bucket="npd-eorca12-era5v1",
+    prefix=prefix,
+    anonymous=True,
+    endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+    force_path_style=True,
+    )
+    # Open Icechunk repository:
+    repo = icechunk.Repository.open(storage=storage)
+    # Open dataset from Icechunk repository:
+    ds = xr.open_zarr(repo.readonly_session(branch="main").store, consolidated=False)
+
+    # Create item with asset for each eORCA12 ERA5v1 NPD prefix:
+    if '1y' in prefix:
+        operation = "annual mean"
+    elif '1m' in prefix:
+        operation = "monthly mean"
+    elif '5d' in prefix:
+        operation = "5-day mean"
+
+    item = create_item_with_asset(
+        ds=ds,
+        bucket="npd-eorca12-era5v1",
+        platform="gn_global",
+        prefix=prefix,
+        config="eORCA12 ERA5v1 NPD",
+        operation=operation
+    )
+    # Add item to the eORCA12 ERA5v1 NPD global native model grid catalog:
+    gn_eorca12_era5v1.add_item(item)
 
 # -- Add Catalogs to NOC Near-Present Day Collection -- #
 npd_eorca1_era5v1.add_child(gn_eorca1_era5v1)
