@@ -1,0 +1,96 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-npd/npd-eorca12-era5v1/gn_global/V1y_3d",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          -90.0
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "properties": {
+    "title": "eORCA12 ERA5v1 NPD V1y_3d Icechunk repository",
+    "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics annual mean outputs defined at V-points.",
+    "platform": "gn_global",
+    "variables": [
+      "hfy",
+      "somesatr",
+      "hfy_adv",
+      "time_centered_bounds",
+      "time_counter_bounds",
+      "hfy_diff",
+      "tauvo"
+    ],
+    "dimensions": [
+      "y",
+      "x",
+      "time_counter",
+      "axis_nbounds"
+    ],
+    "operation": "mean",
+    "operation_frequency": "annual",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "ongoing",
+    "update_frequency": "quarterly",
+    "latest_data_update": "2025-07-30T09:44:58.487543",
+    "start_datetime": "1976-01-01T00:00:00Z",
+    "end_datetime": "2024-12-31T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "eORCA12 ERA5v1 NPD global native model grid Catalog"
+    }
+  ],
+  "assets": {
+    "V1y_3d": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca12-era5v1/gn_global/V1y_3d",
+      "type": "application/icechunk",
+      "title": "eORCA12 ERA5v1 NPD V1y_3d Icechunk repository",
+      "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics annual mean outputs defined at V-points.",
+      "bucket": "npd-eorca12-era5v1",
+      "prefix": "V1y_3d",
+      "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+      "anonymous": true
+    }
+  },
+  "collection": "noc-npd"
+}

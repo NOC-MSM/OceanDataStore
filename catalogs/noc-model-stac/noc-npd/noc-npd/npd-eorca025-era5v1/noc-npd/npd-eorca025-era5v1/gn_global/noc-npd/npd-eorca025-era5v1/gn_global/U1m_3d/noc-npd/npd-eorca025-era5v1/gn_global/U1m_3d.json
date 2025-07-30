@@ -42,11 +42,11 @@
     "platform": "gn_global",
     "variables": [
       "hfx",
-      "time_centered_bounds",
-      "sozosatr",
-      "hfx_adv",
-      "tauuo",
       "hfx_diff",
+      "hfx_adv",
+      "time_centered_bounds",
+      "tauuo",
+      "sozosatr",
       "time_counter_bounds",
       "umo_vint"
     ],
@@ -62,7 +62,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-07-09T16:01:58.455966",
+    "latest_data_update": "2025-07-30T09:44:26.798882",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null

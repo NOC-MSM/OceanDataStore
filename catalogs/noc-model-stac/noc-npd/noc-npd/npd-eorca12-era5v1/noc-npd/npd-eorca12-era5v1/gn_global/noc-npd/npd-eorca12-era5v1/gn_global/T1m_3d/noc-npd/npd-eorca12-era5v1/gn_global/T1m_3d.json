@@ -1,0 +1,139 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-npd/npd-eorca12-era5v1/gn_global/T1m_3d",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          -90.0
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "properties": {
+    "title": "eORCA12 ERA5v1 NPD T1m_3d Icechunk repository",
+    "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics monthly mean outputs defined at T-points.",
+    "platform": "gn_global",
+    "variables": [
+      "hfls",
+      "hfempds",
+      "empmr",
+      "evs",
+      "ficeberg",
+      "berg_latent_heat_flux",
+      "fsitherm",
+      "hfrainds",
+      "hfevapds",
+      "hfds",
+      "friver",
+      "hflx_rnf",
+      "hfns",
+      "mlotst",
+      "mlotstmin",
+      "hfsr",
+      "hfss",
+      "mlotstsq",
+      "hfto",
+      "prsn",
+      "pbo",
+      "ocontempmint",
+      "sbs_abs",
+      "sfdsi",
+      "mlotstmax",
+      "soicecov",
+      "sbt_con",
+      "sohflisf",
+      "snow_ai_cea",
+      "rlntds",
+      "rsntds",
+      "sohfcisf",
+      "snowpre",
+      "somixhgt",
+      "somint_abs",
+      "sos_abs",
+      "somxzint1",
+      "sosafldo",
+      "sowaflup",
+      "time_centered_bounds",
+      "tnpeo",
+      "somxl010",
+      "time_counter_bounds",
+      "sowflisf",
+      "sossq_abs",
+      "sowindsp",
+      "zos",
+      "tos_con",
+      "tossq_con",
+      "zossq"
+    ],
+    "dimensions": [
+      "time_counter",
+      "y",
+      "x",
+      "axis_nbounds"
+    ],
+    "operation": "mean",
+    "operation_frequency": "monthly",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "ongoing",
+    "update_frequency": "quarterly",
+    "latest_data_update": "2025-07-30T09:45:06.262412",
+    "start_datetime": "1976-01-01T00:00:00Z",
+    "end_datetime": "2024-12-31T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "eORCA12 ERA5v1 NPD global native model grid Catalog"
+    }
+  ],
+  "assets": {
+    "T1m_3d": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca12-era5v1/gn_global/T1m_3d",
+      "type": "application/icechunk",
+      "title": "eORCA12 ERA5v1 NPD T1m_3d Icechunk repository",
+      "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics monthly mean outputs defined at T-points.",
+      "bucket": "npd-eorca12-era5v1",
+      "prefix": "T1m_3d",
+      "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+      "anonymous": true
+    }
+  },
+  "collection": "noc-npd"
+}
