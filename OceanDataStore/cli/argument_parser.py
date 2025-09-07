@@ -84,14 +84,6 @@ def create_parser():
     )
 
     parser.add_argument(
-        "-vs",
-        "--variable-stores",
-        dest="var_stores",
-        action="store_true",
-        help="Send variables to independent stores.",
-    )
-
-    parser.add_argument(
         "-cs",
         "--chunk-strategy",
         dest="chunk_strategy",
