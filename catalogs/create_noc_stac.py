@@ -24,6 +24,7 @@ def create_item_with_asset(ds: xr.Dataset,
                            prefix: str,
                            config: str ="eORCA1 ERA5v1 NPD",
                            operation: str ="annual-mean",
+                           media_type: str="application/icechunk",
                            ) -> pystac.Item:
     """
     Create a STAC Item with an asset from an xarray Dataset.
@@ -42,6 +43,8 @@ def create_item_with_asset(ds: xr.Dataset,
         The configuration string for the dataset (default is "eORCA1 ERA5v1 NPD").
     operation : str, optional
         The operation string indicating the type of operation performed on the dataset (default is "annual-mean").
+    media_type : str, optional
+        Media type of the Item asset to be created. Options are 'application/icechunk' and 'application/vnd+zarr'.
 
     Returns
     -------
@@ -99,7 +102,7 @@ def create_item_with_asset(ds: xr.Dataset,
         href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{platform}/{prefix}",
         title=f"{config} {prefix} Icechunk repository",
         description=description,
-        media_type="application/icechunk",
+        media_type=media_type,
         extra_fields=dict(
             bucket=bucket,
             prefix=prefix,
@@ -162,6 +165,18 @@ npd_collection = pystac.Collection(
 )
 
 # -- Define NOC Near-Present Day Model Configuration Catalogs -- #
+npd_eorca1_jra55v1 = pystac.Catalog(
+    id="noc-npd/npd_eorca1_jra55v1",
+    title="eORCA1 JRA55v1 NPD Catalog",
+    description="Catalog of outputs from the eORCA1 JRA55-do version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre."
+    )
+
+npd_eorca025_jra55v1 = pystac.Catalog(
+    id="noc-npd/npd-eorca025-jra55v1",
+    title="eORCA025 JRA55v1 NPD Catalog",
+    description="Catalog of outputs from the eORCA025 JRA55-do version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre.",
+    )
+
 npd_eorca1_era5v1 = pystac.Catalog(
     id="noc-npd/npd-eorca1-era5v1",
     title="eORCA1 ERA5v1 NPD Catalog",
@@ -184,6 +199,18 @@ npd_eorca12_era5v1 = pystac.Catalog(
 # Note: Options for platforms are: "gn_global", "gr_global", "gn_regional{1...4}", "gr_regional{1...4}", "tn", "tr".
 # where gn = global native model grids, gr = global regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
 
+gn_eorca1_jra55v1 = pystac.Catalog(
+    id="noc-npd/npd-eorca1-jra55v1/gn_global",
+    title="eORCA1 JRA55v1 NPD global native model grid Catalog",
+    description="Catalog of global ocean physics outputs stored on the native eORCA1 curvilinear model grid."
+    )
+
+gn_eorca025_jra55v1 = pystac.Catalog(
+    id="noc-npd/npd-eorca025-jra55v1/gn_global",
+    title="eORCA025 JRA55v1 NPD global native model grid Catalog",
+    description="Catalog of global ocean physics outputs stored on the native eORCA025 curvilinear model grid."
+    )
+
 gn_eorca1_era5v1 = pystac.Catalog(
     id="noc-npd/npd-eorca1-era5v1/gn_global",
     title="eORCA1 ERA5v1 NPD global native model grid Catalog",
@@ -201,6 +228,74 @@ gn_eorca12_era5v1 = pystac.Catalog(
     title="eORCA12 ERA5v1 NPD global native model grid Catalog",
     description="Catalog of global ocean physics outputs stored on the native eORCA12 curvilinear model grid."
     )
+
+# -- Add Items to NOC Near-Present Day eORCA1 JRA55v1 Sub-Catalog -- #
+# Define the store credentials for the eORCA1 JRA55v1 NPD data:
+for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W1m", "I1m", "S1m", "domain"]:
+    # Define url for eORCA1 JRA55v1 NPD data:
+    bucket="npd-eorca1-jra55v1"
+    endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk"
+
+    # Open dataset from Icechunk repository:
+    ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
+
+    # Create item with asset for each eORCA1 JRA55v1 NPD prefix:
+    if 'domain' in prefix:
+        operation = "None None"
+    elif '1y' in prefix:
+        operation = "annual mean"
+    elif '1m' in prefix:
+        operation = "monthly mean"
+    elif '5d' in prefix:
+        operation = "5-day mean"
+
+    item = create_item_with_asset(
+        ds=ds,
+        bucket="npd-eorca1-jra55v1",
+        platform="gn_global",
+        prefix=prefix,
+        config="eORCA1 JRA55v1 NPD",
+        operation=operation,
+        media_type="application/vnd+zarr"
+    )
+    # Add item to the eORCA1 JRA55v1 NPD global native model grid catalog:
+    gn_eorca1_jra55v1.add_item(item)
+
+# -- Add Items to NOC Near-Present Day eORCA025 JRA55v1 Sub-Catalog -- #
+# Define the store credentials for the eORCA025 JRA55v1 NPD data:
+for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
+               "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
+               "T5d_3d", "T5d_4d", "U5d_3d", "U5d_4d", "V5d_3d", "V5d_4d", "I5d_3d", "S5d_1d", "domain"
+               ]:
+    # Define url for eORCA025 JRA55v1 NPD data:
+    bucket="npd-eorca1-jra55v1"
+    endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk"
+
+    # Open dataset from Icechunk repository:
+    ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
+
+    # Create item with asset for each eORCA025 JRA55v1 NPD prefix:
+    if 'domain' in prefix:
+        operation = "None None"
+    elif '1y' in prefix:
+        operation = "annual mean"
+    elif '1m' in prefix:
+        operation = "monthly mean"
+    elif '5d' in prefix:
+        operation = "5-day mean"
+
+    item = create_item_with_asset(
+        ds=ds,
+        bucket="npd-eorca025-jra55v1",
+        platform="gn_global",
+        prefix=prefix,
+        config="eORCA025 JRA55v1 NPD",
+        operation=operation,
+        media_type="application/vnd+zarr"
+    )
+    # Add item to the eORCA025 JRA55v1 NPD global native model grid catalog:
+    gn_eorca025_jra55v1.add_item(item)
+
 
 # -- Add Items to NOC Near-Present Day eORCA1 ERA5v1 Sub-Catalog -- #
 # Define the store credentials for the eORCA1 ERA5v1 NPD data:
@@ -234,7 +329,8 @@ for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W
         platform="gn_global",
         prefix=prefix,
         config="eORCA1 ERA5v1 NPD",
-        operation=operation
+        operation=operation,
+        media_type="application/icechunk"
     )
     # Add item to the eORCA1 ERA5v1 NPD global native model grid catalog:
     gn_eorca1_era5v1.add_item(item)
@@ -274,7 +370,8 @@ for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_
         platform="gn_global",
         prefix=prefix,
         config="eORCA025 ERA5v1 NPD",
-        operation=operation
+        operation=operation,
+        media_type="application/icechunk"
     )
     # Add item to the eORCA025 ERA5v1 NPD global native model grid catalog:
     gn_eorca025_era5v1.add_item(item)
@@ -314,16 +411,21 @@ for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_
         platform="gn_global",
         prefix=prefix,
         config="eORCA12 ERA5v1 NPD",
-        operation=operation
+        operation=operation,
+        media_type="application/icechunk"
     )
     # Add item to the eORCA12 ERA5v1 NPD global native model grid catalog:
     gn_eorca12_era5v1.add_item(item)
 
 # -- Add Catalogs to NOC Near-Present Day Collection -- #
+npd_eorca1_jra55v1.add_child(gn_eorca1_jra55v1)
+npd_eorca025_jra55v1.add_child(gn_eorca025_jra55v1)
 npd_eorca1_era5v1.add_child(gn_eorca1_era5v1)
 npd_eorca025_era5v1.add_child(gn_eorca025_era5v1)
 npd_eorca12_era5v1.add_child(gn_eorca12_era5v1)
 
+npd_collection.add_child(npd_eorca1_jra55v1)
+npd_collection.add_child(npd_eorca025_jra55v1)
 npd_collection.add_child(npd_eorca1_era5v1)
 npd_collection.add_child(npd_eorca025_era5v1)
 npd_collection.add_child(npd_eorca12_era5v1)
