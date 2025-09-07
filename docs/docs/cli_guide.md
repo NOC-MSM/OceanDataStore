@@ -1,4 +1,4 @@
-# OceanDataStore CLI
+# OceanDataStore CLI :material-cloud-upload:
 
 !!! abstract "Summary"
 
