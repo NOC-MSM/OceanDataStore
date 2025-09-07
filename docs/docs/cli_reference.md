@@ -28,3 +28,13 @@
 | `--icechunk-configuration` | `-ic` | Path to the JSON file defining the Icechunk storage and repository configurations (default=`None`). |
 
 ---
+
+# OceanDataStore Python API
+
+::: OceanDataStore.object_store_handler.send_to_zarr
+
+::: OceanDataStore.object_store_handler.update_zarr
+
+::: OceanDataStore.object_store_handler.send_to_icechunk
+
+::: OceanDataStore.object_store_handler.update_icechunk
