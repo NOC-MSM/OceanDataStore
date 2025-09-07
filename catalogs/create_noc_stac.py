@@ -49,7 +49,9 @@ def create_item_with_asset(ds: xr.Dataset,
         A STAC Item containing the dataset information and an asset pointing to the data.
     """
     # Define the item description based on the prefix:
-    if 'I' in prefix:
+    if 'domain' in prefix:
+        description = f"Icechunk repository containin {config} global ocean model domain variables."
+    elif 'I' in prefix:
         description = f"Icechunk repository containing {config} global sea-ice {operation} outputs defined at T-points."
     elif 'S' in prefix:
         description = f"Icechunk repository containing {config} global ocean scalar {operation} outputs."
@@ -202,7 +204,7 @@ gn_eorca12_era5v1 = pystac.Catalog(
 
 # -- Add Items to NOC Near-Present Day eORCA1 ERA5v1 Sub-Catalog -- #
 # Define the store credentials for the eORCA1 ERA5v1 NPD data:
-for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W1m", "I1m", "S1m"]:
+for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W1m", "I1m", "S1m", "domain"]:
     # Define S3 storage to read eORCA1 ERA5v1 NPD data:
     storage = icechunk.s3_storage(
     bucket="npd-eorca1-era5v1",
@@ -217,7 +219,9 @@ for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W
     ds = xr.open_zarr(repo.readonly_session(branch="main").store, consolidated=False)
 
     # Create item with asset for each eORCA1 ERA5v1 NPD prefix:
-    if '1y' in prefix:
+    if 'domain' in prefix:
+        operation = "None None"
+    elif '1y' in prefix:
         operation = "annual mean"
     elif '1m' in prefix:
         operation = "monthly mean"
@@ -239,7 +243,7 @@ for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W
 # Define the store credentials for the eORCA025 ERA5v1 NPD data:
 for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
                "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
-               "T5d_3d", "T5d_4d", "U5d_3d", "U5d_4d", "V5d_3d", "V5d_4d", "I5d_3d", "S5d_1d",
+               "T5d_3d", "T5d_4d", "U5d_3d", "U5d_4d", "V5d_3d", "V5d_4d", "I5d_3d", "S5d_1d", "domain"
                ]:
     # Define S3 storage to read eORCA025 ERA5v1 NPD data:
     storage = icechunk.s3_storage(
@@ -255,7 +259,9 @@ for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_
     ds = xr.open_zarr(repo.readonly_session(branch="main").store, consolidated=False)
 
     # Create item with asset for each eORCA025 ERA5v1 NPD prefix:
-    if '1y' in prefix:
+    if 'domain' in prefix:
+        operation = "None None"
+    elif '1y' in prefix:
         operation = "annual mean"
     elif '1m' in prefix:
         operation = "monthly mean"
@@ -277,6 +283,7 @@ for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_
 # Define the store credentials for the eORCA12 ERA5v1 NPD data:
 for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
                "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
+               "domain",
                ]:
     # Define S3 storage to read eORCA12 ERA5v1 NPD data:
     storage = icechunk.s3_storage(
@@ -292,7 +299,9 @@ for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_
     ds = xr.open_zarr(repo.readonly_session(branch="main").store, consolidated=False)
 
     # Create item with asset for each eORCA12 ERA5v1 NPD prefix:
-    if '1y' in prefix:
+    if 'domain' in prefix:
+        operation = "None None"
+    elif '1y' in prefix:
         operation = "annual mean"
     elif '1m' in prefix:
         operation = "monthly mean"
