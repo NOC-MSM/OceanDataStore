@@ -48,6 +48,7 @@ class CaptureWarningsPlugin(WorkerPlugin):
     def teardown(self, worker):
         logging.captureWarnings(False)
 
+
 # -- Define timing context manager -- #
 class timer():
     """
@@ -94,12 +95,13 @@ class timer():
             f"Completed: {self.action} store s3://{self.dest} in {(self.t_end - self.t_start):.2f} seconds"
             )
 
+
 # -- Define OceanDataStore Core Functions -- #
 async def _check_zarr_store(obj_store: ObjectStoreS3,
                             path: str
                             ) -> bool:
     """
-    Check if a zarr store exists at a specified path
+    Check if a Zarr store exists at a specified path
     in the object store.
 
     Parameters
@@ -107,7 +109,7 @@ async def _check_zarr_store(obj_store: ObjectStoreS3,
     obj_store
         ObjectStoreS3 remote filesystem.
     path
-        Path to zarr store in the object store.
+        Path to Zarr store in the object store.
     
     Returns
     -------
@@ -130,18 +132,18 @@ async def _check_zarr_compatibility(data: xr.DataArray | xr.Dataset,
                                ) -> None:
     """
     Check compatibility of DataArray or Dataset to update existing
-    zarr store in cloud object storage.
+    Zarr store in cloud object storage.
 
     Parameters
     ----------
     data: xr.DataArray | xr.Dataset
-        DataArray or DataSet to update existing zarr store with.
+        DataArray or DataSet to update existing Zarr store with.
     obj_store: ObjectStoreS3
         ObjectStoreS3 remote filesystem.
     dest: str
         Destination path in the object store.
     append_dim: bool, default="time_counter"
-        Dimension to append data to existing zarr store.
+        Dimension to append data to existing Zarr store.
     rechunk: Optional[dict], default=None
         Mapping to rechunk dimensions.
     version: int, default=3
@@ -155,7 +157,7 @@ async def _check_zarr_compatibility(data: xr.DataArray | xr.Dataset,
         await _close_session(obj_store=obj_store)
         raise ObjectNotFound(object_name=dest)
     
-    # 2. Check zarr store compatibility:
+    # 2. Check Zarr store compatibility:
     try:
         ds_store = xr.open_zarr(store, zarr_format=version)
     except Exception as e:
@@ -203,7 +205,7 @@ def _check_icechunk_compatibility(data: xr.DataArray | xr.Dataset,
     Parameters
     ----------
     data: xr.DataArray | xr.Dataset
-        DataArray or DataSet to update existing zarr store with.
+        DataArray or DataSet to update existing Zarr store with.
     dest: str
         Path to Icechunk repository in the object store.
     repo: icechunk.Repository
@@ -264,17 +266,17 @@ async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
                          version: int = 3,
                          ) -> None:
     """
-    Write DataArray or Dataset to zarr store in cloud
+    Write DataArray or Dataset to Zarr store in cloud
     object storage.
 
     Parameters
     ----------
     data: xr.DataArray | xr.Dataset
-        DataArray or DataSet to write to zarr store.
+        DataArray or DataSet to write to Zarr store.
     obj_store: ObjectStoreS3
         ObjectStoreS3 remote filesystem.
     dest: str
-        Path to zarr store in the object store.
+        Path to Zarr store in the object store.
     version: int, default=3
         Zarr version to use.
     """
@@ -357,19 +359,19 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
                           version: int = 3,
                           ) -> None:
     """
-    Append DataArray or Dataset to existing zarr store in
+    Append DataArray or Dataset to existing Zarr store in
     cloud object storage.
 
     Parameters
     ----------
     data: xr.DataArray | xr.Dataset
-        DataArray or DataSet to append to existing zarr store.
+        DataArray or DataSet to append to existing Zarr store.
     obj_store: ObjectStoreS3
         ObjectStoreS3 remote filesystem.
     dest: str
-        Path to zarr store in the object store.
+        Path to Zarr store in the object store.
     append_dim: str, default="time_counter"
-        Dimension to append data to existing zarr store.
+        Dimension to append data to existing Zarr store.
     version: int, default=3
         Zarr version to use.
     """
@@ -430,19 +432,19 @@ async def _replace_in_zarr(data: xr.DataArray | xr.Dataset,
                            version: int = 3,
                            ) -> None:
     """
-    Append DataArray or Dataset to existing zarr store in
+    Append DataArray or Dataset to existing Zarr store in
     cloud object storage.
 
     Parameters
     ----------
     data: xr.DataArray | xr.Dataset
-        DataArray or DataSet to append to existing zarr store.
+        DataArray or DataSet to append to existing Zarr store.
     obj_store: ObjectStoreS3
         ObjectStoreS3 remote filesystem.
     dest: str
-        Path to zarr store in the object store.
+        Path to Zarr store in the object store.
     region: dict
-        Region of existing zarr store to replace data.
+        Region of existing Zarr store to replace data.
     version: int, default=3
         Zarr version to use.
     """
@@ -512,19 +514,19 @@ async def _update_zarr(data: xr.DataArray | xr.Dataset,
                        version: int = 3,
                        ) -> None:
     """
-    Update an existing zarr store in object storage by replacing
+    Update an existing Zarr store in object storage by replacing
     existing values and/or appending new values.
 
     Parameters
     ----------
     data: xr.DataArray | xr.Dataset
-        DataArray or DataSet to update existing zarr store with.
+        DataArray or DataSet to update existing Zarr store with.
     obj_store: ObjectStoreS3
         ObjectStoreS3 remote filesystem.
     dest: str
-        Path to zarr store in the object store.
+        Path to Zarr store in the object store.
     append_dim: bool, default="time_counter"
-        Dimension to append data to existing zarr store.
+        Dimension to append data to existing Zarr store.
     rechunk: Optional[dict], default=None
         Mapping to rechunk dimensions.
     version: int, default=3
@@ -562,7 +564,7 @@ async def _update_zarr(data: xr.DataArray | xr.Dataset,
                                     )
     logging.info(f"Passed Compatibility Checks for store {dest}")
 
-    # === Updating existing zarr store === #
+    # === Updating existing Zarr store === #
     # Extract source & target append dimension values:
     ds_target = xr.open_zarr(store, zarr_format=version)
     target_append_dim = ds_target[append_dim].values
@@ -864,13 +866,12 @@ def _preprocess_dataset(file: list[str] | str | xr.Dataset,
     return ds_filepath
 
 
-def send(
+def _send_to_zarr(
         file: list[str] | str | xr.Dataset,
         bucket: str,
         object_prefix: str,
         store_credentials_json: str,
         variables: list[str] | str = 'all',
-        send_vars_indep: bool = True,
         append_dim: str = "time_counter",
         grid_filepath: Optional[str] = None,
         update_coords: Optional[dict] = None,
@@ -879,7 +880,7 @@ def send(
         zarr_version: int = 3
         ) -> None:
     """
-    Write data in serial to new zarr store in cloud object storage.
+    Write data to new Zarr store in cloud object storage.
 
     Parameters
     ----------
@@ -896,8 +897,6 @@ def send(
     variables: list, default='all'
         List of variables to send to Zarr stores.
         If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects.
     append_dim: str, default='time_counter'
         Name of the dimension to append multifile datasets.
     grid_filepath: str, optional
@@ -930,162 +929,20 @@ def send(
     if variables is None:
         variables = list(ds_filepath.data_vars)
 
-    # === Send Variables to Individual Zarr Stores === #
-    if send_vars_indep:
-        for var in variables:
-            logging.info(f"Sending Variable {var}")
-            dest = f"{bucket}/{object_prefix}/{var}"
-            asyncio.run(
-                _write_to_zarr(data=ds_filepath[var],
-                               obj_store=obj_store,
-                               dest=dest,
-                               version=zarr_version
-                               )
-                        )
+    # === Send Dataset to Zarr store === #
+    # Write to Zarr store:
+    dest = f"{bucket}/{object_prefix}"
+    logging.info(f"Sending Dataset to {dest}")
+    asyncio.run(
+        _write_to_zarr(data=ds_filepath[variables],
+                       obj_store=obj_store,
+                       dest=dest,
+                       version=zarr_version
+                       )
+                )
     
-        # Release resources to avoid memory leaks:
-        ds_filepath.close()
-        
-    else:
-        # === Send Dataset to Zarr Store === #
-        # Write to zarr store:
-        dest = f"{bucket}/{object_prefix}"
-        logging.info(f"Sending Dataset to {dest}")
-        asyncio.run(
-            _write_to_zarr(data=ds_filepath[variables],
-                           obj_store=obj_store,
-                           dest=dest,
-                           version=zarr_version
-                           )
-                    )
-        
-        # Release resources to avoid memory leaks:
-        ds_filepath.close()
-
-
-def send_with_dask(
-    file: list[str] | str | xr.Dataset,
-    bucket: str,
-    object_prefix: str,
-    store_credentials_json: str,
-    variables: list[str] | str = 'all',
-    send_vars_indep: bool = True,
-    append_dim: str = "time_counter",
-    grid_filepath: Optional[str] = None,
-    update_coords: Optional[dict] = None,
-    rechunk: Optional[dict] = None,
-    attrs: Optional[dict] = None,
-    dask_config_kwargs: Optional[dict] = None,
-    dask_cluster_kwargs: Optional[dict] = None,
-    zarr_version: int = 3
-    ) -> None:
-    """
-    Write data in parallel to new zarr store in cloud object storage
-    using dask.
-
-    Parameters
-    ----------
-    file: list | str | xarray.Dataset
-        Regular expression or list of filepaths to netCDF file(s).
-        Users can also pass a single xarray.Dataset directly.
-    bucket: str
-        Name of the bucket in the object store. Bucket names can contain only
-        lowercase letters, numbers, dots (.), and hyphens (-).
-    object_prefix: str
-        Prefix to be added to the object names in the object store.
-    store_credentials_json: str
-        Path to the JSON file containing the object store credentials.
-    variables: list | str, default="all"
-        List of variables to send. If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects, by default True.
-    append_dim: str, default="time_counter"
-        Name of the append dimension, by default "time_counter".
-    grid_filepath: str, optional
-        Path to file containing model grid parameter.
-    update_coords: dict, optional
-        Dictionary of coordinate variables to update.
-    rechunk: dict, optional
-        Rechunk strategy dictionary, by default None.
-    attrs: dict, optional
-        Attributes to add to the dataset.
-    dask_config_kwargs: Dict[str,str], optional
-        Dask configuration settings passed to dask.config.set().
-    dask_cluster_kwargs: dict, optional
-        Dask cluster configuration settings passed to LocalCluster().
-    zarr_version: int, default=3
-        Zarr version to use.
-    """
-    # === Configure Cluster === #
-    # Update dask configuration settings:
-    if dask_config_kwargs is not None:
-        dask.config.set(dask_config_kwargs)
-        logging.info("Updated dask configuration settings.")
-
-    # Create local dask cluster & client:
-    with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster, asynchronous=False) as client:
-        logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
-
-        # === Register Dask Worker Plugin === #
-        # Catch UserWarnings when rechunking:
-        client.register_worker_plugin(CaptureWarningsPlugin())
-
-        # === Initialise Asynchronous Object Store === #
-        logging.info("Reading object store credentials from %s", store_credentials_json)
-        obj_store = ObjectStoreS3(anon=False,
-                                  asynchronous=True,
-                                  store_credentials_json=store_credentials_json
-                                  )
-
-        # === Preprocess Data === #
-        ds_filepath = _preprocess_dataset(file=file,
-                                          rechunk=rechunk,
-                                          append_dim=append_dim,
-                                          update_coords=update_coords,
-                                          grid_filepath=grid_filepath,
-                                          attrs=attrs,
-                                          parallel=True,
-                                          )
-        if variables is None:
-            variables = list(ds_filepath.data_vars)
-        
-        # === Send Variables to Individual Zarr Stores === #
-        if send_vars_indep:
-            for var in variables:
-                logging.info(f"Sending Variable {var}")
-                dest = f"{bucket}/{object_prefix}/{var}"
-                asyncio.run(
-                    _write_to_zarr(data=ds_filepath[var],
-                                   obj_store=obj_store,
-                                   dest=dest,
-                                   version=zarr_version
-                                   )
-                            )
-
-            # Release resources to avoid memory leaks:
-            ds_filepath.close()
-            
-        else:
-            # === Send Dataset to Object Store === #
-            # Write to zarr store:
-            dest = f"{bucket}/{object_prefix}"
-            logging.info(f"Sending Dataset to {dest}")
-            asyncio.run(
-                _write_to_zarr(data=ds_filepath[variables],
-                               obj_store=obj_store,
-                               dest=dest,
-                               version=zarr_version
-                               )
-                        )
-
-            # Release resources to avoid memory leaks:
-            ds_filepath.close()
-            
-        # === Shutdown Store & Dask Cluster === #
-        client.run(_close_session, (obj_store), wait=True)
-        client.shutdown()
-        client.close()
-        logging.info("Dask Cluster has been shutdown.")
+    # Release resources to avoid memory leaks:
+    ds_filepath.close()
 
 
 def send_to_zarr(
@@ -1094,7 +951,6 @@ def send_to_zarr(
     object_prefix: str,
     store_credentials_json: str,
     variables: list[str] | str = 'all',
-    send_vars_indep: bool = True,
     append_dim: str = "time_counter",
     grid_filepath: Optional[str] = None,
     update_coords: Optional[dict] = None,
@@ -1105,8 +961,8 @@ def send_to_zarr(
     zarr_version: int = 3
     ) -> None:
     """
-    Send files to new zarr store in cloud object storage
-    in serial or in parallel using a dask local cluster.
+    Write data to new Zarr store in cloud object storage with
+    option of using dask.
 
     Parameters
     ----------
@@ -1122,8 +978,6 @@ def send_to_zarr(
         Path to the JSON file containing the object store credentials.
     variables: list | str, default="all"
         List of variables to send. If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects, by default True.
     append_dim: str, default="time_counter"
         Name of the append dimension, by default "time_counter".
     grid_filepath: str, optional
@@ -1141,39 +995,51 @@ def send_to_zarr(
     zarr_version: int, default=3
         Zarr version to use.
     """
-    # == Send files to zarr store without dask == #
-    if (dask_config_kwargs is None) and (dask_cluster_kwargs is None):
-        send(file,
-             bucket,
-             object_prefix,
-             store_credentials_json,
-             variables,
-             send_vars_indep,
-             append_dim,
-             grid_filepath,
-             update_coords,
-             rechunk,
-             attrs,
-             zarr_version
-             )
+    if dask_cluster_kwargs is not None:
+        # === Send to Zarr store with Dask === #
+        if dask_config_kwargs is not None:
+            dask.config.set(dask_config_kwargs)
+            logging.info("Updated dask configuration settings.")
 
-    # == Send files to zarr store with dask == #
+        # Create local dask cluster & client:
+        with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster) as client:
+            logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
+
+            # Catch UserWarnings when rechunking data:
+            client.register_worker_plugin(CaptureWarningsPlugin())
+
+            _send_to_zarr(file=file,
+                          bucket=bucket,
+                          object_prefix=object_prefix,
+                          store_credentials_json=store_credentials_json,
+                          variables=variables,
+                          append_dim=append_dim,
+                          grid_filepath=grid_filepath,
+                          update_coords=update_coords,
+                          rechunk=rechunk,
+                          attrs=attrs,
+                          zarr_version=zarr_version
+                          )
+
+            # --- Shutdown Store & Dask Cluster --- #
+            client.shutdown()
+            client.close()
+            logging.info("Dask Cluster has been shutdown.")
+    
     else:
-        send_with_dask(file,
-                       bucket,
-                       object_prefix,
-                       store_credentials_json,
-                       variables,
-                       send_vars_indep,
-                       append_dim,
-                       grid_filepath,
-                       update_coords,
-                       rechunk,
-                       attrs,
-                       dask_config_kwargs,
-                       dask_cluster_kwargs,
-                       zarr_version
-                       )
+        # === Send to Zarr store without Dask === #
+        _send_to_zarr(file=file,
+                        bucket=bucket,
+                        object_prefix=object_prefix,
+                        store_credentials_json=store_credentials_json,
+                        variables=variables,
+                        append_dim=append_dim,
+                        grid_filepath=grid_filepath,
+                        update_coords=update_coords,
+                        rechunk=rechunk,
+                        attrs=attrs,
+                        zarr_version=zarr_version
+                        )
 
 
 def _send_to_icechunk(
@@ -1182,7 +1048,6 @@ def _send_to_icechunk(
     object_prefix: str,
     store_credentials_json: str,
     variables: list[str] | str = 'all',
-    send_vars_indep: bool = True,
     append_dim: Optional[str] = 'time_counter',
     grid_filepath: Optional[str] = None,
     update_coords: Optional[dict] = None,
@@ -1210,8 +1075,6 @@ def _send_to_icechunk(
         Path to the JSON file containing the object store credentials.
     variables: list | str, default="all"
         List of variables to send. If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects, by default True.
     append_dim: str, default='time_counter'
         Name of the dimension to append multifile datasets.
     grid_filepath: str, optional
@@ -1263,71 +1126,44 @@ def _send_to_icechunk(
     # Extract append dimension values:
     source_append_dim = ds_filepath[append_dim].values
 
-    # === Send Variables to Individual Icechunk Repos === #
-    if send_vars_indep:
-        for var in variables:
-            logging.info(f"Sending Variable {var}")
-            try:
-                # Create new Icechunk repo:
-                repo = obj_store.create_icechunk_repo(bucket=bucket,
-                                                      prefix=f"{object_prefix}/{var}",
-                                                      storage_config_kwargs=icechunk_config["storage_config_kwargs"],
-                                                      repository_config_kwargs=icechunk_config["repository_config_kwargs"],
-                                                      storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
-                                                      )
-                # Write data and commit to the repo:
+    # === Send Variables to Icechunk Repo === #
+    try:
+        # Create new Icechunk repo:
+        repo = obj_store.create_icechunk_repo(bucket=bucket,
+                                              prefix=object_prefix,
+                                              storage_config_kwargs=icechunk_config["storage_config_kwargs"],
+                                              repository_config_kwargs=icechunk_config["repository_config_kwargs"],
+                                              storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
+                                              )
+        if variable_commits:
+            for var in variables:
+                logging.info(f"Sending Variable {var}")
                 snd_commit_message = f"{commit_message} -> Sent {var} along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
+                # Write each variable using separate commits to the repo:
                 _write_to_icechunk(data=ds_filepath[var],
-                                   dest=f"{bucket}/{object_prefix}/{var}",
-                                   repo=repo,
-                                   commit_message=snd_commit_message,
-                                   branch=branch,
-                                   )
-            except icechunk.IcechunkError:
-                logging.info(f"Skipping Variable: Icechunk repository already exists at {bucket}/{object_prefix}/{var}")
-
-        # Release resources to avoid memory leaks:
-        ds_filepath.close()
-
-    else:
-        # === Send Variables to Single Icechunk Repo === #
-        try:
-            # Create new Icechunk repo:
-            repo = obj_store.create_icechunk_repo(bucket=bucket,
-                                                prefix=object_prefix,
-                                                storage_config_kwargs=icechunk_config["storage_config_kwargs"],
-                                                repository_config_kwargs=icechunk_config["repository_config_kwargs"],
-                                                storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
-                                                )
-            if variable_commits:
-                for var in variables:
-                    logging.info(f"Sending Variable {var}")
-                    snd_commit_message = f"{commit_message} -> Sent {var} along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
-                    # Write each variable using separate commits to the repo:
-                    _write_to_icechunk(data=ds_filepath[var],
-                                       dest=f"{bucket}/{object_prefix}",
-                                       repo=repo,
-                                       commit_message=snd_commit_message,
-                                       branch=branch,
-                                       )
-            else:
-                # Write all variables using single commit to the repo:
-                logging.info(f"Sending Dataset {object_prefix}")
-                snd_commit_message = f"{commit_message} -> Sent dataset along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
-                _write_to_icechunk(data=ds_filepath[variables],
                                    dest=f"{bucket}/{object_prefix}",
                                    repo=repo,
                                    commit_message=snd_commit_message,
                                    branch=branch,
                                    )
-        except icechunk.IcechunkError:
-            if variable_commits:
-                logging.info(f"Skipping Dataset: Icechunk repository already exists at {bucket}/{object_prefix}/{var}")
-            else:
-                logging.info(f"Skipping Dataset: Icechunk repository already exists at {bucket}/{object_prefix}")
+        else:
+            # Write all variables using single commit to the repo:
+            logging.info(f"Sending Dataset {object_prefix}")
+            snd_commit_message = f"{commit_message} -> Sent dataset along {append_dim} from {source_append_dim[0]} to {source_append_dim[-1]}."
+            _write_to_icechunk(data=ds_filepath[variables],
+                               dest=f"{bucket}/{object_prefix}",
+                               repo=repo,
+                               commit_message=snd_commit_message,
+                               branch=branch,
+                               )
+    except icechunk.IcechunkError:
+        if variable_commits:
+            logging.info(f"Skipping Dataset: Icechunk repository already exists at {bucket}/{object_prefix}/{var}")
+        else:
+            logging.info(f"Skipping Dataset: Icechunk repository already exists at {bucket}/{object_prefix}")
 
-        # Release resources to avoid memory leaks:
-        ds_filepath.close()
+    # Release resources to avoid memory leaks:
+    ds_filepath.close()
 
 
 def send_to_icechunk(
@@ -1336,7 +1172,6 @@ def send_to_icechunk(
     object_prefix: str,
     store_credentials_json: str,
     variables: Optional[list[str]] = None,
-    send_vars_indep: bool = True,
     append_dim: Optional[str] = 'time_counter',
     grid_filepath: Optional[str] = None,
     update_coords: Optional[dict] = None,
@@ -1367,8 +1202,6 @@ def send_to_icechunk(
         Path to the JSON file containing the object store credentials.
     variables: list[str], default=None
         List of variables to send. If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects, by default True.
     append_dim: str, default='time_counter'
         Name of the dimension to append multifile datasets.
     grid_filepath: str, optional
@@ -1393,8 +1226,8 @@ def send_to_icechunk(
     icechunk_config: dict, optional
         Icechunk repository configuration.
     """
-    # === Send to Icechunk repo(s) with Dask === #
     if dask_cluster_kwargs is not None:
+        # === Send to Icechunk repo(s) with Dask === #
         if dask_config_kwargs is not None:
             dask.config.set(dask_config_kwargs)
             logging.info("Updated dask configuration settings.")
@@ -1411,7 +1244,6 @@ def send_to_icechunk(
                               object_prefix=object_prefix,
                               store_credentials_json=store_credentials_json,
                               variables=variables,
-                              send_vars_indep=send_vars_indep,
                               append_dim=append_dim,
                               grid_filepath=grid_filepath,
                               update_coords=update_coords,
@@ -1435,7 +1267,6 @@ def send_to_icechunk(
                           object_prefix=object_prefix,
                           store_credentials_json=store_credentials_json,
                           variables=variables,
-                          send_vars_indep=send_vars_indep,
                           append_dim=append_dim,
                           grid_filepath=grid_filepath,
                           update_coords=update_coords,
@@ -1448,13 +1279,12 @@ def send_to_icechunk(
                           )
 
 
-def update(
+def _update_zarr(
         file: list[str] | str | xr.Dataset,
         bucket: str,
         object_prefix: str,
         store_credentials_json: str,
         variables: list[str] | str = 'all',
-        send_vars_indep: bool = True,
         append_dim: str = "time_counter",
         grid_filepath: Optional[str] = None,
         update_coords: Optional[dict] = None,
@@ -1463,7 +1293,7 @@ def update(
         zarr_version: int = 3
         ) -> None:
     """
-    Update existing zarr store in cloud object storage
+    Update existing Zarr store in cloud object storage
     by replacing and/or appending data.
 
     Parameters
@@ -1481,8 +1311,6 @@ def update(
     variables: list, default='all'
         List of variables to send to Zarr stores.
         If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects.
     append_dim: str, default='time_counter'
         Name of the dimension to append multifile datasets.
     grid_filepath: str, optional
@@ -1513,181 +1341,22 @@ def update(
                                       parallel=False
                                       )
 
-    # === Update Variables in Existing Zarr Store === #
-    if send_vars_indep:
-        if variables is None:
-            variables = list(ds_filepath.data_vars)
-
-        for var in variables:
-            if append_dim not in ds_filepath[var].dims:
-                logging.info(f"Skipping Variable: append dimension {append_dim} not found.")
-            else:
-                logging.info(f"Updating Variable {var}")
-                dest = f"{bucket}/{object_prefix}/{var}"
-                asyncio.run(
-                    _update_zarr(data=ds_filepath[var],
-                                 obj_store=obj_store,
-                                 dest=dest,
-                                 append_dim=append_dim,
-                                 rechunk=rechunk,
-                                 version=zarr_version
-                                )
-                            )
+    # === Update Existing Zarr store === #
+    # Write to Zarr store:
+    dest = f"{bucket}/{object_prefix}"
+    logging.info(f"Updating Dataset at {dest}")
+    asyncio.run(
+        _update_zarr(data=ds_filepath,
+                     obj_store=obj_store,
+                     dest=dest,
+                     append_dim=append_dim,
+                     rechunk=rechunk,
+                     version=zarr_version
+                     )
+                )
     
-        # Release resources to avoid memory leaks:
-        ds_filepath.close()
-        
-    else:
-        # === Update Existing Zarr Store === #
-        # Write to zarr store:
-        dest = f"{bucket}/{object_prefix}"
-        logging.info(f"Updating Dataset at {dest}")
-        asyncio.run(
-            _update_zarr(data=ds_filepath,
-                         obj_store=obj_store,
-                         dest=dest,
-                         append_dim=append_dim,
-                         rechunk=rechunk,
-                         version=zarr_version
-                        )
-                    )
-        
-        # Release resources to avoid memory leaks:
-        ds_filepath.close()
-
-
-def update_with_dask(
-    file: list[str] | str | xr.Dataset,
-    bucket: str,
-    object_prefix: str,
-    store_credentials_json: str,
-    variables: list[str] | str = 'all',
-    send_vars_indep: bool = True,
-    append_dim: str = "time_counter",
-    grid_filepath: Optional[str] = None,
-    update_coords: Optional[dict] = None,
-    rechunk: Optional[dict] = None,
-    attrs: Optional[dict] = None,
-    dask_config_kwargs: Optional[dict] = None,
-    dask_cluster_kwargs: Optional[dict] = None,
-    zarr_version: int = 3
-    ) -> None:
-    """
-    Update existing zarr store in cloud object storage
-    in parallel using dask.
-
-    Parameters
-    ----------
-    file: list | str | xarray.Dataset
-        Regular expression or list of filepaths to netCDF file(s).
-        Users can also pass a single xarray.Dataset directly.
-    bucket: str
-        Name of the bucket in the object store. Bucket names can contain only
-        lowercase letters, numbers, dots (.), and hyphens (-).
-    object_prefix: str
-        Prefix to be added to the object names in the object store.
-    store_credentials_json: str
-        Path to the JSON file containing the object store credentials.
-    variables: list, default='all'
-        List of variables to send to zarr stores.
-        If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects.
-    append_dim: str, default='time_counter'
-        Name of the dimension to append multifile datasets.
-    grid_filepath: str, optional
-        Path to file containing model grid parameter.
-    update_coords: dict, optional
-        Dictionary of coordinate variables to update.
-    rechunk: dict, optional
-        Rechunk strategy dictionary.
-    attrs: dict, optional
-        Attributes to add to the dataset.
-    dask_config_kwargs: dict, optional
-        Dask configuration settings passed to dask.config.set().
-    dask_cluster_kwargs: dict, optional
-        Dask cluster configuration settings passed to LocalCluster().
-    zarr_version: int, default=3
-        zarr version to use.
-    """
-    # === Configure Cluster === #
-    # Update dask configuration settings:
-    if dask_config_kwargs is not None:
-        dask.config.set(dask_config_kwargs)
-        logging.info("Updated dask configuration settings.")
-
-    # Create local dask cluster & client:
-    with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster, asynchronous=False) as client:
-        logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
-
-        # === Register Dask Worker Plugin === #
-        # Catch UserWarnings when rechunking:
-        client.register_worker_plugin(CaptureWarningsPlugin())
-
-        # === Initialise asynchronous object store === #
-        logging.info("Reading object store credentials from %s", store_credentials_json)
-        obj_store = ObjectStoreS3(anon=False,
-                                  asynchronous=True,
-                                  store_credentials_json=store_credentials_json
-                                  )
-
-        # === Preprocess data === #
-        ds_filepath = _preprocess_dataset(file=file,
-                                          rechunk=rechunk,
-                                          append_dim=append_dim,
-                                          update_coords=update_coords,
-                                          grid_filepath=grid_filepath,
-                                          attrs=attrs,
-                                          parallel=True
-                                          )
-        
-        # === Send variables to individual zarr stores === #
-        if send_vars_indep:
-            if variables is None:
-                variables = list(ds_filepath.data_vars)
-
-            for var in variables:
-                if append_dim not in ds_filepath[var].dims:
-                    logging.info(f"Skipping Variable: append dimension {append_dim} not found.")
-                else:
-                    logging.info(f"Updating Variable {var}")
-                    dest = f"{bucket}/{object_prefix}/{var}"
-                    asyncio.run(
-                        _update_zarr(data=ds_filepath[var],
-                                     obj_store=obj_store,
-                                     dest=dest,
-                                     append_dim=append_dim,
-                                     rechunk=rechunk,
-                                     version=zarr_version
-                                    )
-                                )
-
-            # Release resources to avoid memory leaks:
-            ds_filepath.close()
-            
-        else:
-            # === Send Dataset to Object Store === #
-            # Write to zarr store:
-            dest = f"{bucket}/{object_prefix}"
-            logging.info(f"Updating Dataset at {dest}")
-            asyncio.run(
-                _update_zarr(data=ds_filepath,
-                             obj_store=obj_store,
-                             dest=dest,
-                             append_dim=append_dim,
-                             rechunk=rechunk,
-                             version=zarr_version
-                            )
-                        )
-
-            # Release resources to avoid memory leaks:
-            ds_filepath.close()
-            
-        # === Shutdown Store & Dask Cluster === #
-        client.run(_close_session, (obj_store), wait=True)
-        client.shutdown()
-        client.close()
-        logging.info("Dask Cluster has been shutdown.")
+    # Release resources to avoid memory leaks:
+    ds_filepath.close()
 
 
 def update_zarr(
@@ -1696,7 +1365,6 @@ def update_zarr(
     object_prefix: str,
     store_credentials_json: str,
     variables: list[str] | str = 'all',
-    send_vars_indep: bool = True,
     append_dim: str = "time_counter",
     grid_filepath: Optional[str] = None,
     update_coords: Optional[dict] = None,
@@ -1707,8 +1375,8 @@ def update_zarr(
     zarr_version: int = 3
     ) -> None:
     """
-    Update existing zarr store in cloud object storage
-    in serial or in parallel using a dask local cluster.
+    Update data in existing Zarr store in cloud object
+    storage with option of using dask.
 
     Parameters
     ----------
@@ -1723,10 +1391,8 @@ def update_zarr(
     store_credentials_json: str
         Path to the JSON file containing the object store credentials.
     variables: list, default='all'
-        List of variables to send to zarr stores.
+        List of variables to send to Zarr stores.
         If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects.
     append_dim: str, default='time_counter'
         Name of the dimension to append multifile datasets.
     grid_filepath: str, optional
@@ -1744,38 +1410,51 @@ def update_zarr(
     zarr_version: int, default=3
         zarr version to use.
     """
-    # === Update zarr store without dask === #
-    if (dask_config_kwargs is None) and (dask_cluster_kwargs is None):
-        update(file,
-               bucket,
-               object_prefix,
-               store_credentials_json,
-               variables,
-               send_vars_indep,
-               append_dim,
-               grid_filepath,
-               update_coords,
-               rechunk,
-               attrs,
-               zarr_version
-               )
-    # === Update zarr store with dask === #
-    else:
-        update_with_dask(file,
-                         bucket,
-                         object_prefix,
-                         store_credentials_json,
-                         variables,
-                         send_vars_indep,
-                         append_dim,
-                         grid_filepath,
-                         update_coords,
-                         rechunk,
-                         attrs,
-                         dask_config_kwargs,
-                         dask_cluster_kwargs,
-                         zarr_version
+    if dask_cluster_kwargs is not None:
+        # === Update Zarr store with Dask === #
+        if dask_config_kwargs is not None:
+            dask.config.set(dask_config_kwargs)
+            logging.info("Updated dask configuration settings.")
+
+        # Create local dask cluster & client:
+        with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster) as client:
+            logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
+
+            # Catch UserWarnings when rechunking data:
+            client.register_worker_plugin(CaptureWarningsPlugin())
+
+            _update_zarr(file=file,
+                         bucket=bucket,
+                         object_prefix=object_prefix,
+                         store_credentials_json=store_credentials_json,
+                         variables=variables,
+                         append_dim=append_dim,
+                         grid_filepath=grid_filepath,
+                         update_coords=update_coords,
+                         rechunk=rechunk,
+                         attrs=attrs,
+                         zarr_version=zarr_version
                          )
+
+            # --- Shutdown Store & Dask Cluster --- #
+            client.shutdown()
+            client.close()
+            logging.info("Dask Cluster has been shutdown.")
+    
+    else:
+        # === Update Zarr store without Dask === #
+        _update_zarr(file=file,
+                     bucket=bucket,
+                     object_prefix=object_prefix,
+                     store_credentials_json=store_credentials_json,
+                     variables=variables,
+                     append_dim=append_dim,
+                     grid_filepath=grid_filepath,
+                     update_coords=update_coords,
+                     rechunk=rechunk,
+                     attrs=attrs,
+                     zarr_version=zarr_version
+                     )
 
 
 def _update_icechunk(
@@ -1784,7 +1463,6 @@ def _update_icechunk(
     object_prefix: str,
     store_credentials_json: str,
     variables: list[str] | str = 'all',
-    send_vars_indep: bool = True,
     append_dim: Optional[str] = 'time_counter',
     grid_filepath: Optional[str] = None,
     update_coords: Optional[dict] = None,
@@ -1796,7 +1474,8 @@ def _update_icechunk(
     icechunk_config: Optional[dict] = None,
     ) -> None:
     """
-    Update data in existing Icechunk repository in cloud object storage.
+    Update data in existing Icechunk repository in cloud object storage
+    by replacing and/or appending data.
 
     Parameters
     ----------
@@ -1812,8 +1491,6 @@ def _update_icechunk(
         Path to the JSON file containing the object store credentials.
     variables: list | str, default="all"
         List of variables to send. If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects, by default True.
     append_dim: str, default='time_counter'
         Name of the dimension to append multifile datasets.
     grid_filepath: str, optional
@@ -1862,73 +1539,45 @@ def _update_icechunk(
     # Consider variables with append dimension only:
     variables = [var for var in variables if append_dim in ds_filepath[var].dims]
 
-    # === Update Variables in Individual Icechunk Repos === #
-    if send_vars_indep:
-        for var in variables:
-            logging.info(f"Updating Variable {var}")
-            try:
-                # Open existing Icechunk repo:
-                repo = obj_store.open_icechunk_repo(bucket=bucket,
-                                                    prefix=f"{object_prefix}/{var}",
-                                                    storage_config_kwargs=icechunk_config["storage_config_kwargs"],
-                                                    repository_config_kwargs=icechunk_config["repository_config_kwargs"],
-                                                    storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
-                                                    )
-                # Update and commit to the repo:
+    # === Update Variables in Icechunk Repo === #
+    try:
+        # Open existing Icechunk repo:
+        repo = obj_store.open_icechunk_repo(bucket=bucket,
+                                            prefix=object_prefix,
+                                            storage_config_kwargs=icechunk_config["storage_config_kwargs"],
+                                            repository_config_kwargs=icechunk_config["repository_config_kwargs"],
+                                            storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
+                                            )
+
+        if variable_commits:
+            for var in variables:
+                logging.info(f"Updating Variable {var}")
+                # Update each variable using separate commits to the repo:
                 _update_icechunk_store(data=ds_filepath[var],
-                                       dest=f"{bucket}/{object_prefix}/{var}",
-                                       repo=repo,
-                                       commit_message=commit_message,
-                                       branch=branch,
-                                       append_dim=append_dim,
-                                       rechunk=rechunk,
-                                       )
-            except icechunk.IcechunkError:
-                logging.info(f"Skipping Variable: Icechunk repository does not exist at {bucket}/{object_prefix}/{var}")
+                                        dest=f"{bucket}/{object_prefix}",
+                                        repo=repo,
+                                        commit_message=commit_message,
+                                        branch=branch,
+                                        append_dim=append_dim,
+                                        rechunk=rechunk,
+                                        )
+        else:
+            # Update dataset using single commit to the repo:
+            logging.info(f"Updating Dataset {object_prefix}")
+            _update_icechunk_store(data=ds_filepath[variables],
+                                    dest=f"{bucket}/{object_prefix}",
+                                    repo=repo,
+                                    commit_message=commit_message,
+                                    branch=branch,
+                                    append_dim=append_dim,
+                                    rechunk=rechunk,
+                                    )
 
-        # Release resources to avoid memory leaks:
-        ds_filepath.close()
+    except icechunk.IcechunkError:
+        logging.info(f"Skipping Dataset: Icechunk repository does not exist at {bucket}/{object_prefix}/{var}")
 
-    else:
-        # === Update Variables in Single Icechunk Repo === #
-        try:
-            # Open existing Icechunk repo:
-            repo = obj_store.open_icechunk_repo(bucket=bucket,
-                                                prefix=object_prefix,
-                                                storage_config_kwargs=icechunk_config["storage_config_kwargs"],
-                                                repository_config_kwargs=icechunk_config["repository_config_kwargs"],
-                                                storage_settings_kwargs=icechunk_config["storage_settings_kwargs"],
-                                                )
-
-            if variable_commits:
-                for var in variables:
-                    logging.info(f"Updating Variable {var}")
-                    # Update each variable using separate commits to the repo:
-                    _update_icechunk_store(data=ds_filepath[var],
-                                           dest=f"{bucket}/{object_prefix}",
-                                           repo=repo,
-                                           commit_message=commit_message,
-                                           branch=branch,
-                                           append_dim=append_dim,
-                                           rechunk=rechunk,
-                                           )
-            else:
-                # Update dataset using single commit to the repo:
-                logging.info(f"Updating Dataset {object_prefix}")
-                _update_icechunk_store(data=ds_filepath[variables],
-                                       dest=f"{bucket}/{object_prefix}",
-                                       repo=repo,
-                                       commit_message=commit_message,
-                                       branch=branch,
-                                       append_dim=append_dim,
-                                       rechunk=rechunk,
-                                       )
-
-        except icechunk.IcechunkError:
-            logging.info(f"Skipping Dataset: Icechunk repository does not exist at {bucket}/{object_prefix}/{var}")
-
-        # Release resources to avoid memory leaks:
-        ds_filepath.close()
+    # Release resources to avoid memory leaks:
+    ds_filepath.close()
 
 
 def update_icechunk(
@@ -1937,7 +1586,6 @@ def update_icechunk(
     object_prefix: str,
     store_credentials_json: str,
     variables: list[str] | str = 'all',
-    send_vars_indep: bool = True,
     append_dim: Optional[str] = 'time_counter',
     grid_filepath: Optional[str] = None,
     update_coords: Optional[dict] = None,
@@ -1968,8 +1616,6 @@ def update_icechunk(
         Path to the JSON file containing the object store credentials.
     variables: list | str, default="all"
         List of variables to send. If None, all variables will be sent.
-    send_vars_indep: bool, default=True
-        Whether to send variables as separate objects, by default True.
     append_dim: str, default='time_counter'
         Name of the dimension to append multifile datasets.
     grid_filepath: str, optional
@@ -2012,7 +1658,6 @@ def update_icechunk(
                              object_prefix=object_prefix,
                              store_credentials_json=store_credentials_json,
                              variables=variables,
-                             send_vars_indep=send_vars_indep,
                              append_dim=append_dim,
                              grid_filepath=grid_filepath,
                              update_coords=update_coords,
@@ -2036,7 +1681,6 @@ def update_icechunk(
                          object_prefix=object_prefix,
                          store_credentials_json=store_credentials_json,
                          variables=variables,
-                         send_vars_indep=send_vars_indep,
                          append_dim=append_dim,
                          grid_filepath=grid_filepath,
                          update_coords=update_coords,
