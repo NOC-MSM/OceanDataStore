@@ -142,6 +142,69 @@ class OceanDataCatalog:
         self.item_summary()
 
 
+    def _open_icechunk_store(
+            self,
+            fields: dict,
+            branch: str,
+            ) -> xr.Dataset:
+        """
+        Open STAC Item Icechunk store asset as xarray Dataset.
+
+        Parameters
+        ----------
+        fields : dict
+            Dictionary of arguments to s3_storage() defining Icechunk
+            S3 storage instance.
+        branch : str
+            Branch of the Icechunk repository to read.
+
+        Returns
+        -------
+        xarray.Dataset
+            Dataset read from Item asset.
+        """
+        # Define S3 Object Store containing asset:
+        storage = icechunk.s3_storage(
+            bucket=fields['bucket'],
+            prefix=fields['prefix'],
+            anonymous=fields['anonymous'],
+            endpoint_url=fields['endpoint_url'],
+            force_path_style=True
+        )
+
+        # Open Item asset Icechunk repository on specified branch:
+        repo = icechunk.Repository.open(storage=storage)
+        store = repo.readonly_session(branch=branch).store
+        ds = xr.open_zarr(store, consolidated=False)
+
+        return ds
+
+
+    def _open_zarr_store(
+            self,
+            fields: dict,
+            ) -> xr.Dataset:
+        """
+        Open STAC Item Zarr store asset as xarray Dataset.
+
+        Parameters
+        ----------
+        fields : dict
+            Dictionary of arguments to open_zarr() defining URL
+            and version of Zarr store.
+
+        Returns
+        -------
+        xarray.Dataset
+            Dataset read from Item asset.
+        """
+        # Open Item asset Zarr store via URL:
+        url = f"{fields['endpoint_url']}/{fields['bucket']}/{fields['prefix']}"
+        ds = xr.open_zarr(url, zarr_format=fields['zarr_format'], consolidated=True)
+
+        return ds
+
+
     def open_dataset(self,
                      id: str,
                      variables: Optional[Sequence[str]] = None,
@@ -151,8 +214,7 @@ class OceanDataCatalog:
                      branch: str = "main",
                      asset_key: Optional[str] = None) -> xr.Dataset:
         """
-        Open a dataset from a STAC Item asset using
-        xarray and Icechunk.
+        Open STAC Item asset as an xarray Dataset.
 
         Parameters
         ----------
@@ -204,24 +266,25 @@ class OceanDataCatalog:
             raise ValueError(f"Asset key '{asset_key}' not found in Item ID '{id}'.")
 
         fields = asset.extra_fields
-        required_fields = ['bucket', 'prefix', 'anonymous', 'endpoint_url']
-        for field in required_fields:
-            if field not in fields:
-                raise ValueError(f"Missing asset field '{field}' in item '{id}'.")
 
-        # Define S3 Object Store containing asset:
-        storage = icechunk.s3_storage(
-            bucket=fields['bucket'],
-            prefix=fields['prefix'],
-            anonymous=fields['anonymous'],
-            endpoint_url=fields['endpoint_url'],
-            force_path_style=True
-        )
+        # Open Icechunk Repository as xarray Dataset:
+        if asset.to_dict()['type'] == "application/icechunk":
+            required_fields = ['bucket', 'prefix', 'anonymous', 'endpoint_url']
+            for field in required_fields:
+                if field not in fields:
+                    raise ValueError(f"Missing asset field '{field}' in item '{id}'.")
+            ds = self._open_icechunk_store(fields=fields, branch=branch)
 
-        # Open Icechunk repository & read-only session on specified branch:
-        repo = icechunk.Repository.open(storage=storage)
-        store = repo.readonly_session(branch=branch).store
-        ds = xr.open_zarr(store, consolidated=False)
+        # Open Zarr store as xarray Dataset:
+        elif asset.to_dict()['type'] == 'application/vnd+zarr':
+            required_fields = ['bucket', 'prefix', 'endpoint_url', 'zarr_format']
+            for field in required_fields:
+                if field not in fields:
+                    raise ValueError(f"Missing asset field '{field}' in item '{id}'.")
+            ds = self._open_zarr_store(fields=fields)
+
+        else:
+            raise ValueError(f"Unsupported media type {asset.to_dict()['type']} for Item asset.")
 
         # Selecting variables:
         if variables:
