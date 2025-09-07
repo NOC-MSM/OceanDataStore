@@ -46,7 +46,7 @@ The arguments used are:
 * `-b`: Bucket name in the object store where the variables will be stored.
 * `-zv`: Zarr version used to create the zarr store. Options are 2 (v2) or 3 (v3).
 
-In the above example, the variable(s) will be stored in a single Zarr v3 store at the `<bucket_name>/<prefix>` path. We can instead create an individual Zarr v3 store for each variable at `<bucket_name>/<prefix>/<var>` by using the `-vs` (`--variable-stores`) flag.
+In the above example, the variable(s) will be stored in a single Zarr v3 store at the `<bucket_name>/<prefix>` path.
 
 ### Icechunk Repositories
 
