@@ -41,18 +41,26 @@
     "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics annual mean outputs defined at U-points.",
     "platform": "gn_global",
     "variables": [
-      "time_counter_bounds",
-      "umo",
-      "uo",
-      "time_centered_bounds",
+      "e3u",
       "u2o",
-      "e3u"
+      "umo",
+      "time_centered_bounds",
+      "time_counter_bounds",
+      "uo"
+    ],
+    "variable_standard_names": [
+      "cell_thickness",
+      "square_of_sea_water_x_velocity",
+      "ocean_mass_x_transport",
+      "time_centered_bounds",
+      "time_counter_bounds",
+      "sea_water_x_velocity"
     ],
     "dimensions": [
+      "time_counter",
       "depthu",
       "y",
       "x",
-      "time_counter",
       "axis_nbounds"
     ],
     "operation": "mean",
@@ -61,7 +69,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-11T14:50:48.938150",
+    "latest_data_update": "2025-09-11T15:03:09.324049",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null

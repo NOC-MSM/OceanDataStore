@@ -42,17 +42,31 @@
     "platform": "gn_global",
     "variables": [
       "avt_evd",
+      "difvho",
       "difvmo",
       "difvso",
+      "obvfsq",
       "e3w",
       "diftrto",
-      "difvho",
-      "time_centered_bounds",
-      "wo",
-      "obvfsq",
       "wmo",
+      "time_centered_bounds",
+      "w2o",
       "time_counter_bounds",
-      "w2o"
+      "wo"
+    ],
+    "variable_standard_names": [
+      "enhanced_vertical_heat_diffusivity",
+      "ocean_vertical_heat_diffusivity",
+      "ocean_vertical_momentum_diffusivity",
+      "ocean_vertical_salt_diffusivity",
+      "obvfsq",
+      "cell_thickness",
+      "ocean_vertical_tracer_diffusivity_due_to_tides",
+      "upward_ocean_mass_transport",
+      "time_centered_bounds",
+      "square_of_upward_sea_water_velocity",
+      "time_counter_bounds",
+      "upward_sea_water_velocity"
     ],
     "dimensions": [
       "time_counter",
@@ -67,7 +81,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-11T14:50:17.640401",
+    "latest_data_update": "2025-09-11T15:02:37.172287",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
