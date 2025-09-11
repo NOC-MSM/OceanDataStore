@@ -124,6 +124,8 @@ def create_item_with_asset(
         description = f"Icechunk repository containing {config} global sea-ice {operation} outputs defined at T-points."
     elif 'S' in prefix:
         description = f"Icechunk repository containing {config} global ocean scalar {operation} outputs."
+    elif 'M' in prefix:
+        description = f"Icechunk repository containing {config} ocean physics transect {operation} outputs defined at {prefix.split('/')[-1]}."
     else:
         description = f"Icechunk repository containing {config} global ocean physics {operation} outputs defined at {prefix[0]}-points."
 
@@ -165,7 +167,7 @@ def create_item_with_asset(
         collection="noc-npd",
     )
 
-    item.add_asset(key=prefix, asset=pystac.Asset(
+    item.add_asset(key=prefix.split('/')[-1], asset=pystac.Asset(
         href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{platform}/{prefix}",
         title=f"{config} {prefix} Icechunk repository",
         description=description,

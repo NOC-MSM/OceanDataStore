@@ -42,16 +42,16 @@
     "platform": "gn_global",
     "variables": [
       "time_centered_bounds",
-      "time_counter_bounds",
-      "thetaoga",
       "scvoltot",
+      "thetaoga",
+      "time_counter_bounds",
       "soga"
     ],
     "variable_standard_names": [
       "time_centered_bounds",
-      "time_counter_bounds",
-      "sea_water_potential_temperature",
       "sea_water_volume",
+      "sea_water_potential_temperature",
+      "time_counter_bounds",
       "sea_water_salinity"
     ],
     "dimensions": [
@@ -64,7 +64,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-11T15:01:51.891635",
+    "latest_data_update": "2025-09-11T16:19:22.760275",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null

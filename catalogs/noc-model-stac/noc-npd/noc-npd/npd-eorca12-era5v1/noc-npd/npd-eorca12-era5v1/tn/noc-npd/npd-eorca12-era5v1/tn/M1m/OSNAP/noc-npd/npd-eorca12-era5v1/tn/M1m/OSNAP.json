@@ -41,32 +41,32 @@
     "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean scalar monthly mean outputs.",
     "platform": "tn",
     "variables": [
+      "sal",
+      "moc_east",
       "dz",
       "sigma0",
-      "moc_east",
+      "moc_west",
       "moc_total",
       "temp",
-      "sal",
-      "moc_west",
-      "volume_transport",
-      "velocity"
+      "velocity",
+      "volume_transport"
     ],
     "variable_standard_names": [
+      "sea_water_salinity",
+      "moc_sigma0",
       "cell_thickness",
       "sea_water_salinity",
       "moc_sigma0",
       "moc_sigma0",
       "sea_water_temperature",
-      "sea_water_salinity",
-      "moc_sigma0",
-      "volume_transport",
-      "sea_water_velocity"
+      "sea_water_velocity",
+      "volume_transport"
     ],
     "dimensions": [
-      "time_counter",
-      "depth",
       "station",
-      "sigma0_bins"
+      "sigma0_bins",
+      "time_counter",
+      "depth"
     ],
     "operation": "mean",
     "operation_frequency": "monthly",
@@ -74,7 +74,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-11T15:03:37.954651",
+    "latest_data_update": "2025-09-11T16:21:15.612236",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
@@ -94,7 +94,7 @@
     }
   ],
   "assets": {
-    "M1m/OSNAP": {
+    "OSNAP": {
       "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca12-era5v1/tn/M1m/OSNAP",
       "type": "application/icechunk",
       "title": "eORCA12 ERA5v1 NPD M1m/OSNAP Icechunk repository",

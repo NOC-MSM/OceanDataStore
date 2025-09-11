@@ -41,36 +41,36 @@
     "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics monthly mean outputs defined at W-points.",
     "platform": "gn_global",
     "variables": [
-      "obvfsq",
-      "difvho",
+      "e3w",
       "difvso",
       "avt_evd",
       "difvmo",
-      "e3w",
-      "wmo",
       "w2o",
-      "wo",
+      "obvfsq",
+      "difvho",
       "time_counter_bounds",
-      "time_centered_bounds"
+      "wmo",
+      "time_centered_bounds",
+      "wo"
     ],
     "variable_standard_names": [
-      "obvfsq",
-      "ocean_vertical_heat_diffusivity",
+      "cell_thickness",
       "ocean_vertical_salt_diffusivity",
       "enhanced_vertical_heat_diffusivity",
       "ocean_vertical_momentum_diffusivity",
-      "cell_thickness",
-      "upward_ocean_mass_transport",
       "square_of_upward_sea_water_velocity",
-      "upward_sea_water_velocity",
+      "obvfsq",
+      "ocean_vertical_heat_diffusivity",
       "time_counter_bounds",
-      "time_centered_bounds"
+      "upward_ocean_mass_transport",
+      "time_centered_bounds",
+      "upward_sea_water_velocity"
     ],
     "dimensions": [
-      "time_counter",
       "depthw",
       "y",
       "x",
+      "time_counter",
       "axis_nbounds"
     ],
     "operation": "mean",
@@ -79,7 +79,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-11T15:03:27.415627",
+    "latest_data_update": "2025-09-11T16:21:04.667345",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
