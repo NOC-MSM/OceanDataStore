@@ -101,6 +101,11 @@
       "type": "application/geo+json"
     },
     {
+      "rel": "item",
+      "href": "./noc-npd/npd-eorca12-era5v1/gn_global/domain/domain_cfg/noc-npd/npd-eorca12-era5v1/gn_global/domain/domain_cfg.json",
+      "type": "application/geo+json"
+    },
+    {
       "rel": "parent",
       "href": "../../../catalog.json",
       "type": "application/json",

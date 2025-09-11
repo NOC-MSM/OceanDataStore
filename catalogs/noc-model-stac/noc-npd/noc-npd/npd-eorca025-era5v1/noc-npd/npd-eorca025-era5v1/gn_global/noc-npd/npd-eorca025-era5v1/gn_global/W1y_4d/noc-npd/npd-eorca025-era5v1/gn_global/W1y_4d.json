@@ -43,16 +43,16 @@
     "variables": [
       "difvho",
       "difvso",
-      "difvmo",
-      "time_centered_bounds",
-      "time_counter_bounds",
-      "avt_evd",
-      "e3w",
-      "obvfsq",
       "diftrto",
+      "time_centered_bounds",
+      "difvmo",
+      "e3w",
       "wo",
-      "w2o",
-      "wmo"
+      "obvfsq",
+      "avt_evd",
+      "wmo",
+      "time_counter_bounds",
+      "w2o"
     ],
     "dimensions": [
       "time_counter",
@@ -67,7 +67,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-07-30T09:44:18.320981",
+    "latest_data_update": "2025-09-11T14:50:03.974915",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null

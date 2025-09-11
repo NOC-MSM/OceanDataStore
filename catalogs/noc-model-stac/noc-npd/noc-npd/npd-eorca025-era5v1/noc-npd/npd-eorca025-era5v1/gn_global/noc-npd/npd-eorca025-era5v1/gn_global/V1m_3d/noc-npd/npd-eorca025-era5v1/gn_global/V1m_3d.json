@@ -41,18 +41,18 @@
     "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics monthly mean outputs defined at V-points.",
     "platform": "gn_global",
     "variables": [
-      "hfy_adv",
-      "time_centered_bounds",
-      "time_counter_bounds",
       "tauvo",
       "hfy_diff",
+      "time_centered_bounds",
       "somesatr",
-      "hfy"
+      "hfy_adv",
+      "hfy",
+      "time_counter_bounds"
     ],
     "dimensions": [
+      "time_counter",
       "y",
       "x",
-      "time_counter",
       "axis_nbounds"
     ],
     "operation": "mean",
@@ -61,7 +61,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-07-30T09:44:30.192002",
+    "latest_data_update": "2025-09-11T14:50:14.384856",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null

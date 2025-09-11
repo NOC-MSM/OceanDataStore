@@ -1,0 +1,121 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-npd/npd-eorca025-era5v1/tn/M1m/MOVE_16N",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          -90.0
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "properties": {
+    "title": "eORCA025 ERA5v1 NPD M1m/MOVE_16N Icechunk repository",
+    "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics monthly mean outputs defined at M-points.",
+    "platform": "tn",
+    "variables": [
+      "q_int",
+      "fw_move",
+      "q_bdry",
+      "fw_int",
+      "moc_move",
+      "moc_model",
+      "fw_bdry",
+      "fw_int_model",
+      "s_bdry_fwt",
+      "rho",
+      "q_int_model",
+      "q_model",
+      "s_move",
+      "dh",
+      "salt",
+      "t_bdry_fwt",
+      "t_move",
+      "fw_model",
+      "trans_int",
+      "t_int",
+      "v",
+      "trans_int_model",
+      "s_int",
+      "vgeo",
+      "trans_bdry",
+      "q_move",
+      "temp",
+      "v_model",
+      "v_bdry",
+      "v_int",
+      "v_move",
+      "v_int_model"
+    ],
+    "dimensions": [
+      "time",
+      "z",
+      "xbounds",
+      "x"
+    ],
+    "operation": "mean",
+    "operation_frequency": "monthly",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "ongoing",
+    "update_frequency": "quarterly",
+    "latest_data_update": "2025-09-11T14:50:37.969281",
+    "start_datetime": "1976-01-01T00:00:00Z",
+    "end_datetime": "2024-12-31T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "eORCA025 ERA5v1 NPD transect Catalog"
+    }
+  ],
+  "assets": {
+    "M1m/MOVE_16N": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-era5v1/tn/M1m/MOVE_16N",
+      "type": "application/icechunk",
+      "title": "eORCA025 ERA5v1 NPD M1m/MOVE_16N Icechunk repository",
+      "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics monthly mean outputs defined at M-points.",
+      "bucket": "npd-eorca025-era5v1",
+      "prefix": "M1m/MOVE_16N",
+      "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+      "anonymous": true
+    }
+  },
+  "collection": "noc-npd"
+}
