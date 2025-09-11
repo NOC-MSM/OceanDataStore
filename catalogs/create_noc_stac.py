@@ -11,21 +11,87 @@ Authors:
 """
 # -- Import Python Modules -- #
 import os
+import sys
+import logging
 import pystac
 import datetime
 import icechunk
 import xarray as xr
 from shapely.geometry import Polygon, mapping
 
+# -- Configure Logging -- #
+logger = logging.getLogger(__name__)
+
+
+def banner():
+    """Add OceanDataStore banner to log."""
+    logger.info(r"""
+          .-~~~-.
+  .- ~ ~-(       )_ _
+ /                    ~ -.
+~      OceanDataStore     ',
+\                         .'
+ - ._ ,. ,.,.,., ,.. -~ ~ '
+        '       '
+    STAC Catalog Creator
+    """,
+    extra={"simple": True},
+    )
+
+
+def initialise_logging():
+    """Initialise logging configuration."""
+    logging.basicConfig(
+        stream=sys.stdout,
+        format="☁  OceanDataStore  ☁  | %(levelname)10s | %(asctime)s | %(message)s",
+        level=logging.INFO,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+
 # -- Define Utility Functions -- #
-def create_item_with_asset(ds: xr.Dataset,
-                           bucket: str,
-                           platform: str,
-                           prefix: str,
-                           config: str ="eORCA1 ERA5v1 NPD",
-                           operation: str ="annual-mean",
-                           media_type: str="application/icechunk",
-                           ) -> pystac.Item:
+def open_icechunk_store(
+    bucket: str,
+    prefix: str,
+    branch: str = "main"
+    ) -> xr.Dataset:
+    """
+    Open an Icechunk Store as an xarray.Dataset.
+
+    Parameters
+    ----------
+    bucket : str
+        S3 bucket name where the Icechunk repository is stored.
+    prefix : str
+        Prefix for the Icechunk repository in the S3 bucket.
+    branch : str, optional
+        Branch of the Icechunk repository to open (default is "main").
+    """
+    # Define S3 storage:
+    storage = icechunk.s3_storage(
+    bucket=bucket,
+    prefix=prefix,
+    anonymous=True,
+    endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+    force_path_style=True,
+    )
+
+    # Open Icechunk Repository:
+    repo = icechunk.Repository.open(storage=storage)
+
+    # Open Dataset from Icechunk Store:
+    return xr.open_zarr(repo.readonly_session(branch=branch).store, consolidated=False)
+
+
+def create_item_with_asset(
+    ds: xr.Dataset,
+    bucket: str,
+    platform: str,
+    prefix: str,
+    config: str ="eORCA1 ERA5v1 NPD",
+    operation: str ="annual-mean",
+    media_type: str="application/icechunk",
+    ) -> pystac.Item:
     """
     Create a STAC Item with an asset from an xarray Dataset.
 
@@ -85,7 +151,7 @@ def create_item_with_asset(ds: xr.Dataset,
             "title": f"{config} {prefix} Icechunk repository",
             "description": description,
             "platform": platform,
-            "variables": list(ds.data_vars),
+            "variables": [ds[var].attrs.get('short_name', var) for var in ds.data_vars],
             "dimensions": list(ds.dims),
             "operation": operation.split(" ")[1],
             "operation_frequency": operation.split(" ")[0],
@@ -113,235 +179,338 @@ def create_item_with_asset(ds: xr.Dataset,
 
     return item
 
+def create_noc_stac():
+    """Create the NOC Model STAC and write to local filesystem."""
+    # -- Define NOC Model STAC Base Catalog -- #
+    noc_stac = pystac.Catalog(id="noc-model-stac",
+                            title="NOC Model STAC Catalog",
+                            description='National Oceanography Centre Spatio-Temporal Asset Catalog for Ocean Model Data',
+                            stac_extensions=None,
+                            extra_fields={
+                                "created": datetime.datetime.now().isoformat(),
+                                "last_update": datetime.datetime.now().isoformat(),
+                                "catalog_version": "0.1.0",
+                                "contacts": ["Oliver Tooth (oliver.tooth@noc.ac.uk)",
+                                            "Adam Blaker (atb299@noc.ac.uk)",
+                                            "Andrew Coward (acc@noc.ac.uk)",
+                                            ],
+                                },
+                            )
 
-# -- Define NOC Model STAC Base Catalog -- #
-noc_stac = pystac.Catalog(id="noc-model-stac",
-                         title="NOC Model STAC Catalog",
-                         description='National Oceanography Centre Spatio-Temporal Asset Catalog for Ocean Model Data',
-                         stac_extensions=None,
-                         extra_fields={
-                             "created": datetime.datetime.now().isoformat(),
-                             "last_update": datetime.datetime.now().isoformat(),
-                             "catalog_version": "0.1.0",
-                             "contacts": ["Oliver Tooth (oliver.tooth@noc.ac.uk)",
-                                          "Adam Blaker (atb299@noc.ac.uk)",
-                                          "Andrew Coward (acc@noc.ac.uk)",
-                                          ],
-                             },
-                         )
+    logging.info(f"Completed: Created NOC STAC Catalog with ID: {noc_stac.id}")
 
-# -- Define NOC Near-Present Day Collection -- #
-# Define the spatial extent for the collection:
-spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 0, 180.0, 90.0, 6000]])
+    # -- Define NOC Near-Present Day Collection -- #
+    # Define the spatial extent for the collection:
+    spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 0, 180.0, 90.0, 6000]])
 
-# Define the current temporal extent for the collection:
-collection_interval = sorted([datetime.datetime(year=1976, month=1, day=1), datetime.datetime(year=2024, month=12, day=31)])
-temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
+    # Define the current temporal extent for the collection:
+    collection_interval = sorted([datetime.datetime(year=1976, month=1, day=1), datetime.datetime(year=2024, month=12, day=31)])
+    temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
-# Define the Near-Present Day Collection:
-npd_collection = pystac.Collection(
-    id="noc-npd",
-    title="NOC Near-Present Day Collection",
-    description="Collection of multi-decadal Near-Present Day ocean model simulations produced by the National Oceanography Centre (NOC) as part of the Atlantic Climate and Environment Strategic Science (AtlantiS) programme.",
-    extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
-    # Open Government License (OGL) - UK version 3.0 - http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
-    license="OGL-UK-3.0",
-    extra_fields=dict(project="AtlantiS", status="ongoing", update_frequency="quarterly", last_data_update="2025-05-30"),
-    keywords=["NOC", "Near-Present Day", "AtlantiS", "hindcast", "global", "model", "ocean", "sea-ice"],
-    providers=[
-        pystac.Provider(
-            name="National Oceanography Centre",
-            description="National Oceanography Centre (United Kindom) - Marine Systems Modelling group.",
-            roles=[pystac.ProviderRole.PRODUCER, pystac.ProviderRole.LICENSOR],
-            url="https://noc-msm.github.io/NOC_Near_Present_Day/"
-        ),
-        pystac.Provider(
-            name="JASMIN",
-            description="JASMIN environmental data analysis facility (United Kindgom).",
-            roles=[pystac.ProviderRole.HOST],
-            url="https://jasmin.ac.uk"
+    # Define the Near-Present Day Collection:
+    npd_collection = pystac.Collection(
+        id="noc-npd",
+        title="NOC Near-Present Day Collection",
+        description="Collection of multi-decadal Near-Present Day ocean model simulations produced by the National Oceanography Centre (NOC) as part of the Atlantic Climate and Environment Strategic Science (AtlantiS) programme.",
+        extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
+        # Open Government License (OGL) - UK version 3.0 - http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
+        license="OGL-UK-3.0",
+        extra_fields=dict(project="AtlantiS", status="ongoing", update_frequency="quarterly", last_data_update="2025-05-30"),
+        keywords=["NOC", "Near-Present Day", "AtlantiS", "hindcast", "global", "model", "ocean", "sea-ice"],
+        providers=[
+            pystac.Provider(
+                name="National Oceanography Centre",
+                description="National Oceanography Centre (United Kindom) - Marine Systems Modelling group.",
+                roles=[pystac.ProviderRole.PRODUCER, pystac.ProviderRole.LICENSOR],
+                url="https://noc-msm.github.io/NOC_Near_Present_Day/"
+            ),
+            pystac.Provider(
+                name="JASMIN",
+                description="JASMIN environmental data analysis facility (United Kindgom).",
+                roles=[pystac.ProviderRole.HOST],
+                url="https://jasmin.ac.uk"
+            )
+        ],
+    )
+
+    logging.info(f"Completed: Created NOC STAC Collection with ID: {npd_collection.id}")
+
+    # -- Define NOC Near-Present Day Model Configuration Catalogs -- #
+    npd_eorca1_era5v1 = pystac.Catalog(
+        id="noc-npd/npd-eorca1-era5v1",
+        title="eORCA1 ERA5v1 NPD Catalog",
+        description="Catalog of outputs from the eORCA1 ERA-5 version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre."
         )
-    ],
-)
 
-# -- Define NOC Near-Present Day Model Configuration Catalogs -- #
-npd_eorca1_era5v1 = pystac.Catalog(
-    id="noc-npd/npd-eorca1-era5v1",
-    title="eORCA1 ERA5v1 NPD Catalog",
-    description="Catalog of outputs from the eORCA1 ERA-5 version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre."
+    logging.info(f"Completed: Created NOC STAC Catalog with ID: {npd_eorca1_era5v1.id}")
+
+    npd_eorca025_era5v1 = pystac.Catalog(
+        id="noc-npd/npd-eorca025-era5v1",
+        title="eORCA025 ERA5v1 NPD Catalog",
+        description="Catalog of outputs from the eORCA025 ERA-5 version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre.",
+        )
+
+    logging.info(f"Completed: Created NOC STAC Catalog with ID: {npd_eorca025_era5v1.id}")
+
+    npd_eorca12_era5v1 = pystac.Catalog(
+        id="noc-npd/npd-eorca12-era5v1",
+        title="eORCA12 ERA5v1 NPD Catalog",
+        description="Catalog of outputs from the eORCA12 ERA-5 version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre.",
+        )
+
+    logging.info(f"Completed: Created NOC STAC Catalog with ID: {npd_eorca12_era5v1.id}")
+
+    # Define NOC Near-Present Day Platform Sub-Catalogs -- #
+    # Note: Options for platforms are: "gn_global", "gr_global", "gn_regional{1...4}", "gr_regional{1...4}", "tn", "tr".
+    # where gn = global native model grids, gr = global regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
+
+    gn_eorca1_era5v1 = pystac.Catalog(
+        id="noc-npd/npd-eorca1-era5v1/gn_global",
+        title="eORCA1 ERA5v1 NPD global native model grid Catalog",
+        description="Catalog of global ocean physics outputs stored on the native eORCA1 curvilinear model grid."
+        )
+
+    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca1_era5v1.id}")
+
+    gn_eorca025_era5v1 = pystac.Catalog(
+        id="noc-npd/npd-eorca025-era5v1/gn_global",
+        title="eORCA025 ERA5v1 NPD global native model grid Catalog",
+        description="Catalog of global ocean physics outputs stored on the native eORCA025 curvilinear model grid."
+        )
+
+    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca025_era5v1.id}")
+
+    gn_eorca12_era5v1 = pystac.Catalog(
+        id="noc-npd/npd-eorca12-era5v1/gn_global",
+        title="eORCA12 ERA5v1 NPD global native model grid Catalog",
+        description="Catalog of global ocean physics outputs stored on the native eORCA12 curvilinear model grid."
+        )
+
+    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca12_era5v1.id}")
+
+    tn_eorca1_era5v1 = pystac.Catalog(
+        id="noc-npd/npd-eorca1-era5v1/tn",
+        title="eORCA1 ERA5v1 NPD transect Catalog",
+        description="Catalog of ocean physics transect outputs defined on the native eORCA1 curvilinear model grid."
     )
 
-npd_eorca025_era5v1 = pystac.Catalog(
-    id="noc-npd/npd-eorca025-era5v1",
-    title="eORCA025 ERA5v1 NPD Catalog",
-    description="Catalog of outputs from the eORCA025 ERA-5 version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre.",
+    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {tn_eorca1_era5v1.id}")
+
+    tn_eorca025_era5v1 = pystac.Catalog(
+        id="noc-npd/npd-eorca025-era5v1/tn",
+        title="eORCA025 ERA5v1 NPD transect Catalog",
+        description="Catalog of ocean physics transect outputs defined on the native eORCA025 curvilinear model grid."
     )
 
-npd_eorca12_era5v1 = pystac.Catalog(
-    id="noc-npd/npd-eorca12-era5v1",
-    title="eORCA12 ERA5v1 NPD Catalog",
-    description="Catalog of outputs from the eORCA12 ERA-5 version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre.",
+    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {tn_eorca025_era5v1.id}")
+
+    tn_eorca12_era5v1 = pystac.Catalog(
+        id="noc-npd/npd-eorca12-era5v1/tn",
+        title="eORCA12 ERA5v1 NPD transect Catalog",
+        description="Catalog of ocean physics transect outputs defined on the native eORCA12 curvilinear model grid."
     )
 
-# Define NOC Near-Present Day Platform Sub-Catalogs -- #
-# Note: Options for platforms are: "gn_global", "gr_global", "gn_regional{1...4}", "gr_regional{1...4}", "tn", "tr".
-# where gn = global native model grids, gr = global regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
+    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {tn_eorca12_era5v1.id}")
 
-gn_eorca1_era5v1 = pystac.Catalog(
-    id="noc-npd/npd-eorca1-era5v1/gn_global",
-    title="eORCA1 ERA5v1 NPD global native model grid Catalog",
-    description="Catalog of global ocean physics outputs stored on the native eORCA1 curvilinear model grid."
-    )
+    # -- Add Items to NOC Near-Present Day eORCA1 ERA5v1 {gn_global} Sub-Catalog -- #
+    # Define the store credentials for the eORCA1 ERA5v1 NPD data:
+    for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W1m", "I1m", "S1m",
+                   "domain/domain_cfg", "domain/mesh_mask", "domain/subbasins"
+                   ]:
+        # Open dataset from Icechunk repository:
+        ds = open_icechunk_store(bucket="npd-eorca1-era5v1", prefix=prefix, branch="main")
 
-gn_eorca025_era5v1 = pystac.Catalog(
-    id="noc-npd/npd-eorca025-era5v1/gn_global",
-    title="eORCA025 ERA5v1 NPD global native model grid Catalog",
-    description="Catalog of global ocean physics outputs stored on the native eORCA025 curvilinear model grid."
-    )
+        # Create item with asset for each eORCA1 ERA5v1 NPD prefix:
+        if 'domain' in prefix:
+            operation = "None None"
+        elif '1y' in prefix:
+            operation = "annual mean"
+        elif '1m' in prefix:
+            operation = "monthly mean"
+        elif '5d' in prefix:
+            operation = "5-day mean"
 
-gn_eorca12_era5v1 = pystac.Catalog(
-    id="noc-npd/npd-eorca12-era5v1/gn_global",
-    title="eORCA12 ERA5v1 NPD global native model grid Catalog",
-    description="Catalog of global ocean physics outputs stored on the native eORCA12 curvilinear model grid."
-    )
+        item = create_item_with_asset(
+            ds=ds,
+            bucket="npd-eorca1-era5v1",
+            platform="gn_global",
+            prefix=prefix,
+            config="eORCA1 ERA5v1 NPD",
+            operation=operation,
+            media_type="application/icechunk"
+        )
+        # Add item to the eORCA1 ERA5v1 NPD global native model grid catalog:
+        gn_eorca1_era5v1.add_item(item)
 
-# -- Add Items to NOC Near-Present Day eORCA1 ERA5v1 Sub-Catalog -- #
-# Define the store credentials for the eORCA1 ERA5v1 NPD data:
-for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W1m", "I1m", "S1m",
-               "domain/domain_cfg", "domain/mesh_mask", "domain/subbasins"
-               ]:
-    # Define S3 storage to read eORCA1 ERA5v1 NPD data:
-    storage = icechunk.s3_storage(
-    bucket="npd-eorca1-era5v1",
-    prefix=prefix,
-    anonymous=True,
-    endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk",
-    force_path_style=True,
-    )
-    # Open Icechunk repository:
-    repo = icechunk.Repository.open(storage=storage)
-    # Open dataset from Icechunk repository:
-    ds = xr.open_zarr(repo.readonly_session(branch="main").store, consolidated=False)
+    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {gn_eorca1_era5v1.id}")
 
-    # Create item with asset for each eORCA1 ERA5v1 NPD prefix:
-    if 'domain' in prefix:
-        operation = "None None"
-    elif '1y' in prefix:
-        operation = "annual mean"
-    elif '1m' in prefix:
+    # -- Add Items to NOC Near-Present Day eORCA1 ERA5v1 {tn} Sub-Catalog -- #
+    # Define the store credentials for the eORCA1 ERA5v1 NPD data:
+    for prefix in ["M1m/MOVE_16N", "M1m/SAMBA_34_5S", "M1m/RAPID_26N", "M1m/OSNAP"]:
+        # Open dataset from Icechunk repository:
+        ds = open_icechunk_store(bucket="npd-eorca1-era5v1", prefix=prefix, branch="main")
+
+        # Create item with asset for each eORCA1 ERA5v1 NPD prefix:
         operation = "monthly mean"
-    elif '5d' in prefix:
-        operation = "5-day mean"
+        item = create_item_with_asset(
+            ds=ds,
+            bucket="npd-eorca1-era5v1",
+            platform="tn",
+            prefix=prefix,
+            config="eORCA1 ERA5v1 NPD",
+            operation=operation,
+            media_type="application/icechunk"
+        )
+        # Add item to the eORCA1 ERA5v1 NPD global native model grid catalog:
+        tn_eorca1_era5v1.add_item(item)
 
-    item = create_item_with_asset(
-        ds=ds,
-        bucket="npd-eorca1-era5v1",
-        platform="gn_global",
-        prefix=prefix,
-        config="eORCA1 ERA5v1 NPD",
-        operation=operation,
-        media_type="application/icechunk"
-    )
-    # Add item to the eORCA1 ERA5v1 NPD global native model grid catalog:
-    gn_eorca1_era5v1.add_item(item)
+    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {tn_eorca1_era5v1.id}")
 
-# -- Add Items to NOC Near-Present Day eORCA025 ERA5v1 Sub-Catalog -- #
-# Define the store credentials for the eORCA025 ERA5v1 NPD data:
-for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
-               "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
-               "T5d_3d", "T5d_4d", "U5d_3d", "U5d_4d", "V5d_3d", "V5d_4d", "I5d_3d", "S5d_1d",
-               "domain/domain_cfg", "domain/mesh_mask", "domain/subbasins"
-               ]:
-    # Define S3 storage to read eORCA025 ERA5v1 NPD data:
-    storage = icechunk.s3_storage(
-    bucket="npd-eorca025-era5v1",
-    prefix=prefix,
-    anonymous=True,
-    endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk",
-    force_path_style=True,
-    )
-    # Open Icechunk repository:
-    repo = icechunk.Repository.open(storage=storage)
-    # Open dataset from Icechunk repository:
-    ds = xr.open_zarr(repo.readonly_session(branch="main").store, consolidated=False)
+    # -- Add Items to NOC Near-Present Day eORCA025 ERA5v1 {gn_global} Sub-Catalog -- #
+    # Define the store credentials for the eORCA025 ERA5v1 NPD data:
+    for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
+                   "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
+                   "T5d_3d", "T5d_4d", "U5d_3d", "U5d_4d", "V5d_3d", "V5d_4d", "I5d_3d", "S5d_1d",
+                   "domain/domain_cfg", "domain/mesh_mask", "domain/subbasins"
+                   ]:
+        # Open dataset from Icechunk repository:
+        ds = open_icechunk_store(bucket="npd-eorca025-era5v1", prefix=prefix, branch="main")
 
-    # Create item with asset for each eORCA025 ERA5v1 NPD prefix:
-    if 'domain' in prefix:
-        operation = "None None"
-    elif '1y' in prefix:
-        operation = "annual mean"
-    elif '1m' in prefix:
+        # Create item with asset for each eORCA025 ERA5v1 NPD prefix:
+        if 'domain' in prefix:
+            operation = "None None"
+        elif '1y' in prefix:
+            operation = "annual mean"
+        elif '1m' in prefix:
+            operation = "monthly mean"
+        elif '5d' in prefix:
+            operation = "5-day mean"
+
+        item = create_item_with_asset(
+            ds=ds,
+            bucket="npd-eorca025-era5v1",
+            platform="gn_global",
+            prefix=prefix,
+            config="eORCA025 ERA5v1 NPD",
+            operation=operation,
+            media_type="application/icechunk"
+        )
+        # Add item to the eORCA025 ERA5v1 NPD global native model grid catalog:
+        gn_eorca025_era5v1.add_item(item)
+
+    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {gn_eorca025_era5v1.id}")
+
+    # -- Add Items to NOC Near-Present Day eORCA025 ERA5v1 {tn} Sub-Catalog -- #
+    # Define the store credentials for the eORCA025 ERA5v1 NPD data:
+    for prefix in ["M1m/MOVE_16N", "M1m/SAMBA_34_5S", "M1m/RAPID_26N", "M1m/OSNAP"]:
+        # Open dataset from Icechunk repository:
+        ds = open_icechunk_store(bucket="npd-eorca025-era5v1", prefix=prefix, branch="main")
+
+        # Create item with asset for each eORCA025 ERA5v1 NPD prefix:
         operation = "monthly mean"
-    elif '5d' in prefix:
-        operation = "5-day mean"
+        item = create_item_with_asset(
+            ds=ds,
+            bucket="npd-eorca025-era5v1",
+            platform="tn",
+            prefix=prefix,
+            config="eORCA025 ERA5v1 NPD",
+            operation=operation,
+            media_type="application/icechunk"
+        )
+        # Add item to the eORCA025 ERA5v1 NPD global native model grid catalog:
+        tn_eorca025_era5v1.add_item(item)
 
-    item = create_item_with_asset(
-        ds=ds,
-        bucket="npd-eorca025-era5v1",
-        platform="gn_global",
-        prefix=prefix,
-        config="eORCA025 ERA5v1 NPD",
-        operation=operation,
-        media_type="application/icechunk"
-    )
-    # Add item to the eORCA025 ERA5v1 NPD global native model grid catalog:
-    gn_eorca025_era5v1.add_item(item)
+    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {tn_eorca025_era5v1.id}")
 
-# -- Add Items to NOC Near-Present Day eORCA12 ERA5v1 Sub-Catalog -- #
-# Define the store credentials for the eORCA12 ERA5v1 NPD data:
-for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
-               "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
-               "domain/domain_cfg",
-               ]:
-    # Define S3 storage to read eORCA12 ERA5v1 NPD data:
-    storage = icechunk.s3_storage(
-    bucket="npd-eorca12-era5v1",
-    prefix=prefix,
-    anonymous=True,
-    endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk",
-    force_path_style=True,
-    )
-    # Open Icechunk repository:
-    repo = icechunk.Repository.open(storage=storage)
-    # Open dataset from Icechunk repository:
-    ds = xr.open_zarr(repo.readonly_session(branch="main").store, consolidated=False)
+    # -- Add Items to NOC Near-Present Day eORCA12 ERA5v1 Sub-Catalog -- #
+    # Define the store credentials for the eORCA12 ERA5v1 NPD data:
+    for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
+                   "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
+                   "domain/domain_cfg",
+                   ]:
+        # Open dataset from Icechunk repository:
+        ds = open_icechunk_store(bucket="npd-eorca12-era5v1", prefix=prefix, branch="main")
 
-    # Create item with asset for each eORCA12 ERA5v1 NPD prefix:
-    if 'domain' in prefix:
-        operation = "None None"
-    elif '1y' in prefix:
-        operation = "annual mean"
-    elif '1m' in prefix:
+        # Create item with asset for each eORCA12 ERA5v1 NPD prefix:
+        if 'domain' in prefix:
+            operation = "None None"
+        elif '1y' in prefix:
+            operation = "annual mean"
+        elif '1m' in prefix:
+            operation = "monthly mean"
+        elif '5d' in prefix:
+            operation = "5-day mean"
+
+        item = create_item_with_asset(
+            ds=ds,
+            bucket="npd-eorca12-era5v1",
+            platform="gn_global",
+            prefix=prefix,
+            config="eORCA12 ERA5v1 NPD",
+            operation=operation,
+            media_type="application/icechunk"
+        )
+        # Add item to the eORCA12 ERA5v1 NPD global native model grid catalog:
+        gn_eorca12_era5v1.add_item(item)
+
+    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {gn_eorca12_era5v1.id}")
+
+    # -- Add Items to NOC Near-Present Day eORCA12 ERA5v1 {tn} Sub-Catalog -- #
+    # Define the store credentials for the eORCA12 ERA5v1 NPD data:
+    for prefix in ["M1m/MOVE_16N", "M1m/SAMBA_34_5S", "M1m/RAPID_26N", "M1m/OSNAP"]:
+        # Open dataset from Icechunk repository:
+        ds = open_icechunk_store(bucket="npd-eorca12-era5v1", prefix=prefix, branch="main")
+
+        # Create item with asset for each eORCA12 ERA5v1 NPD prefix:
         operation = "monthly mean"
-    elif '5d' in prefix:
-        operation = "5-day mean"
+        item = create_item_with_asset(
+            ds=ds,
+            bucket="npd-eorca12-era5v1",
+            platform="tn",
+            prefix=prefix,
+            config="eORCA12 ERA5v1 NPD",
+            operation=operation,
+            media_type="application/icechunk"
+        )
+        # Add item to the eORCA12 ERA5v1 NPD global native model grid catalog:
+        tn_eorca12_era5v1.add_item(item)
 
-    item = create_item_with_asset(
-        ds=ds,
-        bucket="npd-eorca12-era5v1",
-        platform="gn_global",
-        prefix=prefix,
-        config="eORCA12 ERA5v1 NPD",
-        operation=operation,
-        media_type="application/icechunk"
-    )
-    # Add item to the eORCA12 ERA5v1 NPD global native model grid catalog:
-    gn_eorca12_era5v1.add_item(item)
+    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {tn_eorca12_era5v1.id}")
 
-# -- Add Catalogs to NOC Near-Present Day Collection -- #
-npd_eorca1_era5v1.add_child(gn_eorca1_era5v1)
-npd_eorca025_era5v1.add_child(gn_eorca025_era5v1)
-npd_eorca12_era5v1.add_child(gn_eorca12_era5v1)
+    # -- Add Nested Catalogs to NOC Near-Present Day Collection -- #
+    npd_eorca1_era5v1.add_child(gn_eorca1_era5v1)
+    npd_eorca025_era5v1.add_child(gn_eorca025_era5v1)
+    npd_eorca12_era5v1.add_child(gn_eorca12_era5v1)
 
-npd_collection.add_child(npd_eorca1_era5v1)
-npd_collection.add_child(npd_eorca025_era5v1)
-npd_collection.add_child(npd_eorca12_era5v1)
+    npd_eorca1_era5v1.add_child(tn_eorca1_era5v1)
+    npd_eorca025_era5v1.add_child(tn_eorca025_era5v1)
+    npd_eorca12_era5v1.add_child(tn_eorca12_era5v1)
 
-# -- Add NOC Near-Present Day Collection to NOC STAC Catalog -- #
-noc_stac.add_child(npd_collection)
+    npd_collection.add_child(npd_eorca1_era5v1)
+    npd_collection.add_child(npd_eorca025_era5v1)
+    npd_collection.add_child(npd_eorca12_era5v1)
 
-# -- Write NOC Model STAC Catalog to local filesystem -- #
-print(noc_stac.describe())
+    # -- Add NOC Near-Present Day Collection to NOC STAC Catalog -- #
+    noc_stac.add_child(npd_collection)
 
-noc_stac.normalize_hrefs(root_href="https://noc-msm-o.s3-ext.jc.rl.ac.uk/noc-model-stac/")
-noc_stac.save(catalog_type=pystac.CatalogType.SELF_CONTAINED, dest_href=os.path.join(os.getcwd(), "noc-model-stac"))
+    logging.info(f"Completed: Added NOC Near-Present Day Collection Catalogs to NOC STAC: {noc_stac.id}")
+
+    # -- Write NOC Model STAC Catalog to local filesystem -- #
+    logging.info(f"NOC STAC {noc_stac.id} Summary:")
+    print(noc_stac.describe())
+
+    noc_stac.normalize_hrefs(root_href="https://noc-msm-o.s3-ext.jc.rl.ac.uk/noc-model-stac/")
+    noc_stac.save(catalog_type=pystac.CatalogType.SELF_CONTAINED, dest_href=os.path.join(os.getcwd(), "noc-model-stac"))
+    logging.info(f"Completed: Write NOC STAC to -> {os.path.join(os.getcwd(), "noc-model-stac")}")
+
+if __name__ == "__main__":
+    # -- Initialise Logging -- #
+    initialise_logging()
+    banner()
+
+    # -- Create NOC Model STAC Catalog -- #
+    try:
+        create_noc_stac()
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        sys.exit(1)
