@@ -41,18 +41,18 @@
     "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean scalar annual mean outputs.",
     "platform": "gn_global",
     "variables": [
-      "soga",
+      "time_centered_bounds",
+      "scvoltot",
       "thetaoga",
       "time_counter_bounds",
-      "scvoltot",
-      "time_centered_bounds"
+      "soga"
     ],
     "variable_standard_names": [
-      "sea_water_salinity",
+      "time_centered_bounds",
+      "sea_water_volume",
       "sea_water_potential_temperature",
       "time_counter_bounds",
-      "sea_water_volume",
-      "time_centered_bounds"
+      "sea_water_salinity"
     ],
     "dimensions": [
       "time_counter",
@@ -64,7 +64,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-16T15:30:37.899305",
+    "latest_data_update": "2025-09-16T16:39:30.767909",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
@@ -85,7 +85,7 @@
   ],
   "assets": {
     "S1y_1d": {
-      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-era5v1/gn_global/S1y_1d",
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-era5v1/S1y_1d",
       "type": "application/icechunk",
       "title": "eORCA025 ERA5v1 NPD S1y_1d Icechunk repository",
       "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean scalar annual mean outputs.",

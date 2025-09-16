@@ -41,20 +41,20 @@
     "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics 5-day mean outputs defined at U-points.",
     "platform": "gn_global",
     "variables": [
-      "umo",
-      "u2o",
-      "time_counter_bounds",
-      "e3u",
       "time_centered_bounds",
+      "e3u",
+      "time_counter_bounds",
+      "u2o",
+      "umo",
       "uo",
       "uo_eiv"
     ],
     "variable_standard_names": [
-      "ocean_mass_x_transport",
-      "square_of_sea_water_x_velocity",
-      "time_counter_bounds",
-      "cell_thickness",
       "time_centered_bounds",
+      "cell_thickness",
+      "time_counter_bounds",
+      "square_of_sea_water_x_velocity",
+      "ocean_mass_x_transport",
       "sea_water_x_velocity",
       "bolus_sea_water_x_velocity"
     ],
@@ -62,8 +62,8 @@
       "y",
       "x",
       "time_counter",
-      "depthu",
-      "axis_nbounds"
+      "axis_nbounds",
+      "depthu"
     ],
     "operation": "mean",
     "operation_frequency": "5-day",
@@ -71,7 +71,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-16T15:30:58.842414",
+    "latest_data_update": "2025-09-16T16:39:51.256834",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
@@ -92,7 +92,7 @@
   ],
   "assets": {
     "U5d_4d": {
-      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-era5v1/gn_global/U5d_4d",
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-era5v1/U5d_4d",
       "type": "application/icechunk",
       "title": "eORCA025 ERA5v1 NPD U5d_4d Icechunk repository",
       "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics 5-day mean outputs defined at U-points.",

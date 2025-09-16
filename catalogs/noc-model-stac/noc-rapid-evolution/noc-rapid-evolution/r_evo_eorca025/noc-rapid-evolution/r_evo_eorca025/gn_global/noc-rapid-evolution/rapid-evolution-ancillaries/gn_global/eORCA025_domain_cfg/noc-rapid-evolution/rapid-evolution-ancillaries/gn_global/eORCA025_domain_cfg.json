@@ -1,0 +1,195 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-rapid-evolution/rapid-evolution-ancillaries/gn_global/eORCA025_domain_cfg",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          -90.0
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "properties": {
+    "title": "eORCA025 RAPID-Evolution global parent eORCA025_domain_cfg Zarr store",
+    "description": "Zarr store containing eORCA025 RAPID-Evolution global parent global ocean model eORCA025_domain_cfg variables.",
+    "platform": "gn_global",
+    "variables": [
+      "bathy_metry",
+      "e2t",
+      "e1v",
+      "e2u",
+      "e2f",
+      "e2v",
+      "e1t",
+      "e1u",
+      "e3t_0",
+      "e3f_0",
+      "e3t_1d",
+      "e3uw_0",
+      "bottom_level",
+      "e1f",
+      "e3v_0",
+      "e3w_0",
+      "e3u_0",
+      "ff_t",
+      "glamt",
+      "glamf",
+      "gphif",
+      "glamu",
+      "glamv",
+      "gphiv",
+      "e3vw_0",
+      "ff_f",
+      "gphiu",
+      "e3w_1d",
+      "jpiglo",
+      "jpjglo",
+      "isf_draft",
+      "gphit",
+      "ln_zps",
+      "jpkglo",
+      "mask_csemp",
+      "ln_zco",
+      "mask_csgrpemp",
+      "ln_sco",
+      "ln_isfcav",
+      "mask_csglo",
+      "mask_csgrpglo",
+      "mask_csgrprnf",
+      "jperio",
+      "mask_csrnf",
+      "mbku",
+      "nav_lat",
+      "mask_csundef",
+      "mask_opensea",
+      "nav_lon",
+      "mbkv",
+      "top_level",
+      "mbkf"
+    ],
+    "variable_standard_names": [
+      "bathy_metry",
+      "e2t",
+      "e1v",
+      "e2u",
+      "e2f",
+      "e2v",
+      "e1t",
+      "e1u",
+      "e3t_0",
+      "e3f_0",
+      "e3t_1d",
+      "e3uw_0",
+      "bottom_level",
+      "e1f",
+      "e3v_0",
+      "e3w_0",
+      "e3u_0",
+      "ff_t",
+      "glamt",
+      "glamf",
+      "gphif",
+      "glamu",
+      "glamv",
+      "gphiv",
+      "e3vw_0",
+      "ff_f",
+      "gphiu",
+      "e3w_1d",
+      "jpiglo",
+      "jpjglo",
+      "isf_draft",
+      "gphit",
+      "ln_zps",
+      "jpkglo",
+      "mask_csemp",
+      "ln_zco",
+      "mask_csgrpemp",
+      "ln_sco",
+      "ln_isfcav",
+      "mask_csglo",
+      "mask_csgrpglo",
+      "mask_csgrprnf",
+      "jperio",
+      "mask_csrnf",
+      "mbku",
+      "nav_lat",
+      "mask_csundef",
+      "mask_opensea",
+      "nav_lon",
+      "mbkv",
+      "top_level",
+      "mbkf"
+    ],
+    "dimensions": [
+      "time_counter",
+      "y",
+      "x",
+      "nav_lev"
+    ],
+    "operation": "None",
+    "operation_frequency": "None",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "completed",
+    "latest_data_update": "2025-09-16T16:31:41.858598",
+    "start_datetime": "1976-01-16T00:00:00Z",
+    "end_datetime": "2023-12-16T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "RAPID12 JRA55-do global parent domain native model grid Catalog"
+    }
+  ],
+  "assets": {
+    "eORCA025_domain_cfg": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/rapid-evolution-ancillaries/eORCA025_domain_cfg",
+      "type": "application/vnd+zarr",
+      "title": "eORCA025 RAPID-Evolution global parent eORCA025_domain_cfg Zarr store.",
+      "description": "Zarr store containing eORCA025 RAPID-Evolution global parent global ocean model eORCA025_domain_cfg variables.",
+      "bucket": "rapid-evolution-ancillaries",
+      "prefix": "eORCA025_domain_cfg",
+      "endpoint_url": "https://rapidevolution-o.s3-ext.jc.rl.ac.uk",
+      "zarr_format": 3,
+      "anonymous": true
+    }
+  },
+  "collection": "noc-rapid-evolution"
+}

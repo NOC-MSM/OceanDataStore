@@ -1,0 +1,93 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-rapid-evolution/r-evo1-eorca025-rapid12-rapid36/gn_nest/RAPID36/T1m/strd_evd_li",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -98.530975,
+          17.34014
+        ],
+        [
+          -8.879465,
+          17.34014
+        ],
+        [
+          -8.879465,
+          30.447763
+        ],
+        [
+          -98.530975,
+          30.447763
+        ],
+        [
+          -98.530975,
+          17.34014
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -98.530975,
+    17.34014,
+    -8.879465,
+    30.447763
+  ],
+  "properties": {
+    "title": "RAPID36 RAPID-Evolution grandchild nest RAPID36/T1m/strd_evd_li Zarr store",
+    "description": "Zarr store containing RAPID36 RAPID-Evolution grandchild nest global sea-ice monthly mean strd_evd_li output defined at T-points.",
+    "platform": "gn_nest",
+    "variables": [
+      "strd_evd_li"
+    ],
+    "variable_standard_names": [
+      "strd_evd_li"
+    ],
+    "dimensions": [
+      "y",
+      "x",
+      "time_counter",
+      "deptht"
+    ],
+    "operation": "mean",
+    "operation_frequency": "monthly",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "completed",
+    "latest_data_update": "2025-09-16T16:33:03.504224",
+    "start_datetime": "1976-01-16T00:00:00Z",
+    "end_datetime": "2023-12-16T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "RAPID36 JRA55-do nested grandchild domain native model grid Catalog"
+    }
+  ],
+  "assets": {
+    "strd_evd_li": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/r-evo1-eorca025-rapid12-rapid36/RAPID36/T1m/strd_evd_li",
+      "type": "application/vnd+zarr",
+      "title": "RAPID36 RAPID-Evolution grandchild nest RAPID36/T1m/strd_evd_li Zarr store.",
+      "description": "Zarr store containing RAPID36 RAPID-Evolution grandchild nest global sea-ice monthly mean strd_evd_li output defined at T-points.",
+      "bucket": "r-evo1-eorca025-rapid12-rapid36",
+      "prefix": "RAPID36/T1m/strd_evd_li",
+      "endpoint_url": "https://rapidevolution-o.s3-ext.jc.rl.ac.uk",
+      "zarr_format": 3,
+      "anonymous": true
+    }
+  },
+  "collection": "noc-rapid-evolution"
+}

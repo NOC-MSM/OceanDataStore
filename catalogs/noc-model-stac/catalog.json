@@ -12,6 +12,12 @@
     },
     {
       "rel": "child",
+      "href": "./noc-rapid-evolution/collection.json",
+      "type": "application/json",
+      "title": "NOC RAPID-Evolution Collection"
+    },
+    {
+      "rel": "child",
       "href": "./noc-npd-jra55/collection.json",
       "type": "application/json",
       "title": "NOC Near-Present Day JRA55-do Collection"
@@ -23,8 +29,8 @@
       "title": "NOC Near-Present Day ERA-5 Collection"
     }
   ],
-  "created": "2025-09-16T15:24:05.196338",
-  "last_update": "2025-09-16T15:24:05.196366",
+  "created": "2025-09-16T16:30:42.375222",
+  "last_update": "2025-09-16T16:30:42.375254",
   "catalog_version": "0.1.0",
   "contacts": [
     "Oliver Tooth (oliver.tooth@noc.ac.uk)",

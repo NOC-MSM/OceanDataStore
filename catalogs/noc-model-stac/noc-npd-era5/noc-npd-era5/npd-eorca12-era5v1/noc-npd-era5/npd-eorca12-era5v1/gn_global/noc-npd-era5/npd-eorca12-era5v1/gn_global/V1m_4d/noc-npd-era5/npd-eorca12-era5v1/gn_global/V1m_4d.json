@@ -41,26 +41,26 @@
     "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics monthly mean outputs defined at V-points.",
     "platform": "gn_global",
     "variables": [
-      "v2o",
       "e3v",
-      "time_centered_bounds",
       "time_counter_bounds",
       "vo",
+      "v2o",
+      "time_centered_bounds",
       "vmo"
     ],
     "variable_standard_names": [
-      "square_of_sea_water_y_velocity",
       "cell_thickness",
-      "time_centered_bounds",
       "time_counter_bounds",
       "sea_water_y_velocity",
+      "square_of_sea_water_y_velocity",
+      "time_centered_bounds",
       "ocean_mass_y_transport"
     ],
     "dimensions": [
-      "time_counter",
       "depthv",
       "y",
       "x",
+      "time_counter",
       "axis_nbounds"
     ],
     "operation": "mean",
@@ -69,7 +69,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-16T15:31:42.736065",
+    "latest_data_update": "2025-09-16T16:40:31.832366",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
@@ -90,7 +90,7 @@
   ],
   "assets": {
     "V1m_4d": {
-      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca12-era5v1/gn_global/V1m_4d",
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca12-era5v1/V1m_4d",
       "type": "application/icechunk",
       "title": "eORCA12 ERA5v1 NPD V1m_4d Icechunk repository",
       "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics monthly mean outputs defined at V-points.",

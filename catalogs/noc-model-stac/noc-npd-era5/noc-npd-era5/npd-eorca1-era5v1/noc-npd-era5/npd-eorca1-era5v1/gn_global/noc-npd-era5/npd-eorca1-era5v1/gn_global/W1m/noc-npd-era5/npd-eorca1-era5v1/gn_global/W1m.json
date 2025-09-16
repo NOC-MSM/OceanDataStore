@@ -42,31 +42,31 @@
     "platform": "gn_global",
     "variables": [
       "difvmo",
-      "difvho",
-      "avt_evd",
-      "obvfsq",
       "e3w",
-      "difvso",
+      "avt_evd",
+      "difvho",
+      "obvfsq",
       "diftrto",
       "wmo",
-      "w2o",
+      "difvso",
       "time_counter_bounds",
       "wo",
-      "time_centered_bounds"
+      "time_centered_bounds",
+      "w2o"
     ],
     "variable_standard_names": [
       "ocean_vertical_momentum_diffusivity",
-      "ocean_vertical_heat_diffusivity",
-      "enhanced_vertical_heat_diffusivity",
-      "obvfsq",
       "cell_thickness",
-      "ocean_vertical_salt_diffusivity",
+      "enhanced_vertical_heat_diffusivity",
+      "ocean_vertical_heat_diffusivity",
+      "obvfsq",
       "ocean_vertical_tracer_diffusivity_due_to_tides",
       "upward_ocean_mass_transport",
-      "square_of_upward_sea_water_velocity",
+      "ocean_vertical_salt_diffusivity",
       "time_counter_bounds",
       "upward_sea_water_velocity",
-      "time_centered_bounds"
+      "time_centered_bounds",
+      "square_of_upward_sea_water_velocity"
     ],
     "dimensions": [
       "time_counter",
@@ -81,7 +81,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-16T15:30:08.377414",
+    "latest_data_update": "2025-09-16T16:39:03.326174",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
@@ -102,7 +102,7 @@
   ],
   "assets": {
     "W1m": {
-      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca1-era5v1/gn_global/W1m",
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca1-era5v1/W1m",
       "type": "application/icechunk",
       "title": "eORCA1 ERA5v1 NPD W1m Icechunk repository",
       "description": "Icechunk repository containing eORCA1 ERA5v1 NPD global ocean physics monthly mean outputs defined at W-points.",

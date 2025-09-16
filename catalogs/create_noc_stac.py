@@ -15,7 +15,8 @@ import logging
 import pystac
 import datetime
 
-from npd_collection import create_npd_collection
+from npd_collections import create_npd_jra55_collection, create_npd_era5_collection
+from rapid_evo_collection import create_rapid_evo_collection
 from utils import create_logging_banner, initialise_logging
 
 def create_noc_stac():
@@ -40,9 +41,16 @@ def create_noc_stac():
 
     logging.info(f"Completed: Created NOC STAC Catalog with ID: {noc_stac.id}")
 
+    # -- Create & Add Rapid-EVO Collection to NOC STAC Catalog -- #
+    rapid_evo_collection = create_rapid_evo_collection()
+    noc_stac.add_child(rapid_evo_collection)
+
     # -- Create & Add NOC Near-Present Day Collection to NOC STAC Catalog -- #
-    npd_collection = create_npd_collection()
-    noc_stac.add_child(npd_collection)
+    npd_jra55v1_collection = create_npd_jra55_collection()
+    noc_stac.add_child(npd_jra55v1_collection)
+
+    npd_era5v1_collection = create_npd_era5_collection()
+    noc_stac.add_child(npd_era5v1_collection)
 
     logging.info(f"Completed: Added NOC Near-Present Day Collection Catalogs to NOC STAC: {noc_stac.id}")
 

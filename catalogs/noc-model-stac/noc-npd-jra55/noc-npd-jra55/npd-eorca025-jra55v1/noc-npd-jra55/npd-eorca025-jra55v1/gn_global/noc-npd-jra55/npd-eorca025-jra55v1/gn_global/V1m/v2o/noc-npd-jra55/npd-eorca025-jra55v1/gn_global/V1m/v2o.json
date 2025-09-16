@@ -57,7 +57,7 @@
     "ocean_component": "NEMO v4.2.2",
     "si_component": "SI3 v4.0",
     "status": "completed",
-    "latest_data_update": "2025-09-16T15:29:08.423148",
+    "latest_data_update": "2025-09-16T16:38:07.055087",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-02-01T00:00:00Z",
     "datetime": null
@@ -78,14 +78,14 @@
   ],
   "assets": {
     "v2o": {
-      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-jra55v1/gn_global/V1m/v2o",
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-jra55v1/V1m/v2o",
       "type": "application/vnd+zarr",
       "title": "eORCA025 JRA55v1 NPD V1m/v2o Zarr store.",
       "description": "Zarr store containing eORCA025 JRA55v1 NPD global ocean physics monthly mean v2o output defined at V-points.",
       "bucket": "npd-eorca025-jra55v1",
       "prefix": "V1m/v2o",
       "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
-      "zarr_format": 3,
+      "zarr_format": 2,
       "anonymous": true
     }
   },

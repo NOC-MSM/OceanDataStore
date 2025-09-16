@@ -35,6 +35,7 @@
       "title": "NOC Model STAC Catalog"
     }
   ],
+  "contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
   "project": "AtlantiS",
   "status": "ongoing",
   "update_frequency": "quarterly",

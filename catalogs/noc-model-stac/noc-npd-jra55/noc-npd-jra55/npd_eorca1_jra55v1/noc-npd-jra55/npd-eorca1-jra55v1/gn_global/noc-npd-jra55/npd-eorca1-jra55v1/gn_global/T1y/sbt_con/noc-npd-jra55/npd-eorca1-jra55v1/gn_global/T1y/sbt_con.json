@@ -56,7 +56,7 @@
     "ocean_component": "NEMO v4.2.2",
     "si_component": "SI3 v4.0",
     "status": "completed",
-    "latest_data_update": "2025-09-16T15:24:40.816654",
+    "latest_data_update": "2025-09-16T16:33:52.907862",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-02-01T00:00:00Z",
     "datetime": null
@@ -77,14 +77,14 @@
   ],
   "assets": {
     "sbt_con": {
-      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca1-jra55v1/gn_global/T1y/sbt_con",
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca1-jra55v1/T1y/sbt_con",
       "type": "application/vnd+zarr",
       "title": "eORCA1 JRA55v1 NPD T1y/sbt_con Zarr store.",
       "description": "Zarr store containing eORCA1 JRA55v1 NPD global ocean physics annual mean sbt_con output defined at T-points.",
       "bucket": "npd-eorca1-jra55v1",
       "prefix": "T1y/sbt_con",
       "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
-      "zarr_format": 3,
+      "zarr_format": 2,
       "anonymous": true
     }
   },

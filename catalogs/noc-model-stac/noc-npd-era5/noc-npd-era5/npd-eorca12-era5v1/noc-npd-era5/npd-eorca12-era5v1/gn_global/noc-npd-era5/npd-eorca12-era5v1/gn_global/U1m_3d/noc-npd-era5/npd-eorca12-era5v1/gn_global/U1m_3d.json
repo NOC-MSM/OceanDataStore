@@ -41,24 +41,24 @@
     "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics monthly mean outputs defined at U-points.",
     "platform": "gn_global",
     "variables": [
-      "hfx",
-      "tauuo",
-      "time_centered_bounds",
       "hfx_adv",
+      "tauuo",
       "hfx_diff",
+      "time_centered_bounds",
+      "time_counter_bounds",
+      "hfx",
       "sozosatr",
-      "umo_vint",
-      "time_counter_bounds"
+      "umo_vint"
     ],
     "variable_standard_names": [
-      "ocean_heat_x_transport",
-      "surface_downward_x_stress",
-      "time_centered_bounds",
       "advectice_ocean_heat_x_transport",
+      "surface_downward_x_stress",
       "ocean_heat_x_transport_due_to_diffusion",
+      "time_centered_bounds",
+      "time_counter_bounds",
+      "ocean_heat_x_transport",
       "ocean_salt_x_transport",
-      "vertical_integral_of_ocean_mass_x_transport",
-      "time_counter_bounds"
+      "vertical_integral_of_ocean_mass_x_transport"
     ],
     "dimensions": [
       "time_counter",
@@ -72,7 +72,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-16T15:31:37.935017",
+    "latest_data_update": "2025-09-16T16:40:27.365166",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
@@ -93,7 +93,7 @@
   ],
   "assets": {
     "U1m_3d": {
-      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca12-era5v1/gn_global/U1m_3d",
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca12-era5v1/U1m_3d",
       "type": "application/icechunk",
       "title": "eORCA12 ERA5v1 NPD U1m_3d Icechunk repository",
       "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global ocean physics monthly mean outputs defined at U-points.",

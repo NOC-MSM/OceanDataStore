@@ -1,0 +1,27 @@
+{
+  "type": "Catalog",
+  "id": "noc-rapid-evolution/r_evo_rapid36",
+  "stac_version": "1.1.0",
+  "description": "Catalog of RAPID36 JRA55-do nested grandchild domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre.",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "child",
+      "href": "./noc-rapid-evolution/r_evo_rapid36/gn_nest/catalog.json",
+      "type": "application/json",
+      "title": "RAPID36 JRA55-do nested grandchild domain native model grid Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../collection.json",
+      "type": "application/json",
+      "title": "NOC RAPID-Evolution Collection"
+    }
+  ],
+  "title": "RAPID36 RAPID-Evolution nested grandchild domain Catalog"
+}

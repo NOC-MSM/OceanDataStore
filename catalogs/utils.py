@@ -38,7 +38,7 @@ def initialise_logging(logger: logging.Logger) -> None:
     """Initialise logging configuration."""
     logging.basicConfig(
         stream=sys.stdout,
-        format="☁  OceanDataStore  ☁  | %(levelname)10s | %(asctime)s | %(message)s",
+        format="🌐   OceanDataStore  🌐   | %(levelname)10s | %(asctime)s | %(message)s",
         level=logging.INFO,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
@@ -48,7 +48,8 @@ def initialise_logging(logger: logging.Logger) -> None:
 def open_icechunk_store(
     bucket: str,
     prefix: str,
-    branch: str = "main"
+    branch: str = "main",
+    endpoint_url: str = "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
     ) -> xr.Dataset:
     """
     Open an Icechunk Store as an xarray.Dataset.
@@ -61,13 +62,15 @@ def open_icechunk_store(
         Prefix for the Icechunk repository in the S3 bucket.
     branch : str, optional
         Branch of the Icechunk repository to open (default is "main").
+    endpoint_url : str, optional
+        The S3 endpoint URL (default is "https://noc-msm-o.s3-ext.jc.rl.ac.uk").
     """
     # Define S3 storage:
     storage = icechunk.s3_storage(
     bucket=bucket,
     prefix=prefix,
     anonymous=True,
-    endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+    endpoint_url=endpoint_url,
     force_path_style=True,
     )
 
@@ -87,8 +90,10 @@ def create_item_with_icechunk_asset(
     start_date: str = "1976-01-01",
     end_date: str = "2024-12-31",
     bbox: tuple = (-180.0, -90.0, 180.0, 90.0),
-    config: str ="eORCA1 ERA5v1 NPD",
+    collection: str = "noc-npd-era5",
+    config: str = "eORCA1 ERA5v1 NPD",
     operation: str ="annual-mean",
+    endpoint_url: str = "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
     ) -> pystac.Item:
     """
     Create a STAC Item from an Icechunk Store asset.
@@ -110,10 +115,14 @@ def create_item_with_icechunk_asset(
     bbox : tuple, optional
         Bounding box for the dataset in the format (min_lon, min_lat, max_lon, max_lat).
         (default is global coverage).
+    collection : str, optional
+        The name of the STAC Collection to which this Item belongs (default is "noc-npd-era5").
     config : str, optional
         The configuration string for the dataset (default is "eORCA1 ERA5v1 NPD").
     operation : str, optional
         The operation string indicating the type of operation performed on the dataset (default is "annual-mean").
+    endpoint_url : str, optional
+        The S3 endpoint URL (default is "https://noc-msm-o.s3-ext.jc.rl.ac.uk").
 
     Returns
     -------
@@ -146,7 +155,7 @@ def create_item_with_icechunk_asset(
 
     # Create a STAC Item with Asset:
     item = pystac.Item(
-        id=f"noc-npd/{bucket}/{platform}/{prefix}",
+        id=f"{collection}/{bucket}/{platform}/{prefix}",
         geometry=geometry,
         bbox=list(polygon.bounds),  # [min_lon, min_lat, max_lon, max_lat]
         datetime=None,
@@ -167,18 +176,18 @@ def create_item_with_icechunk_asset(
             "update_frequency": "quarterly",
             "latest_data_update": datetime.datetime.now().isoformat(),
         },
-        collection="noc-npd",
+        collection=collection,
     )
 
     item.add_asset(key=prefix.split('/')[-1], asset=pystac.Asset(
-        href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{platform}/{prefix}",
+        href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{prefix}",
         title=f"{config} {prefix} Icechunk repository",
         description=description,
         media_type="application/icechunk",
         extra_fields=dict(
             bucket=bucket,
             prefix=prefix,
-            endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+            endpoint_url=endpoint_url,
             anonymous=True
         )
     ))
@@ -194,11 +203,15 @@ def create_item_with_zarr_asset(
     start_date: str = "1976-01-01",
     end_date: str = "2024-02-01",
     bbox: tuple = (-180.0, -90.0, 180.0, 90.0),
-    config: str ="eORCA1 JRA55v1 NPD",
+    collection : str = "noc-npd-jra55",
+    config: str = "eORCA1 JRA55v1 NPD",
     operation: str ="annual-mean",
+    variable_stores: bool = True,
+    endpoint_url: str = "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+    zarr_format: int = 2,
     ) -> pystac.Item:
     """
-    Create a STAC Item from an Icechunk Store asset.
+    Create a STAC Item from a Zarr Store asset.
 
     Parameters
     ----------
@@ -210,13 +223,25 @@ def create_item_with_zarr_asset(
         The platform name (e.g., "gn_global", "gr_global", etc.).
     prefix : str
         The prefix for the data in the S3 bucket (e.g., "U1y", "U1m", etc.).
+    start_date : str, optional
+        The start date of the dataset in "YYYY-MM-DD" format (default is "1976-01-01").
+    end_date : str, optional
+        The end date of the dataset in "YYYY-MM-DD" format (default is "2024-12-31").
     bbox : tuple, optional
         Bounding box for the dataset in the format (min_lon, min_lat, max_lon, max_lat).
         (default is global coverage).
+    collection : str, optional
+        The name of the STAC Collection to which this Item belongs (default is "noc-npd-jra55").
     config : str, optional
         The configuration string for the dataset (default is "eORCA1 JRA55v1 NPD").
     operation : str, optional
         The operation string indicating the type of operation performed on the dataset (default is "annual-mean").
+    variable_stores : bool, optional
+        Whether each variable is stored in a separate Zarr store (default is True).
+    endpoint_url : str, optional
+        The S3 endpoint URL (default is "https://noc-msm-o.s3-ext.jc.rl.ac.uk").
+    zarr_format: int, optional
+        The Zarr format version (default is 2).
 
     Returns
     -------
@@ -224,16 +249,18 @@ def create_item_with_zarr_asset(
         A STAC Item containing the dataset information and an asset pointing to the data.
     """
     # Define the item description based on the prefix:
+    var = f"{prefix.split('/')[-1]} output" if variable_stores else "outputs"
+
     if 'domain' in prefix:
-        description = f"Icechunk repository containing {config} global ocean model {prefix.split('/')[-1]} variables."
+        description = f"Zarr store containing {config} global ocean model {prefix.split('/')[-1]} variables."
     elif 'I' in prefix:
-        description = f"Icechunk repository containing {config} global sea-ice {operation} outputs defined at T-points."
+        description = f"Zarr store containing {config} global sea-ice {operation} {var} defined at T-points."
     elif 'S' in prefix:
-        description = f"Icechunk repository containing {config} global ocean scalar {operation} outputs."
+        description = f"Zarr store containing {config} global ocean scalar {operation} {var}."
     elif 'M' in prefix:
-        description = f"Icechunk repository containing {config} ocean physics transect {operation} outputs defined at {prefix.split('/')[-1]}."
+        description = f"Zarr store containing {config} ocean physics transect {operation} {var} defined at {prefix.split('/')[-1]}."
     else:
-        description = f"Icechunk repository containing {config} global ocean physics {operation} outputs defined at {prefix[0]}-points."
+        description = f"Zarr store containing {config} global ocean physics {operation} {var} defined at {prefix[0]}-points."
 
     # Define Polygon geometry for the item:
     polygon = Polygon([
@@ -249,7 +276,7 @@ def create_item_with_zarr_asset(
 
     # Create a STAC Item with Asset:
     item = pystac.Item(
-        id=f"noc-npd/{bucket}/{platform}/{prefix}",
+        id=f"{collection}/{bucket}/{platform}/{prefix}",
         geometry=geometry,
         bbox=list(polygon.bounds),  # [min_lon, min_lat, max_lon, max_lat]
         datetime=None,
@@ -269,18 +296,19 @@ def create_item_with_zarr_asset(
             "status": "completed",
             "latest_data_update": datetime.datetime.now().isoformat(),
         },
-        collection="noc-npd",
+        collection=collection,
     )
 
     item.add_asset(key=prefix.split('/')[-1], asset=pystac.Asset(
-        href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{platform}/{prefix}",
-        title=f"{config} {prefix} Zarr store",
+        href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{prefix}",
+        title=f"{config} {prefix} Zarr store.",
         description=description,
         media_type="application/vnd+zarr",
         extra_fields=dict(
             bucket=bucket,
             prefix=prefix,
-            endpoint_url="https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+            endpoint_url=endpoint_url,
+            zarr_format=zarr_format,
             anonymous=True
         )
     ))
