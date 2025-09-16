@@ -1,0 +1,175 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-npd-jra55/npd-eorca025-jra55v1/gn_global/domain/mesh_mask",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          -90.0
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "properties": {
+    "title": "eORCA025 JRA55v1 NPD domain/mesh_mask Zarr store",
+    "description": "Zarr store containing eORCA025 JRA55v1 NPD global ocean model mesh_mask variables.",
+    "platform": "gn_global",
+    "variables": [
+      "e3f_0",
+      "e2v",
+      "e3t_0",
+      "e1u",
+      "e1v",
+      "e2f",
+      "e2u",
+      "e1f",
+      "e2t",
+      "e1t",
+      "e3t_1d",
+      "e3uw_0",
+      "e3u_0",
+      "e3vw_0",
+      "e3v_0",
+      "e3w_1d",
+      "e3w_0",
+      "ff_f",
+      "fmask",
+      "ff_t",
+      "gdept_0",
+      "gdept_1d",
+      "gdepw_1d",
+      "gdepw_0",
+      "glamt",
+      "glamf",
+      "gphif",
+      "gphiu",
+      "mbathy",
+      "glamu",
+      "gphiv",
+      "glamv",
+      "nav_lat",
+      "misf",
+      "nav_lon",
+      "umaskutil",
+      "tmask",
+      "tmaskutil",
+      "umask",
+      "vmaskutil",
+      "vmask",
+      "gphit"
+    ],
+    "variable_standard_names": [
+      "e3f_0",
+      "e2v",
+      "e3t_0",
+      "e1u",
+      "e1v",
+      "e2f",
+      "e2u",
+      "e1f",
+      "e2t",
+      "e1t",
+      "e3t_1d",
+      "e3uw_0",
+      "e3u_0",
+      "e3vw_0",
+      "e3v_0",
+      "e3w_1d",
+      "e3w_0",
+      "ff_f",
+      "fmask",
+      "ff_t",
+      "gdept_0",
+      "gdept_1d",
+      "gdepw_1d",
+      "gdepw_0",
+      "glamt",
+      "glamf",
+      "gphif",
+      "gphiu",
+      "mbathy",
+      "glamu",
+      "gphiv",
+      "glamv",
+      "nav_lat",
+      "misf",
+      "nav_lon",
+      "umaskutil",
+      "tmask",
+      "tmaskutil",
+      "umask",
+      "vmaskutil",
+      "vmask",
+      "gphit"
+    ],
+    "dimensions": [
+      "time_counter",
+      "nav_lev",
+      "y",
+      "x"
+    ],
+    "operation": "None",
+    "operation_frequency": "None",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "completed",
+    "latest_data_update": "2025-09-16T15:29:47.327725",
+    "start_datetime": "1976-01-01T00:00:00Z",
+    "end_datetime": "2024-02-01T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "eORCA025 JRA55v1 NPD global native model grid Catalog"
+    }
+  ],
+  "assets": {
+    "mesh_mask": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-jra55v1/gn_global/domain/mesh_mask",
+      "type": "application/vnd+zarr",
+      "title": "eORCA025 JRA55v1 NPD domain/mesh_mask Zarr store.",
+      "description": "Zarr store containing eORCA025 JRA55v1 NPD global ocean model mesh_mask variables.",
+      "bucket": "npd-eorca025-jra55v1",
+      "prefix": "domain/mesh_mask",
+      "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+      "zarr_format": 3,
+      "anonymous": true
+    }
+  },
+  "collection": "noc-npd-jra55"
+}

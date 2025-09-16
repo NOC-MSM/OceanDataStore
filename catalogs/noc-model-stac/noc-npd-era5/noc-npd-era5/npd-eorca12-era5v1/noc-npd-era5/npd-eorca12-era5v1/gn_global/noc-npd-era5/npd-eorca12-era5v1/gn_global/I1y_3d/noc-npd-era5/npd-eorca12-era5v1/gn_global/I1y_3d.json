@@ -1,0 +1,200 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-npd-era5/npd-eorca12-era5v1/gn_global/I1y_3d",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          -90.0
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "properties": {
+    "title": "eORCA12 ERA5v1 NPD I1y_3d Icechunk repository",
+    "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global sea-ice annual mean outputs defined at T-points.",
+    "platform": "gn_global",
+    "variables": [
+      "isig3",
+      "albedo",
+      "isig2",
+      "hfxcndtop",
+      "isig1",
+      "hfxcndbot",
+      "normstr",
+      "hfxsensib",
+      "qns_ice",
+      "qsr_ice",
+      "sheastr",
+      "qtr_ice_top",
+      "qt_oce_ai",
+      "qt_atm_oi",
+      "sfxice",
+      "qt_ice",
+      "qtr_ice_bot",
+      "siconc",
+      "qemp_ice",
+      "siconcat",
+      "siapnd",
+      "sidive",
+      "simsk",
+      "simskcat",
+      "sithic",
+      "sishea",
+      "sitemcat",
+      "sisali",
+      "sittop",
+      "sitemp",
+      "simsk15",
+      "sithicat",
+      "sivelu",
+      "sivelv",
+      "sitbot",
+      "sistre",
+      "sisalcat",
+      "time_centered_bounds",
+      "simsk05",
+      "sivpnd",
+      "snthicat",
+      "sst_m",
+      "sivolu",
+      "sss_m",
+      "snvolu",
+      "sivelo",
+      "sntemcat",
+      "time_counter_bounds",
+      "utau_oi",
+      "vfxsnw",
+      "vtau_ai",
+      "vtau_oi",
+      "vfxice",
+      "utau_ai"
+    ],
+    "variable_standard_names": [
+      "isig3",
+      "albedo",
+      "isig2",
+      "conductive_heat_flux_at_sea_ice_surface",
+      "isig1",
+      "conductive_heat_flux_at_sea_ice_bottom",
+      "average_normal_stress",
+      "ice_ocean_heat_flux",
+      "qns_ice",
+      "surface_downwelling_shortwave_flux_in_air",
+      "maximum_shear_stress",
+      "qtr_ice_top",
+      "qt_oce_ai",
+      "qt_atm_oi",
+      "sfxice",
+      "surface_downward_heat_flux_in_air",
+      "qtr_ice_bot",
+      "sea_ice_area_fraction",
+      "qemp_ice",
+      "siconcat",
+      "sea_ice_meltpond_concentration",
+      "divergence_of_sea_ice_velocity",
+      "sea_ice_mask",
+      "simskcat",
+      "sea_ice_thickness",
+      "maximum_shear_of_sea_ice_velocity",
+      "sitemcat",
+      "sisali",
+      "sittop",
+      "sitemp",
+      "sea_ice_mask15",
+      "sithicat",
+      "sea_ice_x_velocity",
+      "sea_ice_y_velocity",
+      "sitbot",
+      "compressive_strength_of_sea_ice",
+      "sisalcat",
+      "time_centered_bounds",
+      "sea_ice_mask05",
+      "sea_ice_meltpond_volume",
+      "snthicat",
+      "sst_m",
+      "sea_ice_thickness",
+      "sss_m",
+      "snvolu",
+      "sea_ice_speed",
+      "sntemcat",
+      "time_counter_bounds",
+      "sea_ice_base_upward_x_stress",
+      "vfxsnw",
+      "surface_downward_y_stress",
+      "sea_ice_base_upward_y_stress",
+      "vfxice",
+      "surface_downward_x_stress"
+    ],
+    "dimensions": [
+      "time_counter",
+      "y",
+      "x",
+      "ncatice",
+      "axis_nbounds"
+    ],
+    "operation": "mean",
+    "operation_frequency": "annual",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "ongoing",
+    "update_frequency": "quarterly",
+    "latest_data_update": "2025-09-16T15:31:30.990865",
+    "start_datetime": "1976-01-01T00:00:00Z",
+    "end_datetime": "2024-12-31T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "eORCA12 ERA5v1 NPD global native model grid Catalog"
+    }
+  ],
+  "assets": {
+    "I1y_3d": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca12-era5v1/gn_global/I1y_3d",
+      "type": "application/icechunk",
+      "title": "eORCA12 ERA5v1 NPD I1y_3d Icechunk repository",
+      "description": "Icechunk repository containing eORCA12 ERA5v1 NPD global sea-ice annual mean outputs defined at T-points.",
+      "bucket": "npd-eorca12-era5v1",
+      "prefix": "I1y_3d",
+      "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+      "anonymous": true
+    }
+  },
+  "collection": "noc-npd-era5"
+}

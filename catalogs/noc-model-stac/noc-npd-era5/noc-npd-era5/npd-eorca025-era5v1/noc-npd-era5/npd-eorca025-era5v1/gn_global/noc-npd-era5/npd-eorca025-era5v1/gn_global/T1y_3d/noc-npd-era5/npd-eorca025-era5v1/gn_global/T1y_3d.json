@@ -1,0 +1,193 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-npd-era5/npd-eorca025-era5v1/gn_global/T1y_3d",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          -90.0
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "properties": {
+    "title": "eORCA025 ERA5v1 NPD T1y_3d Icechunk repository",
+    "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics annual mean outputs defined at T-points.",
+    "platform": "gn_global",
+    "variables": [
+      "berg_latent_heat_flux",
+      "hfls",
+      "ficeberg",
+      "hfds",
+      "hfempds",
+      "friver",
+      "hfsr",
+      "hflx_rnf",
+      "hfss",
+      "hfns",
+      "hfevapds",
+      "empmr",
+      "fsitherm",
+      "hfrainds",
+      "evs",
+      "hfto",
+      "mlotst",
+      "ocontempmint",
+      "mlotstmin",
+      "rlntds",
+      "pbo",
+      "rsntds",
+      "prsn",
+      "mlotstsq",
+      "soicecov",
+      "snow_ai_cea",
+      "sbt_con",
+      "sohfcisf",
+      "somint_abs",
+      "somixhgt",
+      "sfdsi",
+      "snowpre",
+      "mlotstmax",
+      "sbs_abs",
+      "somxl010",
+      "sohflisf",
+      "sosafldo",
+      "sossq_abs",
+      "sowindsp",
+      "somxzint1",
+      "sowaflup",
+      "time_centered_bounds",
+      "sowflisf",
+      "sos_abs",
+      "tos_con",
+      "tossq_con",
+      "time_counter_bounds",
+      "ttrd_qns_li",
+      "zos",
+      "tnpeo",
+      "zossq"
+    ],
+    "variable_standard_names": [
+      "latent_heat_flux_from_icebergs",
+      "ocean_surface_downward_latent_heat_flux",
+      "water_flux_into_sea_water_from_icebergs",
+      "ocean_surface_downward_total_heat_flux",
+      "ocean_surface_downward_heat_flux_from_E-P",
+      "water_flux_into_sea_water_from_rivers",
+      "surface_net_downward_solar_heat_flux",
+      "temperature_flux_due_to_runoff_expressed_as_heat_flux_into_sea_water",
+      "ocean_surface_downward_sensible_heat_flux",
+      "surface_net_downward_non_solar_heat_flux",
+      "temperature_flux_due_to_evaporation_expressed_as_heat_flux_out_of_sea_water",
+      "water_flux_out_of_sea_ice_and_sea_water",
+      "fsitherm",
+      "temperature_flux_due_to_rain_expressed_as_heat_flux_into_sea_water",
+      "water_evaporation_flux",
+      "surface_net_downward_total_heat_flux",
+      "ocean_mixed_layer_thickness_defined_by_sigma_theta",
+      "integral_wrt_depth_of_product_of_density_and_conservative_temperature",
+      "ocean_mixed_layer_thickness_defined_by_sigma_theta",
+      "ocean_surface_net_downward_longwave_heat_flux",
+      "sea_water_pressure_at_sea_floor",
+      "ocean_surface_net_downward_shortwave_heat_flux",
+      "snowfall_flux",
+      "square_of_ocean_mixed_layer_thickness_defined_by_sigma_theta",
+      "sea_ice_area_fraction",
+      "snowfall_flux",
+      "sbt_con",
+      "",
+      "integral_wrt_depth_of_product_of_density_and_absolute_salinity",
+      "ocean_mixed_layer_thickness_defined_by_vertical_tracer_diffusivity",
+      "downward_sea_ice_basal_salt_flux",
+      "snowfall_flux",
+      "ocean_mixed_layer_thickness_defined_by_sigma_theta",
+      "sbs_abs",
+      "ocean_mixed_layer_thickness_defined_by_sigma_theta",
+      "",
+      "salt_flux_into_sea_water",
+      "square_of_sea_surface_Salinity",
+      "wind_speed",
+      "ocean_mixed_layer_thickness_defined_by_sigma_theta",
+      "water_flux_out_of_sea_ice_and_sea_water",
+      "time_centered_bounds",
+      "",
+      "sea_surface_salinity",
+      "sea_surface_temperature",
+      "square_of_sea_surface_temperature",
+      "time_counter_bounds",
+      "ttrd_qns_li",
+      "sea_surface_height_above_geoid",
+      "tnpeo",
+      "square_of_sea_surface_height_above_geoid"
+    ],
+    "dimensions": [
+      "time_counter",
+      "y",
+      "x",
+      "axis_nbounds"
+    ],
+    "operation": "mean",
+    "operation_frequency": "annual",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "ongoing",
+    "update_frequency": "quarterly",
+    "latest_data_update": "2025-09-16T15:30:24.085885",
+    "start_datetime": "1976-01-01T00:00:00Z",
+    "end_datetime": "2024-12-31T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "eORCA025 ERA5v1 NPD global native model grid Catalog"
+    }
+  ],
+  "assets": {
+    "T1y_3d": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-era5v1/gn_global/T1y_3d",
+      "type": "application/icechunk",
+      "title": "eORCA025 ERA5v1 NPD T1y_3d Icechunk repository",
+      "description": "Icechunk repository containing eORCA025 ERA5v1 NPD global ocean physics annual mean outputs defined at T-points.",
+      "bucket": "npd-eorca025-era5v1",
+      "prefix": "T1y_3d",
+      "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+      "anonymous": true
+    }
+  },
+  "collection": "noc-npd-era5"
+}

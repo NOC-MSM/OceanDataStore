@@ -1,0 +1,111 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-npd-era5/npd-eorca1-era5v1/tn/M1m/OSNAP",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          -90.0
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "properties": {
+    "title": "eORCA1 ERA5v1 NPD M1m/OSNAP Icechunk repository",
+    "description": "Icechunk repository containing eORCA1 ERA5v1 NPD global ocean scalar monthly mean outputs.",
+    "platform": "tn",
+    "variables": [
+      "sigma0",
+      "moc_total",
+      "sal",
+      "moc_east",
+      "velocity",
+      "volume_transport",
+      "dz",
+      "moc_west",
+      "eddy_induced_velocity",
+      "temp"
+    ],
+    "variable_standard_names": [
+      "sea_water_salinity",
+      "moc_sigma0",
+      "sea_water_salinity",
+      "moc_sigma0",
+      "sea_water_velocity",
+      "volume_transport",
+      "cell_thickness",
+      "moc_sigma0",
+      "sea_water_bolus_velocity",
+      "sea_water_temperature"
+    ],
+    "dimensions": [
+      "station",
+      "time_counter",
+      "depth",
+      "sigma0_bins"
+    ],
+    "operation": "mean",
+    "operation_frequency": "monthly",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "ongoing",
+    "update_frequency": "quarterly",
+    "latest_data_update": "2025-09-16T15:30:21.974869",
+    "start_datetime": "1976-01-01T00:00:00Z",
+    "end_datetime": "2024-12-31T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "eORCA1 ERA5v1 NPD transect Catalog"
+    }
+  ],
+  "assets": {
+    "OSNAP": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca1-era5v1/tn/M1m/OSNAP",
+      "type": "application/icechunk",
+      "title": "eORCA1 ERA5v1 NPD M1m/OSNAP Icechunk repository",
+      "description": "Icechunk repository containing eORCA1 ERA5v1 NPD global ocean scalar monthly mean outputs.",
+      "bucket": "npd-eorca1-era5v1",
+      "prefix": "M1m/OSNAP",
+      "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+      "anonymous": true
+    }
+  },
+  "collection": "noc-npd-era5"
+}

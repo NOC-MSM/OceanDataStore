@@ -1,0 +1,36 @@
+{
+  "type": "Catalog",
+  "id": "noc-npd-jra55/npd-eorca1-jra55v1/tn",
+  "stac_version": "1.1.0",
+  "description": "Catalog of ocean physics transect outputs defined on the native eORCA1 curvilinear model grid.",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "item",
+      "href": "./noc-npd-jra55/npd-eorca1-jra55v1/tn/M1m/move_16N/noc-npd-jra55/npd-eorca1-jra55v1/tn/M1m/move_16N.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "item",
+      "href": "./noc-npd-jra55/npd-eorca1-jra55v1/tn/M1m/samba_34_5S/noc-npd-jra55/npd-eorca1-jra55v1/tn/M1m/samba_34_5S.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "item",
+      "href": "./noc-npd-jra55/npd-eorca1-jra55v1/tn/M1m/rapid_26N/noc-npd-jra55/npd-eorca1-jra55v1/tn/M1m/rapid_26N.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "eORCA1 JRA55v1 NPD Catalog"
+    }
+  ],
+  "title": "eORCA1 JRA55v1 NPD transect Catalog"
+}

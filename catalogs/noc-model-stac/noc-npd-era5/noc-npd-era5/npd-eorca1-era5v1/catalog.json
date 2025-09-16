@@ -1,0 +1,33 @@
+{
+  "type": "Catalog",
+  "id": "noc-npd-era5/npd-eorca1-era5v1",
+  "stac_version": "1.1.0",
+  "description": "Catalog of outputs from the eORCA1 ERA-5 version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre.",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "child",
+      "href": "./noc-npd-era5/npd-eorca1-era5v1/gn_global/catalog.json",
+      "type": "application/json",
+      "title": "eORCA1 ERA5v1 NPD global native model grid Catalog"
+    },
+    {
+      "rel": "child",
+      "href": "./noc-npd-era5/npd-eorca1-era5v1/tn/catalog.json",
+      "type": "application/json",
+      "title": "eORCA1 ERA5v1 NPD transect Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../collection.json",
+      "type": "application/json",
+      "title": "NOC Near-Present Day ERA-5 Collection"
+    }
+  ],
+  "title": "eORCA1 ERA5v1 NPD Catalog"
+}

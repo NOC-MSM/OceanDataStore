@@ -1,0 +1,92 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [],
+  "id": "noc-npd-jra55/npd-eorca025-jra55v1/gn_global/I1m/qt_ice",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          -90.0
+        ],
+        [
+          180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          90.0
+        ],
+        [
+          -180.0,
+          -90.0
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "properties": {
+    "title": "eORCA025 JRA55v1 NPD I1m/qt_ice Zarr store",
+    "description": "Zarr store containing eORCA025 JRA55v1 NPD global sea-ice monthly mean qt_ice output defined at T-points.",
+    "platform": "gn_global",
+    "variables": [
+      "qt_ice"
+    ],
+    "variable_standard_names": [
+      "surface_downward_heat_flux_in_air"
+    ],
+    "dimensions": [
+      "y",
+      "x",
+      "time_counter"
+    ],
+    "operation": "mean",
+    "operation_frequency": "monthly",
+    "ocean_component": "NEMO v4.2.2",
+    "si_component": "SI3 v4.0",
+    "status": "completed",
+    "latest_data_update": "2025-09-16T15:29:23.230446",
+    "start_datetime": "1976-01-01T00:00:00Z",
+    "end_datetime": "2024-02-01T00:00:00Z",
+    "datetime": null
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../../../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "NOC Model STAC Catalog"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../../../../../../catalog.json",
+      "type": "application/json",
+      "title": "eORCA025 JRA55v1 NPD global native model grid Catalog"
+    }
+  ],
+  "assets": {
+    "qt_ice": {
+      "href": "https://noc-msm-o.s3-ext.jc.rl.ac.uk/npd-eorca025-jra55v1/gn_global/I1m/qt_ice",
+      "type": "application/vnd+zarr",
+      "title": "eORCA025 JRA55v1 NPD I1m/qt_ice Zarr store.",
+      "description": "Zarr store containing eORCA025 JRA55v1 NPD global sea-ice monthly mean qt_ice output defined at T-points.",
+      "bucket": "npd-eorca025-jra55v1",
+      "prefix": "I1m/qt_ice",
+      "endpoint_url": "https://noc-msm-o.s3-ext.jc.rl.ac.uk",
+      "zarr_format": 3,
+      "anonymous": true
+    }
+  },
+  "collection": "noc-npd-jra55"
+}
