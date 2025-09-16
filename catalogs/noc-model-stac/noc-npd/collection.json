@@ -12,6 +12,18 @@
     },
     {
       "rel": "child",
+      "href": "./noc-npd/npd_eorca1_jra55v1/catalog.json",
+      "type": "application/json",
+      "title": "eORCA1 JRA55v1 NPD Catalog"
+    },
+    {
+      "rel": "child",
+      "href": "./noc-npd/npd-eorca025-jra55v1/catalog.json",
+      "type": "application/json",
+      "title": "eORCA025 JRA55v1 NPD Catalog"
+    },
+    {
+      "rel": "child",
       "href": "./noc-npd/npd-eorca1-era5v1/catalog.json",
       "type": "application/json",
       "title": "eORCA1 ERA5v1 NPD Catalog"

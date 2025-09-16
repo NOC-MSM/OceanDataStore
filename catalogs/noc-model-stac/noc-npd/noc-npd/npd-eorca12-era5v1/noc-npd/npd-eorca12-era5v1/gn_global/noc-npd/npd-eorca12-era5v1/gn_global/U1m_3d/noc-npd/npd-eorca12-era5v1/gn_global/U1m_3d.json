@@ -42,23 +42,23 @@
     "platform": "gn_global",
     "variables": [
       "hfx_adv",
-      "tauuo",
-      "hfx",
-      "hfx_diff",
       "sozosatr",
-      "time_counter_bounds",
+      "hfx",
       "time_centered_bounds",
-      "umo_vint"
+      "hfx_diff",
+      "tauuo",
+      "umo_vint",
+      "time_counter_bounds"
     ],
     "variable_standard_names": [
       "advectice_ocean_heat_x_transport",
-      "surface_downward_x_stress",
-      "ocean_heat_x_transport",
-      "ocean_heat_x_transport_due_to_diffusion",
       "ocean_salt_x_transport",
-      "time_counter_bounds",
+      "ocean_heat_x_transport",
       "time_centered_bounds",
-      "vertical_integral_of_ocean_mass_x_transport"
+      "ocean_heat_x_transport_due_to_diffusion",
+      "surface_downward_x_stress",
+      "vertical_integral_of_ocean_mass_x_transport",
+      "time_counter_bounds"
     ],
     "dimensions": [
       "y",
@@ -72,7 +72,7 @@
     "si_component": "SI3 v4.0",
     "status": "ongoing",
     "update_frequency": "quarterly",
-    "latest_data_update": "2025-09-11T16:20:58.407597",
+    "latest_data_update": "2025-09-16T14:15:42.548099",
     "start_datetime": "1976-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T00:00:00Z",
     "datetime": null
