@@ -31,7 +31,7 @@ dask_config_json=.../OceanDataStore/tests/dask_config.json
 
 # Bucket and object prefix:
 bucket=npd-eorca1-era5v1
-prefix=test/U1m_icechunk
+prefix=test/U1m_icechunk_vc_dask
 
 # Define the append dimension:
 append_dim=time_counter
@@ -42,14 +42,14 @@ variables="time_counter_bounds uo umo"
 # -- Python Environment -- #
 # Activate miniconda environment:
 source /home/otooth/miniconda3/etc/profile.d/conda.sh
-conda activate env_testing
+conda activate env_jasmin_os
 
 # -- Send eORCA1 ERA-5 v1 monthly mean outputs to JASMIN OS -- #
 echo "In Progress: Sending eORCA1 ERA-5 v1 U1m variables to JASMIN object store without Dask..."
 filepath_gridU=$filedir/eORCA1_ERA5_1m_grid_U_197*.nc
 ods send_to_icechunk -f $filepath_gridU -c $store_credentials_json -b $bucket -p $prefix \
                      -gf $filepath_domain -uc '{"nav_lon":"glamu", "nav_lat":"gphiu"}' \
-                     -cs '{"x":360,"y":331,"depthu":25}' \
+                     -cs '{"x":360,"y":331,"depthu":25}' -dc $dask_config_json -vc \
                      -v $variables || { echo "Error: ods send_to_icechunk failed."; exit 1; }
 
 echo "Completed: Sent eORCA1 ERA-5 v1 monthly mean fields to JASMIN object store without Dask."

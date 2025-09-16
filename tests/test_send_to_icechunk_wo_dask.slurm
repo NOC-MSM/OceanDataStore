@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=test_update_icechunk
+#SBATCH --job-name=test_send_to_icechunk
 #SBATCH --partition=test
 #SBATCH --time=00:20:00
 #SBATCH --ntasks-per-core=1
@@ -8,9 +8,9 @@
 #SBATCH --nodes=1
 
 # ==============================================================
-# test_update_vc_icechunk.slurm
+# test_send_to_icechunk.slurm
 #
-# Description: SLURM script to test update_icechunk using the
+# Description: SLURM script to test send_to_icechunk using the
 # eORCA1 ERA-5 v1 monthly-mean output variables.
 #
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
@@ -31,34 +31,25 @@ dask_config_json=.../OceanDataStore/tests/dask_config.json
 
 # Bucket and object prefix:
 bucket=npd-eorca1-era5v1
-prefix=test/U1m
+prefix=test/U1m_icechunk
 
 # Define the append dimension:
 append_dim=time_counter
 
 # Define variable:
-variables="time_counter_bounds uo"
+variables="time_counter_bounds uo umo"
 
 # -- Python Environment -- #
 # Activate miniconda environment:
 source /home/otooth/miniconda3/etc/profile.d/conda.sh
-conda activate env_testing
+conda activate env_jasmin_os
 
 # -- Send eORCA1 ERA-5 v1 monthly mean outputs to JASMIN OS -- #
-echo "In Progress: Sending eORCA1 ERA-5 v1 U1m variables to JASMIN object store..."
-filepath_gridU=$filedir/eORCA1_ERA5_1m_grid_U_197601-197601.nc
+echo "In Progress: Sending eORCA1 ERA-5 v1 U1m variables to JASMIN object store without Dask..."
+filepath_gridU=$filedir/eORCA1_ERA5_1m_grid_U_197*.nc
 ods send_to_icechunk -f $filepath_gridU -c $store_credentials_json -b $bucket -p $prefix \
                      -gf $filepath_domain -uc '{"nav_lon":"glamu", "nav_lat":"gphiu"}' \
-                     -cs '{"x":360,"y":331,"depthu":25}' -v $variables \
-                     -dc $dask_config_json -vc || { echo "Error: ods send_to_icechunk failed."; exit 1; }
+                     -cs '{"x":360,"y":331,"depthu":25}' \
+                     -v $variables || { echo "Error: ods send_to_icechunk failed."; exit 1; }
 
-echo "Completed: Sent eORCA1 ERA-5 v1 monthly mean fields to JASMIN object store."
-
-echo "In Progress: Updating eORCA1 ERA-5 v1 U1m variables to JASMIN object store..."
-variables="umo"
-ods update_icechunk -f $filepath_gridU -c $store_credentials_json -b $bucket -p $prefix \
-                    -gf $filepath_domain -uc '{"nav_lon":"glamu", "nav_lat":"gphiu"}' \
-                    -ad $append_dim -cs '{"x":360,"y":331,"depthu":25}' -v $variables \
-                    -dc $dask_config_json -vc || { echo "Error: ods update_icechunk failed."; exit 1; }
-
-echo "Completed: Updated eORCA1 ERA-5 v1 monthly mean fields in JASMIN object store."
+echo "Completed: Sent eORCA1 ERA-5 v1 monthly mean fields to JASMIN object store without Dask."
