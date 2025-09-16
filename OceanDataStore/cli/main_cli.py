@@ -24,14 +24,12 @@ def banner():
     """Log the OceanDataStore banner."""
     logger.info(
         f"""
-          .-~~~-.
-  .- ~ ~-(       )_ _
- /                    ~ -.
-~      OceanDataStore     ',
-\                         .'
- - ._ ,. ,.,.,., ,.. -~ ~ '
-        '       '
-    version: {__version__}
+         .~~~.
+       .(     ).~~~~~~.
+     ~(               ).~~~.
+   .(    OceanDataStore     ).  
+  (._ ,. ,.,.,., ,.. -~ -~~~~~).
+        version: {__version__}
 
 """,
         extra={"simple": True},
@@ -42,7 +40,7 @@ def initialise_logging():
     """Initialise logging configuration."""
     logging.basicConfig(
         stream=sys.stdout,
-        format="☁  OceanDataStore  ☁  | %(levelname)10s | %(asctime)s | %(message)s",
+        format="🌐  OceanDataStore  🌐 | %(levelname)10s | %(asctime)s | %(message)s",
         level=logging.INFO,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
@@ -157,6 +155,9 @@ def process_action(args):
     
     elif args.action == "update_icechunk":
 
+        if args.var_commits:
+            logger.warning("The --var-commits flag will be ignored when updating an Icechunk repository.")
+
         update_icechunk(
             file=filepaths,
             bucket=args.bucket,
@@ -170,7 +171,6 @@ def process_action(args):
             attrs=args.attrs,
             branch=args.branch,
             commit_message=args.commit_message,
-            variable_commits=args.var_commits,
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
             icechunk_config=icechunk_config,
