@@ -35,7 +35,7 @@ def test_available_collections(catalog):
     collections = catalog.available_collections
     assert isinstance(collections, list)
     assert all(isinstance(c, str) for c in collections)
-    assert "noc-npd" in collections
+    assert "noc-npd-era5" in collections
 
 def test_available_items(catalog):
     items = catalog.available_items
@@ -43,7 +43,7 @@ def test_available_items(catalog):
     assert all(isinstance(i, str) for i in items)
 
 def test_search_valid_collection(catalog):
-    catalog.search(collection="noc-npd")
+    catalog.search(collection="noc-npd-era5")
     assert catalog.Collection is not None
     assert isinstance(catalog.available_items, list)
 
@@ -67,7 +67,7 @@ def test_summary_outputs(catalog):
     # Catalog summary:
     assert catalog.summary() == catalog.Catalog.describe()
     # Collection summary:
-    catalog.search(collection='noc-npd')
+    catalog.search(collection='noc-npd-era5')
     assert (catalog.Collection or catalog.Catalog).describe() == catalog.Collection.describe()
 
 def test_open_dataset(catalog, item_id):
