@@ -22,7 +22,7 @@ def catalog():
 
 @pytest.fixture(scope="module")
 def item_id():
-    return "noc-npd/npd-eorca1-era5v1/gn_global/T1y"
+    return "noc-npd-era5/npd-eorca1-era5v1/gn_global/T1y"
 
 def test_catalog_initialization(catalog):
     assert catalog.Catalog is not None
