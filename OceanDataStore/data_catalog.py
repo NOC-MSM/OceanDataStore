@@ -9,7 +9,7 @@ using pystac, Zarr and Icechunk.
 Authors:
     - Ollie Tooth
 """
-from typing import Optional, Sequence, Tuple
+from typing import Optional
 
 import pystac
 import icechunk
@@ -70,7 +70,11 @@ class OceanDataCatalog:
         """
         List available Item IDs in the current Collection or the root Catalog.
         """
-        return [item.id for item in self.Items] if self.Items else []
+        if self.Items:
+            return [item.id for item in self.Items]
+        else:
+            scope = self.Collection if self.Collection else self.Catalog
+            return list(scope.get_items(recursive=True))
 
 
     def summary(self) -> str:
@@ -98,36 +102,92 @@ class OceanDataCatalog:
             """)
 
 
-    def _filter_items(self, items, platform: Optional[str], variable: Optional[str]):
+    def _filter_items(self,
+                      items: list[pystac.Item],
+                      platform: Optional[str] = None,
+                      variable_name: Optional[str] = None,
+                      standard_name: Optional[str] = None,
+                      item_name: Optional[str] = None
+                      ):
         """
         Filter Items based on specified platform and variable.
+
+        Parameters
+        ----------
+        items : list[pystac.Item]
+            List of STAC Items to filter.
+        platform : str, optional
+            Platform name to filter Items by.
+        variable_name : str, optional
+            Variable name to filter Items by.
+        standard_name : str, optional
+            Standard variable name to filter Items by.
+        item_name : str, optional
+            Substring to filter Item IDs by.
         """
         if platform:
             items = [item for item in items if platform in item.properties.get('platform', '')]
-        if variable:
-            items = [item for item in items if variable in item.properties.get('variables', [])]
+        if variable_name:
+            items = [item for item in items if any(variable_name in var for var in item.properties.get('variables', []))]
+        if standard_name:
+            items = [item for item in items if any(standard_name in var for var in item.properties.get('variable_standard_names', []))]
+        if item_name:
+            items = [item for item in items if item_name in item.id]
+
         return items
 
 
     def search(self,
                collection: Optional[str] = None,
-               variable: Optional[str] = None,
-               platform: Optional[str] = None) -> None:
+               platform: Optional[str] = None,
+               variable_name: Optional[str] = None,
+               standard_name: Optional[str] = None,
+               item_name: Optional[str] = None
+               ) -> None:
         """
         Search the NOC STAC Catalog for Items matching the specified criteria.
+
+        When both a platform and a variable / standard name are provided,
+        the search returns all Items which match both criteria.
 
         Parameters
         ----------
         collection : str, optional
             Collection name to search for. Default is None,
             which searches the entire root Catalog.
-        variable : str, optional
-            Variable name to search for. Default is None,
-            which retrieves all Items.
         platform : str, optional
             Platform name to search for. Default is None,
             which retrieves Items from all platforms.
+        variable_name : str, optional
+            Variable name to search for. Default is None,
+            which retrieves all Items.
+        standard_name : str, optional
+            Standard variable name to search for. Default is None,
+            which retrieves all Items.
+        item_name : str, optional
+            Substring to filter Item IDs by. Default is None,
+            which retrieves all Items.
+
+        Raises
+        ------
+        ValueError
+            If the specified collection is not found in the Catalog.
+        ValueError
+            If both variable_name and standard_name are specified.
+        TypeError
+            If any of the input parameters are of incorrect type.
         """
+        if not isinstance(collection, (type(None), str)):
+            raise TypeError("'collection' must be a string or None.")
+        if not isinstance(platform, (type(None), str)):
+            raise TypeError("'platform' must be a string or None.")
+        if not isinstance(variable_name, (type(None), str)):
+            raise TypeError("'variable_name' must be a string or None.")
+        if not isinstance(standard_name, (type(None), str)):
+            raise TypeError("'standard_name' must be a string or None.")
+        if not isinstance(item_name, (type(None), str)):
+            raise TypeError("'item_name' must be a string or None.")
+
         if collection:
             collections = {col.id: col for col in self.Catalog.get_all_collections()}
             if collection not in collections:
@@ -138,8 +198,16 @@ class OceanDataCatalog:
             scope = self.Collection if self.Collection else self.Catalog
             items = list(scope.get_items(recursive=True))
 
-        self.Items = self._filter_items(items, platform, variable)
-        self.item_summary()
+        if (variable_name is not None) and (standard_name is not None):
+            raise ValueError("Only one of 'variable_name' or 'standard_name' can be specified.")
+        else:
+            self.Items = self._filter_items(items=items,
+                                            platform=platform,
+                                            variable_name=variable_name,
+                                            standard_name=standard_name,
+                                            item_name=item_name
+                                            )
+            self.item_summary()
 
 
     def _open_icechunk_store(
@@ -200,17 +268,17 @@ class OceanDataCatalog:
         """
         # Open Item asset Zarr store via URL:
         url = f"{fields['endpoint_url']}/{fields['bucket']}/{fields['prefix']}"
-        ds = xr.open_zarr(url, zarr_format=fields['zarr_format'], consolidated=True)
+        ds = xr.open_zarr(url, zarr_format=int(fields['zarr_format']), consolidated=True)
 
         return ds
 
 
     def open_dataset(self,
                      id: str,
-                     variables: Optional[Sequence[str]] = None,
+                     variables: Optional[list[str]] = None,
                      start_datetime: Optional[str] = None,
                      end_datetime: Optional[str] = None,
-                     bbox: Optional[Tuple[float, float, float, float]] = None,
+                     bbox: Optional[tuple[float, float, float, float]] = None,
                      branch: str = "main",
                      asset_key: Optional[str] = None) -> xr.Dataset:
         """
@@ -220,25 +288,25 @@ class OceanDataCatalog:
         ----------
         id : str
             Item ID to open asset.
-        variables : Sequence[str], optional
+        variable_names : list[str], optional
             Variable or list of variables to be parsed from the dataset.
-            All variables are included by default.
+            Default is to return all variables.
         start_datetime : str, optional
             Start datetime used to subset the dataset. Should be a string
-            in ISO format (e.g., "1976-01-01T00:00:00Z"). The Item
-            start_datetime is used by default.
+            in ISO format (e.g., "1976-01-01T00:00:00Z"). Default is to use
+            the Item start_datetime.
         end_datetime : str, optional
             End datetime used to subset the dataset. Should be a string
-            in ISO format (e.g., "2024-12-31T00:00:00Z"). The Item
-            end_datetime is used by default.
-        bbox : Tuple[float, float, float, float], optional
+            in ISO format (e.g., "2024-12-31T00:00:00Z"). Default is to use
+            the Item end_datetime.
+        bbox : tuple[float, float, float, float], optional
             Spatial bounding box used to subset the dataset. Should be a list of four floats
             representing the bounding box in the format: (min_lon, min_lat, max_lon, max_lat).
-            The Item bbox is used by default.
+            Default is to use the Item bbox.
         branch : str, optional
-            Branch of the Icechunk repository to use. The "main" branch is used by default.
+            Branch of the Icechunk repository to use. Default is to use the "main" branch.
         asset_key : str, optional
-            Key of the asset to open. The key is inferred from the Item ID by default.
+            Key of the asset to open. Default is to infer the key from the Item ID.
 
         Returns
         -------
@@ -254,7 +322,23 @@ class OceanDataCatalog:
         KeyError
             If the specified variable(s) are not found in the dataset.
         """
-        # Collect Item Asset:
+        # -- Validate inputs -- #
+        if not isinstance(id, str):
+            raise TypeError("'id' must be a string.")
+        if not isinstance(variables, (type(None), str, list, tuple)):
+            raise TypeError("'variables' must be a string, list, tuple or None.")
+        if isinstance(variables, str):
+            variables = [variables]
+        if not isinstance(start_datetime, (type(None), str)):
+            raise TypeError("'start_datetime' must be a string or None.")
+        if not isinstance(end_datetime, (type(None), str)):
+            raise TypeError("'end_datetime' must be a string or None.")
+        if not isinstance(bbox, (type(None), tuple)):
+            raise TypeError("'bbox' must be a tuple or None.")
+        if bbox is not None and (len(bbox) != 4 or not all(isinstance(coord, float) for coord in bbox)):
+            raise TypeError("'bbox' must be a tuple of floats in the form (lon_min, lon_max, lat_min, lat_max).")
+
+        # -- Collect Item Asset -- #
         try:
             item = next(self.Catalog.get_items(id, recursive=True))
         except StopIteration:
