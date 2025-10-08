@@ -9,6 +9,8 @@ python3 create_noc_stac.py
 
 This will create a new directory `noc-model-stac` inside the `catalogs/` directory storing a STAC containing NOC Near-Present Day & RAPID-Evolution model datasets. Further datasets will be added to the `noc-model-stac` in the future.
 
+---
+
 ### Uploading a STAC to the JASMIN Object Store:
 
 To upload a new or updated STAC to the `noc-msm` JASMIN Cloud Object Store tenancy, use a applicable CLI, such as `s3cmd` or `MinIO`.
