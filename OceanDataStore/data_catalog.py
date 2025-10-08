@@ -11,6 +11,7 @@ Authors:
 """
 from typing import Optional
 
+import os
 import pystac
 import icechunk
 import xarray as xr
@@ -48,7 +49,7 @@ class OceanDataCatalog:
                  catalog_url: str = None
                  ):
         # Define the URL to the NOC STAC root catalog:
-        self._stac_url = catalog_url or f"https://raw.githubusercontent.com/NOC-MSM/OceanDataStore/dev/catalogs/{catalog_name}/catalog.json"
+        self._stac_url = catalog_url or f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/oceandatastore/{catalog_name}/catalog.json"
         # Store the root catalog as a class attribute:
         self.Catalog = pystac.read_file(self._stac_url)
 
@@ -70,11 +71,13 @@ class OceanDataCatalog:
         """
         List available Item IDs in the current Collection or the root Catalog.
         """
-        if self.Items:
+        if self.Items is not None:
+            # Return all Item IDs from the most recent search:
             return [item.id for item in self.Items]
         else:
+            # Return first 25 Item IDs from the current Collection or root Catalog:
             scope = self.Collection if self.Collection else self.Catalog
-            return list(scope.get_items(recursive=True))
+            return [next(scope.get_items(recursive=True), None).id for _ in range(25)]
 
 
     def summary(self) -> str:
@@ -210,6 +213,39 @@ class OceanDataCatalog:
             self.item_summary()
 
 
+    def _open_item(
+            self,
+            id: str,
+        ) -> pystac.Item:
+        """
+        Open a STAC Item directly from URL using Item ID.
+
+        Parameters
+        ----------
+        id : str
+            Item ID to open directly from URL.
+        
+        Returns
+        -------
+        pystac.Item
+            STAC Item object.
+        """
+        # Define base URL to the root catalog:
+        base_url = os.path.dirname(self._stac_url)
+
+        # Construct URL to the Item JSON file:
+        # Assumes Item IDs use path-like representation.
+        id_name = f"{id}/"
+        id_list = [f"{id_n}/" for id_n in id_name.split("/")]
+        id_str = ["".join(id_list[:n+1]) for n in range(len(id_list))]
+        item_url = f"{base_url}/{(''.join(id_str))[:-2]}.json"
+
+        # Open the Item from the constructed URL:
+        item = pystac.Item.from_file(item_url)
+
+        return item
+
+
     def _open_icechunk_store(
             self,
             fields: dict,
@@ -235,6 +271,7 @@ class OceanDataCatalog:
         storage = icechunk.s3_storage(
             bucket=fields['bucket'],
             prefix=fields['prefix'],
+            region=None,
             anonymous=fields['anonymous'],
             endpoint_url=fields['endpoint_url'],
             force_path_style=True
@@ -275,7 +312,7 @@ class OceanDataCatalog:
 
     def open_dataset(self,
                      id: str,
-                     variables: Optional[list[str]] = None,
+                     variable_names: Optional[list[str]] = None,
                      start_datetime: Optional[str] = None,
                      end_datetime: Optional[str] = None,
                      bbox: Optional[tuple[float, float, float, float]] = None,
@@ -289,7 +326,7 @@ class OceanDataCatalog:
         id : str
             Item ID to open asset.
         variable_names : list[str], optional
-            Variable or list of variables to be parsed from the dataset.
+            List of variable names to be parsed from the dataset.
             Default is to return all variables.
         start_datetime : str, optional
             Start datetime used to subset the dataset. Should be a string
@@ -325,10 +362,10 @@ class OceanDataCatalog:
         # -- Validate inputs -- #
         if not isinstance(id, str):
             raise TypeError("'id' must be a string.")
-        if not isinstance(variables, (type(None), str, list, tuple)):
-            raise TypeError("'variables' must be a string, list, tuple or None.")
-        if isinstance(variables, str):
-            variables = [variables]
+        if not isinstance(variable_names, (type(None), list)):
+            raise TypeError("'variable_names' must be a list of strings.")
+        if variable_names is not None and not all([isinstance(var, str) for var in variable_names]):
+            raise TypeError("'variable_names' must be a list of strings.")
         if not isinstance(start_datetime, (type(None), str)):
             raise TypeError("'start_datetime' must be a string or None.")
         if not isinstance(end_datetime, (type(None), str)):
@@ -340,11 +377,13 @@ class OceanDataCatalog:
 
         # -- Collect Item Asset -- #
         try:
-            item = next(self.Catalog.get_items(id, recursive=True))
-        except StopIteration:
-            raise ValueError(f"Item ID '{id}' not found in the STAC catalog.")
+            item = self._open_item(id=id)
+        except Exception:
+            raise RuntimeError(f"Item ID '{id}' not found in Catalog.")
 
-        asset_key = asset_key or item.id.split('/')[-1]
+        # Infer asset key from Item ID if not provided:
+        if asset_key is None:
+            asset_key = list(item.assets.keys())[0]
         asset = item.assets.get(asset_key)
         if asset is None:
             raise ValueError(f"Asset key '{asset_key}' not found in Item ID '{id}'.")
@@ -371,11 +410,11 @@ class OceanDataCatalog:
             raise ValueError(f"Unsupported media type {asset.to_dict()['type']} for Item asset.")
 
         # Selecting variables:
-        if variables:
+        if variable_names is not None:
             try:
-                ds = ds[list(variables)]
+                ds = ds[variable_names]
             except KeyError:
-                raise KeyError(f"Variable(s) {variables} not found in dataset.")
+                raise KeyError("One or more variables not found in dataset.")
 
         # Spatio-temporal subsetting:
         if bbox:
