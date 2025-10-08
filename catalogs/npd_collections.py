@@ -82,7 +82,7 @@ def create_npd_jra55_collection(
 
     # -- Define NOC Near-Present Day Model Configuration Catalogs -- #
     npd_eorca1_jra55v1 = pystac.Catalog(
-        id="noc-npd-jra55/npd_eorca1_jra55v1",
+        id="noc-npd-jra55/npd-eorca1-jra55v1",
         title="eORCA1 JRA55v1 NPD Catalog",
         description="Catalog of outputs from the eORCA1 JRA55-do version 1 Near-Present Day ocean physics simulation performed by the National Oceanography Centre."
         )
@@ -98,11 +98,11 @@ def create_npd_jra55_collection(
     logging.info(f"Completed: Created NOC STAC Catalog with ID: {npd_eorca025_jra55v1.id}")
 
     # Define NOC Near-Present Day Platform Sub-Catalogs -- #
-    # Note: Options for platforms are: "gn_global", "gr_global", "gn_regional{1...4}", "gr_regional{1...4}", "tn", "tr".
-    # where gn = global native model grids, gr = global regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
+    # Note: Options for platforms are: "gn", "gr", "tn", "tr".
+    # where gn = native model grids, gr = regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
 
     gn_eorca1_jra55v1 = pystac.Catalog(
-        id="noc-npd-jra55/npd-eorca1-jra55v1/gn_global",
+        id="noc-npd-jra55/npd-eorca1-jra55v1/gn",
         title="eORCA1 JRA55v1 NPD global native model grid Catalog",
         description="Catalog of global ocean physics outputs stored on the native eORCA1 curvilinear model grid."
         )
@@ -110,7 +110,7 @@ def create_npd_jra55_collection(
     logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca1_jra55v1.id}")
 
     gn_eorca025_jra55v1 = pystac.Catalog(
-        id="noc-npd-jra55/npd-eorca025-jra55v1/gn_global",
+        id="noc-npd-jra55/npd-eorca025-jra55v1/gn",
         title="eORCA025 JRA55v1 NPD global native model grid Catalog",
         description="Catalog of global ocean physics outputs stored on the native eORCA025 curvilinear model grid."
         )
@@ -158,7 +158,7 @@ def create_npd_jra55_collection(
             item = create_item_with_zarr_asset(
                 ds=ds,
                 bucket=bucket,
-                platform="gn_global",
+                platform="gn",
                 prefix=f"{prefix}/{var}",
                 config="eORCA1 JRA55v1 NPD",
                 operation=operation,
@@ -213,7 +213,7 @@ def create_npd_jra55_collection(
             item = create_item_with_zarr_asset(
                 ds=ds,
                 bucket=bucket,
-                platform="gn_global",
+                platform="gn",
                 prefix=f"{prefix}/{var}",
                 config="eORCA025 JRA55v1 NPD",
                 operation=operation,
@@ -326,11 +326,11 @@ def create_npd_era5_collection() -> pystac.Collection:
     logging.info(f"Completed: Created NOC STAC Catalog with ID: {npd_eorca12_era5v1.id}")
 
     # Define NOC Near-Present Day Platform Sub-Catalogs -- #
-    # Note: Options for platforms are: "gn_global", "gr_global", "gn_regional{1...4}", "gr_regional{1...4}", "tn", "tr".
-    # where gn = global native model grids, gr = global regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
+    # Note: Options for platforms are: "gn", "gr", "tn", "tr".
+    # where gn = native model grids, gr = regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
 
     gn_eorca1_era5v1 = pystac.Catalog(
-        id="noc-npd-era5/npd-eorca1-era5v1/gn_global",
+        id="noc-npd-era5/npd-eorca1-era5v1/gn",
         title="eORCA1 ERA5v1 NPD global native model grid Catalog",
         description="Catalog of global ocean physics outputs stored on the native eORCA1 curvilinear model grid."
         )
@@ -338,7 +338,7 @@ def create_npd_era5_collection() -> pystac.Collection:
     logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca1_era5v1.id}")
 
     gn_eorca025_era5v1 = pystac.Catalog(
-        id="noc-npd-era5/npd-eorca025-era5v1/gn_global",
+        id="noc-npd-era5/npd-eorca025-era5v1/gn",
         title="eORCA025 ERA5v1 NPD global native model grid Catalog",
         description="Catalog of global ocean physics outputs stored on the native eORCA025 curvilinear model grid."
         )
@@ -346,7 +346,7 @@ def create_npd_era5_collection() -> pystac.Collection:
     logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca025_era5v1.id}")
 
     gn_eorca12_era5v1 = pystac.Catalog(
-        id="noc-npd-era5/npd-eorca12-era5v1/gn_global",
+        id="noc-npd-era5/npd-eorca12-era5v1/gn",
         title="eORCA12 ERA5v1 NPD global native model grid Catalog",
         description="Catalog of global ocean physics outputs stored on the native eORCA12 curvilinear model grid."
         )
@@ -377,7 +377,7 @@ def create_npd_era5_collection() -> pystac.Collection:
 
     logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {tn_eorca12_era5v1.id}")
 
-    # -- Add Items to NOC Near-Present Day eORCA1 ERA5v1 {gn_global} Sub-Catalog -- #
+    # -- Add Items to NOC Near-Present Day eORCA1 ERA5v1 {gn} Sub-Catalog -- #
     # Define the store credentials for the eORCA1 ERA5v1 NPD data:
     for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W1m", "I1m", "S1m",
                    "domain/domain_cfg", "domain/mesh_mask", "domain/subbasins"
@@ -398,7 +398,7 @@ def create_npd_era5_collection() -> pystac.Collection:
         item = create_item_with_icechunk_asset(
             ds=ds,
             bucket="npd-eorca1-era5v1",
-            platform="gn_global",
+            platform="gn",
             prefix=prefix,
             config="eORCA1 ERA5v1 NPD",
             operation=operation,
@@ -429,7 +429,7 @@ def create_npd_era5_collection() -> pystac.Collection:
 
     logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {tn_eorca1_era5v1.id}")
 
-    # -- Add Items to NOC Near-Present Day eORCA025 ERA5v1 {gn_global} Sub-Catalog -- #
+    # -- Add Items to NOC Near-Present Day eORCA025 ERA5v1 {gn} Sub-Catalog -- #
     # Define the store credentials for the eORCA025 ERA5v1 NPD data:
     for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
                    "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
@@ -452,7 +452,7 @@ def create_npd_era5_collection() -> pystac.Collection:
         item = create_item_with_icechunk_asset(
             ds=ds,
             bucket="npd-eorca025-era5v1",
-            platform="gn_global",
+            platform="gn",
             prefix=prefix,
             config="eORCA025 ERA5v1 NPD",
             operation=operation,
@@ -505,7 +505,7 @@ def create_npd_era5_collection() -> pystac.Collection:
         item = create_item_with_icechunk_asset(
             ds=ds,
             bucket="npd-eorca12-era5v1",
-            platform="gn_global",
+            platform="gn",
             prefix=prefix,
             config="eORCA12 ERA5v1 NPD",
             operation=operation,

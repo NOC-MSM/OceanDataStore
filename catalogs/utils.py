@@ -153,9 +153,22 @@ def create_item_with_icechunk_asset(
     # Convert the Polygon to GeoJSON format:
     geometry = mapping(polygon)
 
+    # Define STAC Item ID:
+    if 'domain' in prefix:
+        id_name = f"{collection}/{bucket}/{platform}/{prefix.split('/')[-1]}"
+    elif 'M' in prefix:
+        id_name = f"{collection}/{bucket}/{platform}/{prefix.replace('/','-')}"
+    else:
+        if len(ds.data_vars) > 1:
+            # Multiple variable Icechunk repository:
+            id_name = f"{collection}/{bucket}/{platform}/{prefix}"
+        else:
+            # Single variable Icechunk repository:
+            id_name = f"{collection}/{bucket}/{platform}/{prefix.replace('/','-')}"
+
     # Create a STAC Item with Asset:
     item = pystac.Item(
-        id=f"{collection}/{bucket}/{platform}/{prefix}",
+        id=id_name,
         geometry=geometry,
         bbox=list(polygon.bounds),  # [min_lon, min_lat, max_lon, max_lat]
         datetime=None,
@@ -274,9 +287,22 @@ def create_item_with_zarr_asset(
     # Convert the Polygon to GeoJSON format:
     geometry = mapping(polygon)
 
+    # Define STAC Item ID:
+    if 'domain' in prefix:
+        id_name = f"{collection}/{bucket}/{platform}/{prefix.split('/')[-1]}"
+    elif 'M' in prefix:
+        id_name = f"{collection}/{bucket}/{platform}/{prefix.replace('/','-')}"
+    else:
+        if len(ds.data_vars) > 1:
+            # Multiple variable Zarr Store:
+            id_name = f"{collection}/{bucket}/{platform}/{prefix}"
+        else:
+            # Single variable Zarr Store:
+            id_name = f"{collection}/{bucket}/{platform}/{prefix.replace('/','-')}"
+
     # Create a STAC Item with Asset:
     item = pystac.Item(
-        id=f"{collection}/{bucket}/{platform}/{prefix}",
+        id=id_name,
         geometry=geometry,
         bbox=list(polygon.bounds),  # [min_lon, min_lat, max_lon, max_lat]
         datetime=None,

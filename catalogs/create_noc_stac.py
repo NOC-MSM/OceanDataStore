@@ -60,7 +60,7 @@ def create_noc_stac():
 
     noc_stac.normalize_hrefs(root_href="https://noc-msm-o.s3-ext.jc.rl.ac.uk/noc-model-stac/")
     noc_stac.save(catalog_type=pystac.CatalogType.SELF_CONTAINED, dest_href=os.path.join(os.getcwd(), "noc-model-stac"))
-    logging.info(f"Completed: Write NOC STAC to -> {os.path.join(os.getcwd(), "noc-model-stac")}")
+    logging.info(f"Completed: Write NOC STAC to -> {os.path.join(os.getcwd(), 'noc-model-stac')}")
 
 if __name__ == "__main__":
     # -- Configure Logging -- #

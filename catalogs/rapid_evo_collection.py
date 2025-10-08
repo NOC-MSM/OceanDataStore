@@ -105,11 +105,11 @@ def create_rapid_evo_collection(
     logging.info(f"Completed: Created NOC STAC Catalog with ID: {r_evo_rapid36.id}")
 
     # Define NOC RAPID-Evolution Platform Sub-Catalogs -- #
-    # Note: Options for platforms are: "gn_global", "gr_global", "gn_regional{1...4}", "gr_regional{1...4}", "tn", "tr".
-    # where gn = global native model grids, gr = global regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
+    # Note: Options for platforms are: "gn", "gr", "tn", "tr".
+    # where gn = native model grids, gr = regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
 
     gn_eorca025 = pystac.Catalog(
-        id="noc-rapid-evolution/r_evo_eorca025/gn_global",
+        id="noc-rapid-evolution/r_evo_eorca025/gn",
         title="RAPID12 JRA55-do global parent domain native model grid Catalog",
         description="Catalog of global ocean physics outputs stored on the native global eORCA025 curvilinear model grid."
         )
@@ -117,7 +117,7 @@ def create_rapid_evo_collection(
     logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca025.id}")
 
     gn_rapid12 = pystac.Catalog(
-        id="noc-rapid-evolution/r_evo_rapid12/gn_nest",
+        id="noc-rapid-evolution/r_evo_rapid12/gn",
         title="RAPID12 JRA55-do nested child domain native model grid Catalog",
         description="Catalog of ocean physics outputs stored on the native nested RAPID12 curvilinear model grid."
         )
@@ -125,7 +125,7 @@ def create_rapid_evo_collection(
     logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_rapid12.id}")
 
     gn_rapid36 = pystac.Catalog(
-        id="noc-rapid-evolution/r_evo_rapid36/gn_nest",
+        id="noc-rapid-evolution/r_evo_rapid36/gn",
         title="RAPID36 JRA55-do nested grandchild domain native model grid Catalog",
         description="Catalog of ocean physics outputs stored on the native nested RAPID36 curvilinear model grid."
         )
@@ -147,10 +147,10 @@ def create_rapid_evo_collection(
             item = create_item_with_zarr_asset(
                 ds=ds,
                 bucket=bucket,
-                platform="gn_global",
+                platform="gn",
                 prefix=prefix,
-                start_date="1976-01-16",
-                end_date="2023-12-16",
+                start_date="1976-01-01",
+                end_date="2023-12-31",
                 collection="noc-rapid-evolution",
                 config="eORCA025 RAPID-Evolution global parent",
                 operation=operation,
@@ -180,10 +180,10 @@ def create_rapid_evo_collection(
                 item = create_item_with_zarr_asset(
                     ds=ds,
                     bucket=bucket,
-                    platform="gn_global",
+                    platform="gn",
                     prefix=f"{prefix}/{var}",
-                    start_date="1976-01-16",
-                    end_date="2023-12-16",
+                    start_date="1976-01-01",
+                    end_date="2023-12-31",
                     collection="noc-rapid-evolution",
                     config="eORCA025 RAPID-Evolution global parent",
                     operation=operation,
@@ -207,10 +207,10 @@ def create_rapid_evo_collection(
             item = create_item_with_zarr_asset(
                 ds=ds,
                 bucket=bucket,
-                platform="gn_nest",
+                platform="gn",
                 prefix=prefix,
-                start_date="1976-01-16",
-                end_date="2023-12-16",
+                start_date="1976-01-01",
+                end_date="2023-12-31",
                 bbox=(-100.143814, 6.0719233, -1.8753614, 42.41955),
                 collection="noc-rapid-evolution",
                 config="RAPID12 RAPID-Evolution child nest",
@@ -240,10 +240,10 @@ def create_rapid_evo_collection(
                 item = create_item_with_zarr_asset(
                     ds=ds,
                     bucket=bucket,
-                    platform="gn_nest",
+                    platform="gn",
                     prefix=f"{prefix}/{var}",
-                    start_date="1976-01-16",
-                    end_date="2023-12-16",
+                    start_date="1976-01-01",
+                    end_date="2023-12-31",
                     bbox=(-100.143814, 6.0719233, -1.8753614, 42.41955),
                     collection="noc-rapid-evolution",
                     config="RAPID12 RAPID-Evolution child nest",
@@ -268,10 +268,10 @@ def create_rapid_evo_collection(
             item = create_item_with_zarr_asset(
                 ds=ds,
                 bucket=bucket,
-                platform="gn_nest",
+                platform="gn",
                 prefix=prefix,
-                start_date="1976-01-16",
-                end_date="2023-12-16",
+                start_date="1976-01-01",
+                end_date="2023-12-31",
                 bbox=(-98.530975, 17.34014, -8.879465, 30.447763),
                 collection="noc-rapid-evolution",
                 config="RAPID36 RAPID-Evolution grandchild nest",
@@ -301,9 +301,9 @@ def create_rapid_evo_collection(
                 item = create_item_with_zarr_asset(
                     ds=ds,
                     bucket=bucket,
-                    platform="gn_nest",
-                    start_date="1976-01-16",
-                    end_date="2023-12-16",
+                    platform="gn",
+                    start_date="1976-01-01",
+                    end_date="2023-12-31",
                     prefix=f"{prefix}/{var}",
                     bbox=(-98.530975, 17.34014, -8.879465, 30.447763),
                     collection="noc-rapid-evolution",
