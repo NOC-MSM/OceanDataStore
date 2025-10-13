@@ -2,7 +2,7 @@
 
 !!! abstract "Summary"
 
-    **This is the user guide for the OceanDataStore Command Line Interface (CLI) to write and update ocean data in cloud object storage.**
+    **This is the User Guide for the OceanDataStore Command Line Interface (CLI) to write and update ocean data in cloud object storage.**
 
 ---
 
