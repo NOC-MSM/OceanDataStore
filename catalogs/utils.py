@@ -83,6 +83,7 @@ def open_icechunk_store(
 
 # -- STAC Functions -- #
 def create_item_with_icechunk_asset(
+    id: str,
     ds: xr.Dataset,
     bucket: str,
     platform: str,
@@ -100,6 +101,8 @@ def create_item_with_icechunk_asset(
 
     Parameters
     ----------
+    id : str
+        Unique identifier for the STAC Item.
     ds : xr.Dataset
         The xarray Dataset containing the data to be included in the STAC Item.
     bucket : str
@@ -168,7 +171,7 @@ def create_item_with_icechunk_asset(
 
     # Create a STAC Item with Asset:
     item = pystac.Item(
-        id=id_name,
+        id=id,
         geometry=geometry,
         bbox=list(polygon.bounds),  # [min_lon, min_lat, max_lon, max_lat]
         datetime=None,
@@ -209,6 +212,7 @@ def create_item_with_icechunk_asset(
 
 
 def create_item_with_zarr_asset(
+    id : str,
     ds: xr.Dataset,
     bucket: str,
     platform: str,
@@ -228,6 +232,8 @@ def create_item_with_zarr_asset(
 
     Parameters
     ----------
+    id : str
+        Unique identifier for the STAC Item.
     ds : xr.Dataset
         The xarray Dataset containing the data to be included in the STAC Item.
     bucket : str
@@ -302,7 +308,7 @@ def create_item_with_zarr_asset(
 
     # Create a STAC Item with Asset:
     item = pystac.Item(
-        id=id_name,
+        id=id,
         geometry=geometry,
         bbox=list(polygon.bounds),  # [min_lon, min_lat, max_lon, max_lat]
         datetime=None,

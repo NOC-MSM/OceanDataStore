@@ -81,7 +81,7 @@ def create_rapid_evo_collection(
 
     # -- Define NOC RAPID-Evolution Model Configuration Catalogs -- #
     r_evo_eorca025 = pystac.Catalog(
-        id="noc-rapid-evolution/r_evo_eorca025",
+        id="r_evo_eorca025",
         title="eORCA025 RAPID-Evolution global parent domain Catalog",
         description="Catalog of eORCA025 JRA55-do global parent domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre."
     )
@@ -89,7 +89,7 @@ def create_rapid_evo_collection(
     logging.info(f"Completed: Created NOC STAC Catalog with ID: {r_evo_eorca025.id}")
 
     r_evo_rapid12 = pystac.Catalog(
-        id="noc-rapid-evolution/r_evo_rapid12",
+        id="r_evo_rapid12",
         title="RAPID12 RAPID-Evolution nested child domain Catalog",
         description="Catalog of RAPID12 JRA55-do nested child domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre.",
     )
@@ -97,7 +97,7 @@ def create_rapid_evo_collection(
     logging.info(f"Completed: Created NOC STAC Catalog with ID: {r_evo_rapid12.id}")
 
     r_evo_rapid36 = pystac.Catalog(
-        id="noc-rapid-evolution/r_evo_rapid36",
+        id="r_evo_rapid36",
         title="RAPID36 RAPID-Evolution nested grandchild domain Catalog",
         description="Catalog of RAPID36 JRA55-do nested grandchild domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre.",
     )
@@ -109,7 +109,7 @@ def create_rapid_evo_collection(
     # where gn = native model grids, gr = regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
 
     gn_eorca025 = pystac.Catalog(
-        id="noc-rapid-evolution/r_evo_eorca025/gn",
+        id="gn",
         title="RAPID12 JRA55-do global parent domain native model grid Catalog",
         description="Catalog of global ocean physics outputs stored on the native global eORCA025 curvilinear model grid."
         )
@@ -117,7 +117,7 @@ def create_rapid_evo_collection(
     logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca025.id}")
 
     gn_rapid12 = pystac.Catalog(
-        id="noc-rapid-evolution/r_evo_rapid12/gn",
+        id="gn",
         title="RAPID12 JRA55-do nested child domain native model grid Catalog",
         description="Catalog of ocean physics outputs stored on the native nested RAPID12 curvilinear model grid."
         )
@@ -125,7 +125,7 @@ def create_rapid_evo_collection(
     logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_rapid12.id}")
 
     gn_rapid36 = pystac.Catalog(
-        id="noc-rapid-evolution/r_evo_rapid36/gn",
+        id="gn",
         title="RAPID36 JRA55-do nested grandchild domain native model grid Catalog",
         description="Catalog of ocean physics outputs stored on the native nested RAPID36 curvilinear model grid."
         )
@@ -145,6 +145,7 @@ def create_rapid_evo_collection(
             # Open domain_cfg dataset from Zarr store:
             ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
             item = create_item_with_zarr_asset(
+                id="noc-rapid-evolution/r_evo_eorca025/gn/domain_cfg",
                 ds=ds,
                 bucket=bucket,
                 platform="gn",
@@ -178,6 +179,7 @@ def create_rapid_evo_collection(
                 # Open dataset from Zarr store:
                 ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}/{var}", consolidated=True)
                 item = create_item_with_zarr_asset(
+                    id=f"noc-rapid-evolution/r_evo_eorca025/gn/{prefix}/{var}",
                     ds=ds,
                     bucket=bucket,
                     platform="gn",
@@ -205,6 +207,7 @@ def create_rapid_evo_collection(
             # Open domain_cfg dataset from Zarr store:
             ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
             item = create_item_with_zarr_asset(
+                id="noc-rapid-evolution/r_evo_rapid12/gn/domain_cfg",
                 ds=ds,
                 bucket=bucket,
                 platform="gn",
@@ -219,7 +222,7 @@ def create_rapid_evo_collection(
                 zarr_format=3,
             )
             # Add item to the RAPID12 RAPID-Evolution nested child domain native model grid catalog:
-            gn_eorca025.add_item(item)
+            gn_rapid12.add_item(item)
         
         else:
             bucket="r-evo1-eorca025-rapid12-rapid36"
@@ -238,6 +241,7 @@ def create_rapid_evo_collection(
                 # Open dataset from Zarr store:
                 ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}/{var}", consolidated=True)
                 item = create_item_with_zarr_asset(
+                    id=f"noc-rapid-evolution/r_evo_rapid12/gn/{prefix}/{var}",
                     ds=ds,
                     bucket=bucket,
                     platform="gn",
@@ -266,6 +270,7 @@ def create_rapid_evo_collection(
             # Open domain_cfg dataset from Zarr store:
             ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
             item = create_item_with_zarr_asset(
+                id="noc-rapid-evolution/r_evo_rapid36/gn/domain_cfg",
                 ds=ds,
                 bucket=bucket,
                 platform="gn",
@@ -280,7 +285,7 @@ def create_rapid_evo_collection(
                 zarr_format=3,
             )
             # Add item to the RAPID36 RAPID-Evolution nested grandchild domain native model grid catalog:
-            gn_eorca025.add_item(item)
+            gn_rapid36.add_item(item)
         
         else:
             bucket="r-evo1-eorca025-rapid12-rapid36"
@@ -299,6 +304,7 @@ def create_rapid_evo_collection(
                 # Open dataset from Zarr store:
                 ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}/{var}", consolidated=True)
                 item = create_item_with_zarr_asset(
+                    id=f"noc-rapid-evolution/r_evo_rapid36/gn/{prefix}/{var}",
                     ds=ds,
                     bucket=bucket,
                     platform="gn",
