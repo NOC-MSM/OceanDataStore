@@ -26,7 +26,7 @@ def icechunk_item_id():
 
 @pytest.fixture(scope="module")
 def zarr_item_id():
-    return "noc-npd-jra55/npd-eorca1-jra55v1/gn/T1y-tos_con"
+    return "noc-npd-jra55/npd-eorca1-jra55v1/gn/T1y/tos_con"
 
 def test_catalog_initialization(catalog):
     assert catalog.Catalog is not None
