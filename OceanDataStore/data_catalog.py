@@ -235,10 +235,9 @@ class OceanDataCatalog:
 
         # Construct URL to the Item JSON file:
         # Assumes Item IDs use path-like representation.
-        id_name = f"{id}/"
-        id_list = [f"{id_n}/" for id_n in id_name.split("/")]
-        id_str = ["".join(id_list[:n+1]) for n in range(len(id_list))]
-        item_url = f"{base_url}/{(''.join(id_str))[:-2]}.json"
+        id_list = [f"{id_n}/" for id_n in id.split("/")]
+        id_prefix = "".join(id_list[:3])
+        item_url = f"{base_url}/{id_prefix}{id}/{id}.json"
 
         # Open the Item from the constructed URL:
         item = pystac.Item.from_file(item_url)
