@@ -6,6 +6,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# STAC files
+*noc-model-stac/
+
 # C extensions
 *.so
 
