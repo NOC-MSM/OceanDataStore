@@ -390,7 +390,7 @@ class OceanDataCatalog:
         fields = asset.extra_fields
 
         # Open Icechunk Repository as xarray Dataset:
-        if asset.to_dict()['type'] == "application/icechunk":
+        if asset.to_dict()['type'] == "application/vnd.zarr+icechunk":
             required_fields = ['bucket', 'prefix', 'anonymous', 'endpoint_url']
             for field in required_fields:
                 if field not in fields:
@@ -398,7 +398,7 @@ class OceanDataCatalog:
             ds = self._open_icechunk_store(fields=fields, branch=branch)
 
         # Open Zarr store as xarray Dataset:
-        elif asset.to_dict()['type'] == 'application/vnd+zarr':
+        elif asset.to_dict()['type'] == 'application/vnd.zarr':
             required_fields = ['bucket', 'prefix', 'endpoint_url', 'zarr_format']
             for field in required_fields:
                 if field not in fields:
