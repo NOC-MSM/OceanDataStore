@@ -393,7 +393,7 @@ def create_npd_era5_collection() -> pystac.Collection:
     # Define the store credentials for the eORCA1 ERA5v1 NPD data:
     bucket = "npd-eorca1-era5v1"
     for prefix in ["T1y", "U1y", "V1y", "W1y", "I1y", "S1y", "T1m", "U1m", "V1m", "W1m", "I1m", "S1m",
-                   "domain/domain_cfg", "domain/mesh_mask", "domain/subbasins"
+                   "domain/domain_cfg"
                    ]:
         # Open dataset from Icechunk repository:
         ds = open_icechunk_store(bucket=bucket, prefix=prefix, branch="main")
@@ -414,6 +414,8 @@ def create_npd_era5_collection() -> pystac.Collection:
             bucket=bucket,
             platform="gn",
             prefix=prefix,
+            start_date="1976-01-01",
+            end_date="2025-07-31",
             config="eORCA1 ERA5v1 NPD",
             operation=operation,
         )
@@ -436,6 +438,8 @@ def create_npd_era5_collection() -> pystac.Collection:
             bucket=bucket,
             platform="tn",
             prefix=prefix,
+            start_date="1976-01-01",
+            end_date="2025-07-31",
             config="eORCA1 ERA5v1 NPD",
             operation=operation,
         )
@@ -450,7 +454,7 @@ def create_npd_era5_collection() -> pystac.Collection:
     for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
                    "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
                    "T5d_3d", "T5d_4d", "U5d_3d", "U5d_4d", "V5d_3d", "V5d_4d", "I5d_3d", "S5d_1d",
-                   "domain/domain_cfg", "domain/mesh_mask", "domain/subbasins"
+                   "domain/domain_cfg"
                    ]:
         # Open dataset from Icechunk repository:
         ds = open_icechunk_store(bucket=bucket, prefix=prefix, branch="main")
@@ -471,6 +475,8 @@ def create_npd_era5_collection() -> pystac.Collection:
             bucket=bucket,
             platform="gn",
             prefix=prefix,
+            start_date="1976-01-01",
+            end_date="2025-07-31",
             config="eORCA025 ERA5v1 NPD",
             operation=operation,
         )
@@ -493,6 +499,8 @@ def create_npd_era5_collection() -> pystac.Collection:
             bucket=bucket,
             platform="tn",
             prefix=prefix,
+            start_date="1976-01-01",
+            end_date="2025-07-31",
             config="eORCA025 ERA5v1 NPD",
             operation=operation,
         )
@@ -506,6 +514,7 @@ def create_npd_era5_collection() -> pystac.Collection:
     bucket = "npd-eorca12-era5v1"
     for prefix in ["T1y_3d", "T1y_4d", "U1y_3d", "U1y_4d", "V1y_3d", "V1y_4d", "W1y_4d", "I1y_3d", "S1y_1d",
                    "T1m_3d", "T1m_4d", "U1m_3d", "U1m_4d", "V1m_3d", "V1m_4d", "W1m_4d", "I1m_3d", "S1m_1d",
+                   "T5d_3d", "T5d_4d", "U5d_3d", "U5d_4d", "V5d_3d", "V5d_4d", "I5d_3d", "S5d_1d",
                    "domain/domain_cfg",
                    ]:
         # Open dataset from Icechunk repository:
@@ -516,10 +525,16 @@ def create_npd_era5_collection() -> pystac.Collection:
             operation = "None None"
         elif '1y' in prefix:
             operation = "annual mean"
+            start_date="1976-01-01"
+            end_date="2024-12-31"
         elif '1m' in prefix:
             operation = "monthly mean"
+            start_date="1976-01-01"
+            end_date="2024-12-31"
         elif '5d' in prefix:
             operation = "5-day mean"
+            start_date="1990-01-01"
+            end_date="2024-12-31"
 
         item = create_item_with_icechunk_asset(
             id=f"noc-npd-era5/{bucket}/gn/{prefix}",
@@ -527,6 +542,8 @@ def create_npd_era5_collection() -> pystac.Collection:
             bucket=bucket,
             platform="gn",
             prefix=prefix,
+            start_date=start_date,
+            end_date=end_date,
             config="eORCA12 ERA5v1 NPD",
             operation=operation,
         )
@@ -549,6 +566,8 @@ def create_npd_era5_collection() -> pystac.Collection:
             bucket=bucket,
             platform="tn",
             prefix=prefix,
+            start_date="1976-01-01",
+            end_date="2024-12-31",
             config="eORCA12 ERA5v1 NPD",
             operation=operation,
         )

@@ -134,7 +134,7 @@ def create_item_with_icechunk_asset(
     """
     # Define the item description based on the prefix:
     if 'domain' in prefix:
-        description = f"Icechunk repository containing {config} global ocean model {prefix.split('/')[-1]} variables."
+        description = f"Icechunk repository containing {config} global ocean model domain and mesh mask variables."
     elif 'I' in prefix:
         description = f"Icechunk repository containing {config} global sea-ice {operation} outputs defined at T-points."
     elif 'S' in prefix:
@@ -155,19 +155,6 @@ def create_item_with_icechunk_asset(
 
     # Convert the Polygon to GeoJSON format:
     geometry = mapping(polygon)
-
-    # Define STAC Item ID:
-    if 'domain' in prefix:
-        id_name = f"{collection}/{bucket}/{platform}/{prefix.split('/')[-1]}"
-    elif 'M' in prefix:
-        id_name = f"{collection}/{bucket}/{platform}/{prefix.replace('/','-')}"
-    else:
-        if len(ds.data_vars) > 1:
-            # Multiple variable Icechunk repository:
-            id_name = f"{collection}/{bucket}/{platform}/{prefix}"
-        else:
-            # Single variable Icechunk repository:
-            id_name = f"{collection}/{bucket}/{platform}/{prefix.replace('/','-')}"
 
     # Create a STAC Item with Asset:
     item = pystac.Item(
@@ -199,7 +186,7 @@ def create_item_with_icechunk_asset(
         href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{prefix}",
         title=f"{config} {prefix} Icechunk repository",
         description=description,
-        media_type="application/icechunk",
+        media_type="application/vnd.zarr+icechunk",
         extra_fields=dict(
             bucket=bucket,
             prefix=prefix,
@@ -271,7 +258,7 @@ def create_item_with_zarr_asset(
     var = f"{prefix.split('/')[-1]} output" if variable_stores else "outputs"
 
     if 'domain' in prefix:
-        description = f"Zarr store containing {config} global ocean model {prefix.split('/')[-1]} variables."
+        description = f"Zarr store containing {config} global ocean model domain and mesh mask variables."
     elif 'I' in prefix:
         description = f"Zarr store containing {config} global sea-ice {operation} {var} defined at T-points."
     elif 'S' in prefix:
@@ -292,19 +279,6 @@ def create_item_with_zarr_asset(
 
     # Convert the Polygon to GeoJSON format:
     geometry = mapping(polygon)
-
-    # Define STAC Item ID:
-    if 'domain' in prefix:
-        id_name = f"{collection}/{bucket}/{platform}/{prefix.split('/')[-1]}"
-    elif 'M' in prefix:
-        id_name = f"{collection}/{bucket}/{platform}/{prefix.replace('/','-')}"
-    else:
-        if len(ds.data_vars) > 1:
-            # Multiple variable Zarr Store:
-            id_name = f"{collection}/{bucket}/{platform}/{prefix}"
-        else:
-            # Single variable Zarr Store:
-            id_name = f"{collection}/{bucket}/{platform}/{prefix.replace('/','-')}"
 
     # Create a STAC Item with Asset:
     item = pystac.Item(
@@ -335,7 +309,7 @@ def create_item_with_zarr_asset(
         href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{prefix}",
         title=f"{config} {prefix} Zarr store.",
         description=description,
-        media_type="application/vnd+zarr",
+        media_type="application/vnd.zarr",
         extra_fields=dict(
             bucket=bucket,
             prefix=prefix,
