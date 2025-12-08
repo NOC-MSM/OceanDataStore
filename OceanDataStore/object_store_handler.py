@@ -14,7 +14,6 @@ Authors:
 import glob
 import time
 import logging
-import asyncio
 import warnings
 from typing import Optional
 
@@ -188,8 +187,6 @@ async def _check_zarr_compatibility(data: xr.DataArray | xr.Dataset,
                     await _close_session(obj_store=obj_store)
                     raise ChunkSizeError(chunks=rechunk, store_chunks=ds_store.chunks)
 
-    await _close_session(obj_store=obj_store)
-
 
 def _check_icechunk_compatibility(data: xr.DataArray | xr.Dataset,
                                   dest: str,
@@ -311,8 +308,6 @@ async def _write_to_zarr(data: xr.DataArray | xr.Dataset,
                 warnings.simplefilter(action="ignore", category=UserWarning)
                 data.to_zarr(store=store, mode="w", zarr_format=version)
 
-                await _close_session(obj_store=obj_store)
-
 
 def _write_to_icechunk(data: xr.DataArray | xr.Dataset,
                        dest: str,
@@ -383,8 +378,6 @@ async def _append_to_zarr(data: xr.DataArray | xr.Dataset,
         with warnings.catch_warnings():
             warnings.simplefilter(action="ignore", category=UserWarning)
             data.to_zarr(store=store, append_dim=append_dim, zarr_format=version)
-
-            await _close_session(obj_store=obj_store)
 
 
 def _append_to_icechunk(data: xr.DataArray | xr.Dataset,
@@ -461,8 +454,6 @@ async def _replace_in_zarr(data: xr.DataArray | xr.Dataset,
         with warnings.catch_warnings():
             warnings.simplefilter(action="ignore", category=UserWarning)
             data.to_zarr(store=store, region=region, zarr_format=version)
-
-            await _close_session(obj_store=obj_store)
 
 
 def _replace_in_icechunk(data: xr.DataArray | xr.Dataset,
@@ -909,7 +900,7 @@ def _preprocess_dataset(file: list[str] | str | xr.Dataset,
     return ds_filepath
 
 
-def _send_to_zarr(
+async def _send_to_zarr(
         file: list[str] | str | xr.Dataset,
         bucket: str,
         object_prefix: str,
@@ -984,23 +975,24 @@ def _send_to_zarr(
     # Write to Zarr store:
     dest = f"{bucket}/{object_prefix}"
     logging.info(f"Sending Dataset to {dest}")
-    asyncio.run(
-        _write_to_zarr(data=ds_filepath[variables],
-                       obj_store=obj_store,
-                       dest=dest,
-                       version=zarr_version
-                       )
-                )
+    await _write_to_zarr(data=ds_filepath[variables],
+                        obj_store=obj_store,
+                        dest=dest,
+                        version=zarr_version
+                        )
 
     # Shutdown Object Store session on all Dask workers:
     if client is not None:
-        client.run(_close_session, (obj_store), wait=True)
-    
-    # Release resources to avoid memory leaks:
-    ds_filepath.close()
+        # Release resources to avoid memory leaks:
+        ds_filepath.close()
+        client.run(_close_session, obj_store, wait=True)
+    else:
+        # Release resources to avoid memory leaks:
+        ds_filepath.close()
+        await _close_session(obj_store=obj_store)
 
 
-def send_to_zarr(
+async def send_to_zarr(
     file: list[str] | str | xr.Dataset,
     bucket: str,
     object_prefix: str,
@@ -1063,42 +1055,42 @@ def send_to_zarr(
             # Catch UserWarnings when rechunking data:
             client.register_worker_plugin(CaptureWarningsPlugin())
 
-            _send_to_zarr(file=file,
-                          bucket=bucket,
-                          object_prefix=object_prefix,
-                          store_credentials_json=store_credentials_json,
-                          client=client,
-                          variables=variables,
-                          append_dim=append_dim,
-                          grid_filepath=grid_filepath,
-                          update_coords=update_coords,
-                          rechunk=rechunk,
-                          attrs=attrs,
-                          parallel=True,
-                          zarr_version=zarr_version
-                          )
+            await _send_to_zarr(file=file,
+                                bucket=bucket,
+                                object_prefix=object_prefix,
+                                store_credentials_json=store_credentials_json,
+                                client=client,
+                                variables=variables,
+                                append_dim=append_dim,
+                                grid_filepath=grid_filepath,
+                                update_coords=update_coords,
+                                rechunk=rechunk,
+                                attrs=attrs,
+                                parallel=True,
+                                zarr_version=zarr_version
+                                )
 
             # --- Shutdown Store & Dask Cluster --- #
+            cluster.close()
             client.shutdown()
-            client.close()
             logging.info("Dask Cluster has been shutdown.")
     
     else:
         # === Send to Zarr store without Dask === #
-        _send_to_zarr(file=file,
-                        bucket=bucket,
-                        object_prefix=object_prefix,
-                        store_credentials_json=store_credentials_json,
-                        client=None,
-                        variables=variables,
-                        append_dim=append_dim,
-                        grid_filepath=grid_filepath,
-                        update_coords=update_coords,
-                        rechunk=rechunk,
-                        attrs=attrs,
-                        parallel=False,
-                        zarr_version=zarr_version
-                        )
+        await _send_to_zarr(file=file,
+                            bucket=bucket,
+                            object_prefix=object_prefix,
+                            store_credentials_json=store_credentials_json,
+                            client=None,
+                            variables=variables,
+                            append_dim=append_dim,
+                            grid_filepath=grid_filepath,
+                            update_coords=update_coords,
+                            rechunk=rechunk,
+                            attrs=attrs,
+                            parallel=False,
+                            zarr_version=zarr_version
+                            )
 
 
 def _send_to_icechunk(
@@ -1328,8 +1320,8 @@ def send_to_icechunk(
                               )
 
             # --- Shutdown Store & Dask Cluster --- #
+            cluster.close()
             client.shutdown()
-            client.close()
             logging.info("Dask Cluster has been shutdown.")
     
     else:
@@ -1352,7 +1344,7 @@ def send_to_icechunk(
                           )
 
 
-def _update_zarr(
+async def _update_zarr(
         file: list[str] | str | xr.Dataset,
         bucket: str,
         object_prefix: str,
@@ -1431,25 +1423,26 @@ def _update_zarr(
     # Write to Zarr store:
     dest = f"{bucket}/{object_prefix}"
     logging.info(f"Updating Dataset at {dest}")
-    asyncio.run(
-        _update_zarr_store(data=ds_filepath[variables],
-                           obj_store=obj_store,
-                           dest=dest,
-                           append_dim=append_dim,
-                           rechunk=rechunk,
-                           version=zarr_version
-                           )
-                )
+    await _update_zarr_store(data=ds_filepath[variables],
+                             obj_store=obj_store,
+                             dest=dest,
+                             append_dim=append_dim,
+                             rechunk=rechunk,
+                             version=zarr_version
+                             )
     
     # Shutdown Object Store session on all Dask workers:
     if client is not None:
-        client.run(_close_session, (obj_store), wait=True)
-    
-    # Release resources to avoid memory leaks:
-    ds_filepath.close()
+        # Release resources to avoid memory leaks:
+        ds_filepath.close()
+        client.run(_close_session, obj_store, wait=True)
+    else:
+        await _close_session(obj_store=obj_store)
+        # Release resources to avoid memory leaks:
+        ds_filepath.close()
 
 
-def update_zarr(
+async def update_zarr(
     file: list[str] | str | xr.Dataset,
     bucket: str,
     object_prefix: str,
@@ -1513,42 +1506,42 @@ def update_zarr(
             # Catch UserWarnings when rechunking data:
             client.register_worker_plugin(CaptureWarningsPlugin())
 
-            _update_zarr(file=file,
-                         bucket=bucket,
-                         object_prefix=object_prefix,
-                         store_credentials_json=store_credentials_json,
-                         client=client,
-                         variables=variables,
-                         append_dim=append_dim,
-                         grid_filepath=grid_filepath,
-                         update_coords=update_coords,
-                         rechunk=rechunk,
-                         attrs=attrs,
-                         parallel=True,
-                         zarr_version=zarr_version
-                         )
+            await _update_zarr(file=file,
+                               bucket=bucket,
+                               object_prefix=object_prefix,
+                               store_credentials_json=store_credentials_json,
+                               client=client,
+                               variables=variables,
+                               append_dim=append_dim,
+                               grid_filepath=grid_filepath,
+                               update_coords=update_coords,
+                               rechunk=rechunk,
+                               attrs=attrs,
+                               parallel=True,
+                               zarr_version=zarr_version
+                               )
 
             # --- Shutdown Store & Dask Cluster --- #
+            cluster.close()
             client.shutdown()
-            client.close()
             logging.info("Dask Cluster has been shutdown.")
     
     else:
         # === Update Zarr store without Dask === #
-        _update_zarr(file=file,
-                     bucket=bucket,
-                     object_prefix=object_prefix,
-                     store_credentials_json=store_credentials_json,
-                     client=None,
-                     variables=variables,
-                     append_dim=append_dim,
-                     grid_filepath=grid_filepath,
-                     update_coords=update_coords,
-                     rechunk=rechunk,
-                     attrs=attrs,
-                     parallel=False,
-                     zarr_version=zarr_version
-                     )
+        await _update_zarr(file=file,
+                           bucket=bucket,
+                           object_prefix=object_prefix,
+                           store_credentials_json=store_credentials_json,
+                           client=None,
+                           variables=variables,
+                           append_dim=append_dim,
+                           grid_filepath=grid_filepath,
+                           update_coords=update_coords,
+                           rechunk=rechunk,
+                           attrs=attrs,
+                           parallel=False,
+                           zarr_version=zarr_version
+                           )
 
 
 def _update_icechunk(
@@ -1747,8 +1740,8 @@ def update_icechunk(
                              )
 
             # --- Shutdown Store & Dask Cluster --- #
+            cluster.close()
             client.shutdown()
-            client.close()
             logging.info("Dask Cluster has been shutdown.")
     
     else:

@@ -12,6 +12,7 @@ Authors:
 """
 import sys
 import json
+import asyncio
 import logging
 
 from ..object_store_handler import send_to_zarr, send_to_icechunk, update_zarr, update_icechunk, list_objects
@@ -98,6 +99,7 @@ def process_action(args):
     # === Process Actions === #
     if args.action == "send_to_zarr":
 
+        asyncio.run(
         send_to_zarr(
             file=filepaths,
             bucket=args.bucket,
@@ -112,10 +114,11 @@ def process_action(args):
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
             zarr_version=zarr_version,
-        )
+            ))
     
     elif args.action == "update_zarr":
 
+        asyncio.run(
         update_zarr(
             file=filepaths,
             bucket=args.bucket,
@@ -130,7 +133,7 @@ def process_action(args):
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
             zarr_version=zarr_version,
-            )
+            ))
 
     elif args.action == "send_to_icechunk":
 
