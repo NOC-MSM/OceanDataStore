@@ -17,7 +17,9 @@
 # Created On: 2025-05-15
 #
 # ==============================================================
-# -- Input arguments to msm-os -- #
+set -euo pipefail
+
+# -- Input arguments to OceanDataStore -- #
 # Filepath to eORCA1 ancillary file:
 filepath_domain=/dssgfs01/scratch/npd/simulations/Domains/eORCA1/domain_cfg.nc
 # Filepath to eORCA1 monthly mean output files:
@@ -37,12 +39,12 @@ prefix=test/U1m_icechunk_dask
 append_dim=time_counter
 
 # Define variable:
-variables="time_counter_bounds uo umo"
+variables="time_counter_bounds uo"
 
 # -- Python Environment -- #
 # Activate miniconda environment:
-source /home/otooth/miniconda3/etc/profile.d/conda.sh
-conda activate env_jasmin_os
+source /dssgfs01/working/otooth/miniforge3/bin/activate
+conda activate env_test
 
 # -- Send eORCA1 ERA-5 v1 monthly mean outputs to JASMIN OS -- #
 echo "In Progress: Sending eORCA1 ERA-5 v1 U1m variables to JASMIN object store without Dask..."
@@ -50,6 +52,6 @@ filepath_gridU=$filedir/eORCA1_ERA5_1m_grid_U_197*.nc
 ods send_to_icechunk -f $filepath_gridU -c $store_credentials_json -b $bucket -p $prefix \
                      -gf $filepath_domain -uc '{"nav_lon":"glamu", "nav_lat":"gphiu"}' \
                      -cs '{"x":360,"y":331,"depthu":25}' -dc $dask_config_json \
-                     -v $variables || { echo "Error: ods send_to_icechunk failed."; exit 1; }
+                     -v $variables
 
 echo "Completed: Sent eORCA1 ERA-5 v1 monthly mean fields to JASMIN object store without Dask."
