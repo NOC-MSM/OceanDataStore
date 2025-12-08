@@ -24,8 +24,8 @@ classifiers = [
 
 dependencies = [
   "dask[distributed]>=2025.2.0",
-  "aiobotocore==2.17.0",
-  "botocore==1.35.93",
+  "aiobotocore>=2.17.0",
+  "botocore>=1.35.93",
   "netcdf4>=1.7.2",
   "h5netcdf>=1.6.1",
   "xarray>=2025.1.2",
