@@ -292,7 +292,7 @@ def create_npd_era5_collection() -> pystac.Collection:
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         # Open Government License (OGL) - UK version 3.0 - http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
         license="OGL-UK-3.0",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="AtlantiS", status="ongoing", update_frequency="quarterly", last_data_update="2025-05-30"),
+        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="AtlantiS", status="ongoing", update_frequency="quarterly", last_data_update="2025-07-31"),
         keywords=["NOC", "Near-Present Day", "AtlantiS", "hindcast", "global", "model", "ocean", "sea-ice"],
         providers=[
             pystac.Provider(
@@ -526,15 +526,15 @@ def create_npd_era5_collection() -> pystac.Collection:
         elif '1y' in prefix:
             operation = "annual mean"
             start_date="1976-01-01"
-            end_date="2024-12-31"
+            end_date="2025-06-30"
         elif '1m' in prefix:
             operation = "monthly mean"
             start_date="1976-01-01"
-            end_date="2024-12-31"
+            end_date="2025-06-30"
         elif '5d' in prefix:
             operation = "5-day mean"
             start_date="1990-01-01"
-            end_date="2024-12-31"
+            end_date="2025-06-30"
 
         item = create_item_with_icechunk_asset(
             id=f"noc-npd-era5/{bucket}/gn/{prefix}",
