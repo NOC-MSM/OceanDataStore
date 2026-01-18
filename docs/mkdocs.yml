@@ -29,13 +29,23 @@ theme:
     - navigation.footer
     - search.suggest
   palette:
-    # Light Mode
-    - scheme: default
+    # Light Mode (system preference)
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       toggle:
-        icon: material/weather-night
-        name: Light mode
-      primary: light blue
-      accent: deep orange
+        icon: material/toggle-switch
+        name: Light Mode
+      primary: red
+      accent: light blue
+
+    # Dark Mode (system preference)
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Dark Mode
+      primary: red
+      accent: light blue
 
 markdown_extensions:
   - attr_list
