@@ -9,6 +9,9 @@ __pycache__/
 # STAC files
 *noc-model-stac/
 
+# SLURM output files
+slurm-*.out
+
 # C extensions
 *.so
 
