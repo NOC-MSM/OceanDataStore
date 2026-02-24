@@ -1,6 +1,0 @@
-pystac
-xarray
-icechunk
-pytest
-pytest-mock
-numpy
