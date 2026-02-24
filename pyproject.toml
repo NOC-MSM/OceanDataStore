@@ -50,5 +50,8 @@ requires = ["setuptools>=77.0.3", "setuptools-scm>=8"]
 [tool.setuptools.packages.find]
 include = ["OceanDataStore*"]
 
+[tool.setuptools_scm]
+fallback_version = "0.2.0"
+
 [project.scripts]
 ods = "OceanDataStore.cli.main_cli:ods"
