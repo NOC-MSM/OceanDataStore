@@ -73,15 +73,17 @@ markdown_extensions:
   - pymdownx.blocks.caption
 
 nav:
-  - Getting started: index.md
-  - User Guide:
-    - catalog_guide.md
-    - cli_guide.md
-  - Examples:
-    - OceanDataCatalog_example.ipynb
+  - Getting Started: index.md
+  - CLI:
+    - User Guide: cli_guide.md
+  - OceanDataCatalog:
+    - User Guide: catalog_guide.md
+    - Examples:
+      - OceanDataCatalog_example.ipynb
+  - Catalog Browser: catalog.md
   - Reference:
-    - catalog_reference.md
-    - cli_reference.md
+    - OceanDataCatalog: catalog_reference.md
+    - CLI: cli_reference.md
 
 plugins:
   - search
