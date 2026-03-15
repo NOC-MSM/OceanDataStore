@@ -1,8 +1,12 @@
-# OceanDataCatalog API
+# OceanDataCatalog
 
 !!! abstract "Summary"
 
-    **This is the User Guide for the OceanDataCatalog API to explore and access ocean data stored in the JASMIN Object Store.**
+    * This is the User Guide for the **OceanDataCatalog API** to explore and access ocean data stored in the JASMIN Object Store.
+
+    * Visit the interactive NOC Model STAC browser **[here].**
+
+[here]: catalog.md
 
 ---
 
