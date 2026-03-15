@@ -1,4 +1,6 @@
-# OceanDataStore | :simple-files: :material-arrow-right-bold: :material-cloud-upload: :material-arrow-right-bold: :material-cloud-download:
+# OceanDataStore
+<img src="./assets/icons/noc_logo_black.png" alt="Logo" width="220" height="80"/>
+<img src="./assets/icons/OceanDataStore_logo.png" alt="Logo"  width="180" height="120"/>
 
 ## About
 **OceanDataStore** is a Python library designed to streamline writing, updating and accessing ocean model and observational data stored in cloud object storage.
