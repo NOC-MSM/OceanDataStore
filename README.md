@@ -1,8 +1,10 @@
+# OceanDataStore
+
 <p align="left">
-    <img src="./docs/docs/assets/icons/noc_logo_black.png" alt="Logo" width="220" height="80">
+    <img src="./docs/docs/assets/icons/noc_logo_black.png" alt="Logo" width="210" height="75">
     &nbsp
     &nbsp
-    <img src="./docs/docs/assets/icons/OceanDataStore_logo.png" alt="Logo" width="170" height="120">
+    <img src="./docs/docs/assets/icons/OceanDataStore_logo.png" alt="Logo" width="170" height="110">
 </p>
 
 *A library designed to streamline writing, updating & accessing ocean model and observational data stored in cloud object storage.*
