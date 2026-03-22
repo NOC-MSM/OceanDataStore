@@ -1,4 +1,4 @@
-# OceanDataCatalog
+# OceanDataCatalog :material-cloud-download:
 
 !!! abstract "Summary"
 
