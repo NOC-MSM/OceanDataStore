@@ -6,7 +6,7 @@ Utility functions to create the National Oceanography Centre
 (NOC) Spatio-Temporal Access Catalog and write to JSON files.
 
 Authors:
-    - Ollie Tooth
+    - Ollie Tooth (oliver.tooth@noc.ac.uk)
 """
 # -- Import Python Modules -- #
 import sys
@@ -69,6 +69,7 @@ def open_icechunk_store(
     storage = icechunk.s3_storage(
     bucket=bucket,
     prefix=prefix,
+    region="us-east-1",
     anonymous=True,
     endpoint_url=endpoint_url,
     force_path_style=True,
@@ -88,6 +89,7 @@ def create_item_with_icechunk_asset(
     bucket: str,
     platform: str,
     prefix: str,
+    variant: str = "r1i1c1f1",
     start_date: str = "1976-01-01",
     end_date: str = "2024-12-31",
     bbox: tuple = (-180.0, -90.0, 180.0, 90.0),
@@ -111,6 +113,8 @@ def create_item_with_icechunk_asset(
         The platform name (e.g., "gn_global", "gr_global", etc.).
     prefix : str
         The prefix for the data in the S3 bucket (e.g., "U1y", "U1m", etc.).
+    variant : str, optional
+        The simulation variant string for the dataset (default is "r1i1c1f1").
     start_date : str, optional
         The start date of the dataset in "YYYY-MM-DD" format (default is "1976-01-01").
     end_date : str, optional
@@ -134,15 +138,18 @@ def create_item_with_icechunk_asset(
     """
     # Define the item description based on the prefix:
     if 'domain' in prefix:
-        description = f"Icechunk repository containing {config} global ocean model domain and mesh mask variables."
+        description = "**Global ocean model domain and mesh mask variables.**"
     elif 'I' in prefix:
-        description = f"Icechunk repository containing {config} global sea-ice {operation} outputs defined at T-points."
+        description = f"**{operation.capitalize()} global sea-ice outputs defined at NEMO model T-points.**"
     elif 'S' in prefix:
-        description = f"Icechunk repository containing {config} global ocean scalar {operation} outputs."
+        description = f"**{operation.capitalize()} global ocean scalar outputs.**"
     elif 'M' in prefix:
-        description = f"Icechunk repository containing {config} ocean physics transect {operation} outputs defined at {prefix.split('/')[-1]}."
+        description = f"**{operation.capitalize()} ocean physics transect outputs defined at {prefix.split('/')[-1]}.**"
     else:
-        description = f"Icechunk repository containing {config} global ocean physics {operation} outputs defined at {prefix[0]}-points."
+        description = f"**{operation.capitalize()} global ocean physics outputs defined at NEMO model {prefix[0]}-points.**"
+
+    # Add OceanDataCatalog Access Information to the description:
+    description += f"\n\n**OceanDataCatalog Access:**\n`catalog.open_dataset(id='{id}')`"
 
     # Define Polygon geometry for the item:
     polygon = Polygon([
@@ -161,12 +168,13 @@ def create_item_with_icechunk_asset(
         id=id,
         geometry=geometry,
         bbox=list(polygon.bounds),  # [min_lon, min_lat, max_lon, max_lat]
-        datetime=None,
+        datetime=datetime.datetime(year=(int(start_date.split("-")[0]) + int(end_date.split("-")[0])) // 2, month=1, day=1),
         start_datetime=datetime.datetime(year=int(start_date.split("-")[0]), month=int(start_date.split("-")[1]), day=int(start_date.split("-")[2])),
         end_datetime=datetime.datetime(year=int(end_date.split("-")[0]), month=int(end_date.split("-")[1]), day=int(end_date.split("-")[2])),
         properties={
-            "title": f"{config} {prefix} Icechunk repository",
+            "title": f"{prefix} Icechunk repository",
             "description": description,
+            "variant": variant,
             "platform": platform,
             "variables": list(ds.data_vars),
             "variable_standard_names": [ds[var].attrs.get('standard_name', var) for var in ds.data_vars],
@@ -174,7 +182,9 @@ def create_item_with_icechunk_asset(
             "operation": operation.split(" ")[1],
             "operation_frequency": operation.split(" ")[0],
             "ocean_component": "NEMO v4.2.2",
-            "si_component": "SI3 v4.0",
+            "sea_ice_component": "SI3 v4.0",
+            "biogeochemistry_component": None,
+            "atmosphere_component": None,
             "status": "ongoing",
             "update_frequency": "quarterly",
             "latest_data_update": datetime.datetime.now().isoformat(),
@@ -184,13 +194,14 @@ def create_item_with_icechunk_asset(
 
     item.add_asset(key=prefix.split('/')[-1], asset=pystac.Asset(
         href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{prefix}",
-        title=f"{config} {prefix} Icechunk repository",
+        title=f"{config}: {prefix} Icechunk repository",
         description=description,
         media_type="application/vnd.zarr+icechunk",
         extra_fields=dict(
+            endpoint_url=endpoint_url,
             bucket=bucket,
             prefix=prefix,
-            endpoint_url=endpoint_url,
+            variant=variant,
             anonymous=True
         )
     ))
@@ -204,6 +215,7 @@ def create_item_with_zarr_asset(
     bucket: str,
     platform: str,
     prefix: str,
+    variant: str = "r1i1c1f1",
     start_date: str = "1976-01-01",
     end_date: str = "2024-02-01",
     bbox: tuple = (-180.0, -90.0, 180.0, 90.0),
@@ -229,6 +241,8 @@ def create_item_with_zarr_asset(
         The platform name (e.g., "gn_global", "gr_global", etc.).
     prefix : str
         The prefix for the data in the S3 bucket (e.g., "U1y", "U1m", etc.).
+    variant : str, optional
+        The simulation variant string for the dataset (default is "r1i1c1f
     start_date : str, optional
         The start date of the dataset in "YYYY-MM-DD" format (default is "1976-01-01").
     end_date : str, optional
@@ -258,15 +272,18 @@ def create_item_with_zarr_asset(
     var = f"{prefix.split('/')[-1]} output" if variable_stores else "outputs"
 
     if 'domain' in prefix:
-        description = f"Zarr store containing {config} global ocean model domain and mesh mask variables."
+        description = "**Global ocean model domain and mesh mask variables.**"
     elif 'I' in prefix:
-        description = f"Zarr store containing {config} global sea-ice {operation} {var} defined at T-points."
+        description = f"**{operation.capitalize()} global sea-ice {var} outputs defined at NEMO model T-points.**"
     elif 'S' in prefix:
-        description = f"Zarr store containing {config} global ocean scalar {operation} {var}."
+        description = f"**{operation.capitalize()} global ocean scalar {var} outputs.**"
     elif 'M' in prefix:
-        description = f"Zarr store containing {config} ocean physics transect {operation} {var} defined at {prefix.split('/')[-1]}."
+        description = f"**{operation.capitalize()} ocean physics transect {var} outputs defined at {prefix.split('/')[-1]}.**"
     else:
-        description = f"Zarr store containing {config} global ocean physics {operation} {var} defined at {prefix[0]}-points."
+        description = f"**{operation.capitalize()} global ocean physics {var} outputs defined at {prefix[0]}-points.**"
+
+    # Add OceanDataCatalog Access Information to the description:
+    description += f"\n\n**OceanDataCatalog Access:**\n`catalog.open_dataset(id='{id}')`"
 
     # Define Polygon geometry for the item:
     polygon = Polygon([
@@ -285,20 +302,23 @@ def create_item_with_zarr_asset(
         id=id,
         geometry=geometry,
         bbox=list(polygon.bounds),  # [min_lon, min_lat, max_lon, max_lat]
-        datetime=None,
+        datetime=datetime.datetime(year=(int(start_date.split("-")[0]) + int(end_date.split("-")[0])) // 2, month=1, day=1),
         start_datetime=datetime.datetime(year=int(start_date.split("-")[0]), month=int(start_date.split("-")[1]), day=int(start_date.split("-")[2])),
         end_datetime=datetime.datetime(year=int(end_date.split("-")[0]), month=int(end_date.split("-")[1]), day=int(end_date.split("-")[2])),
         properties={
-            "title": f"{config} {prefix} Zarr store",
+            "title": f"{prefix} Zarr store",
             "description": description,
             "platform": platform,
+            "variant": variant,
             "variables": list(ds.data_vars),
             "variable_standard_names": [ds[var].attrs.get('standard_name', var) for var in ds.data_vars],
             "dimensions": list(ds.dims),
             "operation": operation.split(" ")[1],
             "operation_frequency": operation.split(" ")[0],
             "ocean_component": "NEMO v4.2.2",
-            "si_component": "SI3 v4.0",
+            "sea_ice_component": "SI3 v4.0",
+            "biogeochemistry_component": None,
+            "atmosphere_component": None,
             "status": "completed",
             "latest_data_update": datetime.datetime.now().isoformat(),
         },
@@ -307,13 +327,13 @@ def create_item_with_zarr_asset(
 
     item.add_asset(key=prefix.split('/')[-1], asset=pystac.Asset(
         href=f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/{bucket}/{prefix}",
-        title=f"{config} {prefix} Zarr store.",
+        title=f"{config}: {prefix} Zarr store.",
         description=description,
         media_type="application/vnd.zarr",
         extra_fields=dict(
+            endpoint_url=endpoint_url,
             bucket=bucket,
             prefix=prefix,
-            endpoint_url=endpoint_url,
             zarr_format=zarr_format,
             anonymous=True
         )
