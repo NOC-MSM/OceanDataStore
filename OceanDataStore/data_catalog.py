@@ -45,7 +45,7 @@ class OceanDataCatalog:
         The list of STAC Items returned from the most recent query.
     """
     def __init__(self,
-                 catalog_name: str = "noc-model-stac",
+                 catalog_name: str = "noc-stac",
                  catalog_url: str = None
                  ):
         # Define the URL to the NOC STAC root catalog:
@@ -236,7 +236,7 @@ class OceanDataCatalog:
         # Construct URL to the Item JSON file:
         # Assumes Item IDs use path-like representation.
         id_list = [f"{id_n}/" for id_n in id.split("/")]
-        id_prefix = "".join(id_list[:3])
+        id_prefix = "".join(id_list[:4])
         item_url = f"{base_url}/{id_prefix}{id}/{id}.json"
 
         # Open the Item from the constructed URL:
@@ -270,7 +270,7 @@ class OceanDataCatalog:
         storage = icechunk.s3_storage(
             bucket=fields['bucket'],
             prefix=fields['prefix'],
-            region=None,
+            region="us-east-1",
             anonymous=fields['anonymous'],
             endpoint_url=fields['endpoint_url'],
             force_path_style=True
