@@ -6,7 +6,7 @@ Function to create the National Oceanography Centre (NOC)
 Rapid Evolution Spatio-Temporal Access Catalog Collection.
 
 Authors:
-    - Ollie Tooth
+    - Ollie Tooth (oliver.tooth@noc.ac.uk)
 """
 # -- Import Python Modules -- #
 import logging
@@ -55,7 +55,7 @@ def create_rapid_evo_collection(
     rapid_evo_collection = pystac.Collection(
         id="noc-rapid-evolution",
         title="NOC RAPID-Evolution Collection",
-        description="Collection of nested ocean model simulations produced by the National Oceanography Centre (NOC) as part of the CCROC RAPID-Evolution project delivered through a partnership between UK (National Oceanography Centre, Met Office) and US (University of Miami and NOAA's AOML).",
+        description="**About:**\n\nCollection of nested ocean model simulations produced by the National Oceanography Centre (NOC) as part of the CCROC RAPID-Evolution project delivered through a partnership between UK (National Oceanography Centre, Met Office) and US (University of Miami and NOAA's AOML).\n\n**More Information:**\n - [RAPID-Evolution](https://rapid.ac.uk/rapid-evolution)",
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         # Open Government License (OGL) - UK version 3.0 - http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
         license="OGL-UK-3.0",
@@ -64,13 +64,13 @@ def create_rapid_evo_collection(
         providers=[
             pystac.Provider(
                 name="National Oceanography Centre",
-                description="National Oceanography Centre (United Kindom) - Marine Systems Modelling group.",
+                description="National Oceanography Centre (United Kingdom) - Ocean Modelling Group.",
                 roles=[pystac.ProviderRole.PRODUCER, pystac.ProviderRole.LICENSOR],
                 url="https://rapid.ac.uk/rapid-evolution"
             ),
             pystac.Provider(
                 name="JASMIN",
-                description="JASMIN environmental data analysis facility (United Kindgom).",
+                description="JASMIN Environmental Data Analysis Facility (United Kingdom).",
                 roles=[pystac.ProviderRole.HOST],
                 url="https://jasmin.ac.uk"
             )
