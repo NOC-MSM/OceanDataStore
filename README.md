@@ -20,15 +20,41 @@ pip install git+https://github.com/NOC-MSM/OceanDataStore.git
 
 **Note:** we strongly recommend installing **OceanDataStore** into a new virtual environment using either ``venv`` or ``conda / mamba``.
 
+## Examples
+
+### Writing Ocean Model Data to the Cloud...
+
+* To create a new Zarr store in an S3-compatible object store using a large number of files, we can use [dask](https://www.dask.org) with the `send_to_zarr` command:
+
+```bash
+ods send_to_zarr -f /path/to/files*.nc -c credentials.json -b bucket_name -p prefix \
+                 -gf /path/to/domain_cfg.nc -uc '{"lon":"lon_new", "lat":"lat_new"}' \
+                 -cs '{"x":2160, "y":1803}' -dc dask_config.json -zv 3
+```
+
+For examples of how to implement the commands in **OceanDataStore CLI** in your own workflows, see the bash scripts in the `examples` directory.
+
+### Accessing Ocean Data in the Cloud...
+
+* To access monthly-mean sea surface temperature data from the NOC Near-Present Day eORCA1 ERA5v1 (1-degree) global ocean sea-ice hindcast between 2004-2010 as an `xarray.Dataset`:
+
+```python
+# Initialise default NOC STAC:
+catalog = OceanDataCatalog(catalog_name="noc-stac")
+
+# Open ocean model data as xarray.Dataset:
+catalog.open_dataset(id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/T1m",
+                     variable_names=["tos_con"]
+                     start_datetime='2004-01',
+                     end_datetime='2008-12',
+                    )
+```
+
 ## Documentation
 
 To learn more about OceanDataStore, click [**here**](https://noc-msm.github.io/OceanDataStore/) to explore the documentation.
 
-## Examples
-
-For examples of how to implement the commands in **OceanDataStore CLI** in your own workflows, see the bash scripts in the `examples` directory.
-
-## OceanDataStore CLI Arguments
+## OceanDataStore CLI Reference
 
 ### Mandatory Arguments
 
