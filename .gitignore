@@ -8,6 +8,7 @@ __pycache__/
 
 # STAC files
 *noc-model-stac/
+*noc-stac/
 
 # SLURM output files
 slurm-*.out
