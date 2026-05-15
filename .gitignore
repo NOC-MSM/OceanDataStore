@@ -182,6 +182,10 @@ poetry.toml
 # VSCode
 .vscode/
 
+# Pixi
+.pixi/
+pixi.lock
+
 # Metals
 .metals/
 

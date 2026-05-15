@@ -54,4 +54,4 @@ include = ["OceanDataStore*"]
 fallback_version = "0.2.0"
 
 [project.scripts]
-ods = "OceanDataStore.cli.main_cli:ods"
+ods = "OceanDataStore.cli.cli:ods"

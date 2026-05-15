@@ -1,0 +1,72 @@
+[workspace]
+authors = ["Ollie Tooth <oliver.tooth@noc.ac.uk>"]
+preview = ["pixi-build"]
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-arm64"]
+
+[package]
+name = "OceanDataStore"
+version = "9999.0.0"
+
+[package.build]
+backend = { name = "pixi-build-python", version = ">=0.4.4" }
+
+[package.host-dependencies]
+setuptools = "*"
+setuptools_scm = "*"
+
+[package.run-dependencies]
+python = "*"
+aiobotocore = "*"
+botocore = "*"
+dask = "*"
+distributed = "*"
+flox = "*"
+fsspec = "*"
+h5netcdf = "*"
+icechunk = "*"
+pystac = "*"
+shapely = "*"
+s3fs = "*"
+tqdm = "*"
+numpy = "*"
+requests = "*"
+xarray = "*"
+zarr = "*"
+git = "*"  # needed for dynamic versioning
+
+[dependencies]
+OceanDataStore = { path = "." }
+python = "3.13.*"
+
+[feature.test.pypi-dependencies]
+pytest = "*"
+pytest-mock = "*"
+
+[feature.test.tasks]
+tests = { cmd = "pytest --maxfail=1 --disable-warnings --tb=short", description = "Run OceanDataStore unit tests using pytest." }
+
+[feature.docs.pypi-dependencies]
+mkdocs-material = "*"
+mkdocs-glightbox = "*"
+mkdocs-jupyter = ">=0.26.1"
+mkdocstrings = "*"
+mkdocstrings-python = "*"
+
+[feature.docs.tasks]
+docs = { cmd = "cd docs/; mkdocs serve", description = "Run the MkDocs built-in development server to build docs locally." }
+
+[feature.dev.dependencies]
+ipykernel = ">=7.2.0,<8"
+matplotlib = ">=3.7.0,<4"
+
+[feature.release.pypi-dependencies]
+build = "*"
+twine = ">=6.2.0, <7"
+
+[environments]
+default = { solve-group = "default" }
+test = { features = ["test"], solve-group = "default" }
+docs = { features = ["docs"], solve-group = "default" }
+release = { features = ["release"], solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
