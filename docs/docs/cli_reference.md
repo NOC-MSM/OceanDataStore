@@ -31,10 +31,10 @@
 
 # OceanDataStore Python API
 
-::: OceanDataStore.object_store_handler.send_to_zarr
+::: OceanDataStore.cli.send_to_zarr
 
-::: OceanDataStore.object_store_handler.update_zarr
+::: OceanDataStore.cli.update_zarr
 
-::: OceanDataStore.object_store_handler.send_to_icechunk
+::: OceanDataStore.cli.send_to_icechunk
 
-::: OceanDataStore.object_store_handler.update_icechunk
+::: OceanDataStore.cli.update_icechunk
