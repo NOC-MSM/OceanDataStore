@@ -208,9 +208,9 @@ class ObjectStoreS3(s3fs.S3FileSystem):
     def create_icechunk_repo(self,
                              bucket: str,
                              prefix: str,
-                             storage_config_kwargs: dict = {},
+                             storage_config_kwargs: dict = {'region': 'us-east-1', 'force_path_style': True},
                              repository_config_kwargs: dict = {},
-                             storage_settings_kwargs: dict = {},
+                             storage_settings_kwargs: dict = {'unsafe_use_conditional_update': False, 'unsafe_use_conditional_create': False},
                              ) -> icechunk.Repository:
         """
         Create a new Icechunk repository in cloud object storage.
@@ -266,7 +266,7 @@ class ObjectStoreS3(s3fs.S3FileSystem):
     def open_icechunk_repo(self,
                            bucket: str,
                            prefix: str,
-                           storage_config_kwargs: dict = {'region': '', 'force_path_style': True},
+                           storage_config_kwargs: dict = {'region': 'us-east-1', 'force_path_style': True},
                            repository_config_kwargs: dict = {},
                            storage_settings_kwargs: dict = {'unsafe_use_conditional_update': False, 'unsafe_use_conditional_create': False},
                            ) -> icechunk.Repository:
