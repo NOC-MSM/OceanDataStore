@@ -1,6 +1,6 @@
 {
     "storage_config_kwargs": {
-        "region": "",
+        "region": "us-east-1",
         "force_path_style": "True"
     },
     "repository_config_kwargs": {},
