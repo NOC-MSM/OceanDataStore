@@ -13,7 +13,7 @@ Authors:
 import json
 import argparse
 
-from ..__init__ import __version__
+from OceanDataStore import __version__
 
 
 def create_parser():

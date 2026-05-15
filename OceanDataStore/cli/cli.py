@@ -15,8 +15,14 @@ import json
 import asyncio
 import logging
 
-from ..object_store_handler import send_to_zarr, send_to_icechunk, update_zarr, update_icechunk, list_objects
-from .argument_parser import __version__, create_parser
+from OceanDataStore.cli import (
+    send_to_zarr,
+    send_to_icechunk,
+    update_zarr,
+    update_icechunk,
+    list_objects
+)
+from OceanDataStore.cli.arg_parser import __version__, create_parser
 
 logger = logging.getLogger(__name__)
 

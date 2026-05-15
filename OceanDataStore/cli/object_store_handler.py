@@ -28,9 +28,9 @@ from dask.distributed import Client, LocalCluster
 from dask.distributed.diagnostics.plugin import WorkerPlugin
 
 # -- Import OceanDataStore Modules -- #
-from .object_store import ObjectStoreS3
+from OceanDataStore.cli.object_store import ObjectStoreS3
 
-from .exceptions import (
+from OceanDataStore.cli.exceptions import (
     ObjectNotFound,
     DimensionNotFound,
     DimensionSizeError,
