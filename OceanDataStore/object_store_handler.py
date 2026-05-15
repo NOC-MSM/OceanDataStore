@@ -1103,7 +1103,7 @@ async def send_to_zarr(
 
         # Create local dask cluster & client:
         with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster) as client:
-            logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
+            logging.info(f"Created LocalCluster with {dask_cluster_kwargs['n_workers']} workers @ Client: {client.dashboard_link}")
 
             # Catch UserWarnings when rechunking data:
             client.register_worker_plugin(CaptureWarningsPlugin())
@@ -1378,7 +1378,7 @@ def send_to_icechunk(
 
         # Create local dask cluster & client:
         with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster) as client:
-            logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
+            logging.info(f"Created LocalCluster with {dask_cluster_kwargs['n_workers']} workers @ Client: {client.dashboard_link}")
 
             # Catch UserWarnings when rechunking data:
             client.register_worker_plugin(CaptureWarningsPlugin())
@@ -1593,7 +1593,7 @@ async def update_zarr(
 
         # Create local dask cluster & client:
         with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster) as client:
-            logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
+            logging.info(f"Created LocalCluster with {dask_cluster_kwargs['n_workers']} workers @ Client: {client.dashboard_link}")
 
             # Catch UserWarnings when rechunking data:
             client.register_worker_plugin(CaptureWarningsPlugin())
@@ -1819,7 +1819,7 @@ def update_icechunk(
 
         # Create local dask cluster & client:
         with LocalCluster(**dask_cluster_kwargs) as cluster, Client(cluster) as client:
-            logging.info(f"Created LocalCluster with {dask_cluster_kwargs["n_workers"]} workers @ Client: {client.dashboard_link}")
+            logging.info(f"Created LocalCluster with {dask_cluster_kwargs['n_workers']} workers @ Client: {client.dashboard_link}")
 
             # Catch UserWarnings when rechunking data:
             client.register_worker_plugin(CaptureWarningsPlugin())
