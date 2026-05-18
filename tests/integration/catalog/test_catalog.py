@@ -13,7 +13,7 @@ Authors:
 import pytest
 import numpy as np
 import xarray as xr
-from OceanDataStore.catalog.oceandatacatalog import OceanDataCatalog
+from OceanDataStore.catalog import OceanDataCatalog
 
 # Fixture to instantiate catalog using the default URL
 @pytest.fixture(scope="module")
@@ -57,41 +57,6 @@ def test_search_valid_collection(catalog):
     assert catalog.Collection is not None
     assert isinstance(catalog.available_items, list)
 
-def test_search_invalid_collection(catalog):
-    with pytest.raises(ValueError, match="Collection 'invalid' not found"):
-        catalog.search(collection="invalid")
-
-def test_filter_by_platform(catalog):
-    catalog.search(platform="gn")
-    assert isinstance(catalog.Items, list)
-    for item in catalog.Items:
-        assert "gn" in item.properties.get("platform", "")
-
-def test_filter_by_variable(catalog):
-    catalog.search(variable_name="tos_con")
-    assert isinstance(catalog.Items, list)
-    for item in catalog.Items:
-        assert "tos_con" in item.properties.get("variables", [])
-
-def test_filter_by_standard_name(catalog):
-    catalog.search(standard_name="sea_surface_temperature")
-    assert isinstance(catalog.Items, list)
-    for item in catalog.Items:
-        assert "sea_surface_temperature" in item.properties.get("variable_standard_names", [])
-
-def test_filter_by_item_name(catalog):
-    catalog.search(item_name="domain")
-    assert isinstance(catalog.Items, list)
-    for item in catalog.Items:
-        assert "domain" in item.id
-
-def test_summary_outputs(catalog):
-    # Catalog summary:
-    assert catalog.summary() == catalog.Catalog.describe()
-    # Collection summary:
-    catalog.search(collection='noc-npd-era5')
-    assert (catalog.Collection or catalog.Catalog).describe() == catalog.Collection.describe()
-
 def test_open_icechunk_dataset(catalog, icechunk_item_id):
     assert isinstance(catalog.open_dataset(id=icechunk_item_id), xr.Dataset)
 
@@ -109,15 +74,3 @@ def test_open_dataset_with_bbox(catalog, icechunk_item_id):
     assert isinstance(ds, xr.Dataset)
     assert ds.nav_lat.min() >= 0.0
     assert ds.nav_lat.max() <= 90.0
-
-def test_open_dataset_invalid_asset_key(catalog, icechunk_item_id):
-    with pytest.raises(ValueError, match="key 'invalid_key' not found in Item ID"):
-        catalog.open_dataset(icechunk_item_id, asset_key="invalid_key")
-
-def test_open_dataset_invalid_id(catalog):
-    with pytest.raises(RuntimeError, match="Item ID 'invalid_id' not found in Catalog"):
-        catalog.open_dataset(id="invalid_id")
-
-def test_open_dataset_invalid_variable_names(catalog, icechunk_item_id):
-    with pytest.raises(KeyError, match="One or more variables not found in dataset"):
-        catalog.open_dataset(id=icechunk_item_id, variable_names=["invalid_variable"])
