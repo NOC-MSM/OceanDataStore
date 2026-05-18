@@ -1,5 +1,5 @@
 """
-data_catalog.py
+oceandatacatalog.py
 
 Description:
 This module defines the OceanDataCatalog() class which is a
@@ -15,6 +15,193 @@ import os
 import pystac
 import icechunk
 import xarray as xr
+
+# -- NOC brand CSS -- #
+_NOC_CSS = """
+<style>
+  .ods-card {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    border: 1px solid #0087c1;
+    border-radius: 6px;
+    overflow: hidden;
+    max-width: 950px;
+    margin: 6px 0;
+    box-shadow: 0 1px 4px rgba(0,63,112,0.12);
+  }
+  .ods-header {
+    background: #003f70;
+    color: #ffffff;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .ods-badge {
+    background: #0087c1;
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 1px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .ods-badge-neutral {
+    background: #5a9cbf;
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 1px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .ods-body {
+    background: #eef6fb;
+    padding: 10px 14px;
+  }
+  .ods-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .ods-stat {
+    background: #ffffff;
+    border: 1px solid #b3d7ea;
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #003f70;
+  }
+  .ods-stat span {
+    font-weight: 600;
+  }
+  .ods-url {
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    word-break: break-all;
+  }
+  .ods-url a { color: #0087c1; text-decoration: none; }
+  .ods-url a:hover { text-decoration: underline; }
+  .ods-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .ods-table thead tr {
+    background: #003f70;
+    color: #ffffff;
+  }
+  .ods-table thead th {
+    padding: 6px 10px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .ods-table tbody tr:nth-child(even) { background: #d6ecf5; }
+  .ods-table tbody tr:nth-child(odd)  { background: #ffffff; }
+  .ods-table tbody tr:hover { background: #b3d7ea; }
+  .ods-table td {
+    padding: 5px 10px;
+    vertical-align: top;
+    text-align: left;
+    border-bottom: 1px solid #cce4f0;
+  }
+  .ods-id {
+    font-family: monospace;
+    font-size: 11px;
+    color: #003f70;
+    white-space: nowrap;
+  }
+  details.ods-details > summary {
+    cursor: pointer;
+    color: #0087c1;
+    font-size: 11px;
+    list-style: none;
+    user-select: none;
+  }
+  details.ods-details > summary::-webkit-details-marker { display: none; }
+  details.ods-details > summary::before { content: "▶ "; font-size: 9px; }
+  details.ods-details[open] > summary::before { content: "▼ "; font-size: 9px; }
+  details.ods-details .ods-detail-body {
+    margin-top: 4px;
+    color: #333;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .ods-section-title {
+    font-weight: 600;
+    color: #003f70;
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .ods-code {
+    background: #ffffff;
+    color: #003f70;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #cce4f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .ods-copy-btn {
+    background: #0087c1;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .ods-copy-btn:hover { background: #006fa0; }
+  .ods-none { color: #999; font-style: italic; }
+</style>
+"""
+
+# -- Define CatalogSummary() class -- #
+class CatalogSummary:
+    """
+    Container for OceanDataCatalog summary.
+
+    Parameters
+    ----------
+    num_collections : int
+        The number of collections in the catalog.
+    num_items : int
+        The number of items in the catalog.
+    other_info : dict
+        Any other relevant summary information about the catalog.
+    """
+    def __init__(self,
+                 display_text: str | None = None,
+                 display_html: str | None = None,
+                 ):
+        self.display_text = display_text
+        self.display_html = display_html
+
+    def __repr__(self):
+        """
+        Plain text representation of the CatalogSummary.
+        """
+        return self.display_text
+
+    def _repr_html_(self):
+        """
+        HTML representation of the CatalogSummary.
+        """
+        return self.display_html
 
 # -- Define OceanDataCatalog() class -- #
 class OceanDataCatalog:
@@ -56,6 +243,54 @@ class OceanDataCatalog:
         # Define the Collection and Items attributes:
         self.Collection = None
         self.Items = None
+        # Cache the catalog name for display:
+        self._catalog_name = catalog_name
+
+    def __repr__(self) -> str:
+        """
+        Plain text representation of the OceanDataCatalog.
+        """
+        n_collections = len(self.available_collections)
+        col_name = self.Collection.id if self.Collection else "—"
+        n_items = len(self.Items) if self.Items is not None else "—"
+        return (
+            f"OceanDataCatalog\n"
+            f"  Catalog:     {self._catalog_name}\n"
+            f"  URL:         {self._stac_url}\n"
+            f"  Collections: {n_collections} available\n"
+            f"  Collection:  {col_name}\n"
+            f"  Search:      {n_items} items"
+        )
+
+
+    def _repr_html_(self) -> str:
+        """
+        HTML representation of the OceanDataCatalog.
+        """
+        n_collections = len(self.available_collections)
+        col_name = self.Collection.id if self.Collection else "<span class='ods-none'>none selected</span>"
+        n_items = (
+            f"{len(self.Items)} items"
+            if self.Items is not None
+            else "<span class='ods-none'>no search yet</span>"
+        )
+        return (
+            f"{_NOC_CSS}"
+            f"<div class='ods-card'>"
+            f"  <div class='ods-header'>"
+            f"    OceanDataCatalog"
+            f"    <span class='ods-badge'>{self._catalog_name}</span>"
+            f"  </div>"
+            f"  <div class='ods-body'>"
+            f"    <div class='ods-stats'>"
+            f"      <div class='ods-stat'>Collections&nbsp;<span>{n_collections}</span></div>"
+            f"      <div class='ods-stat'>Active collection&nbsp;<span>{col_name}</span></div>"
+            f"      <div class='ods-stat'>Last search&nbsp;<span>{n_items}</span></div>"
+            f"    </div>"
+            f"    <div class='ods-url'>URL <a href='{self._stac_url}' target='_blank'>{self._stac_url}</a></div>"
+            f"  </div>"
+            f"</div>"
+        )
 
 
     @property
@@ -80,29 +315,394 @@ class OceanDataCatalog:
             return [next(scope.get_items(recursive=True), None).id for _ in range(25)]
 
 
-    def summary(self) -> str:
+    def summary(self) -> CatalogSummary:
         """
-        Summary description of the root Catalog or a selected Collection.
-        """
-        return (self.Collection or self.Catalog).describe()
+        Summary of the most recent OceanDataCatalog search.
 
-
-    def item_summary(self) -> None:
+        * In Jupyter / Marimo environments a styled HTML table is displayed.
+        * In plain Python / CLI environments a formatted text table is printed instead.
         """
-        Summary description of the Items returned from the most recent search.
-        """
+        # -- Validate STAC Items -- #
         if not self.Items:
             raise ValueError("No Items returned in most recent query. Use 'search()' to query Catalog.")
 
+        n = len(self.Items)
+
+        # ----- HTML Output ----- #
+        rows_html = ""
         for item in self.Items:
-            print(f"""
-            * Item ID: {item.id}
-              Title: {item.properties.get('title', 'No title available')}
-              Description: {item.properties.get('description', 'No description available')}
-              Platform: {item.properties.get('platform', 'No platform available')}
-              Start Date: {item.properties.get('start_datetime', 'No start date available')}
-              End Date: {item.properties.get('end_datetime', 'No end date available')}
-            """)
+            title   = item.properties.get("title", "")
+            platform = item.properties.get("platform", "<span class='ods-none'>—</span>")
+            start   = item.properties.get("start_datetime", "<span class='ods-none'>—</span>")
+            end     = item.properties.get("end_datetime",   "<span class='ods-none'>—</span>")
+            variables = item.properties.get("variables", [])
+            if variables:
+                var_list = "<br>".join(variables)
+                vars_cell = (
+                    f"<details class='ods-details'>"
+                    f"<summary>{len(variables)} variable{'s' if len(variables) != 1 else ''}</summary>"
+                    f"<div class='ods-detail-body'>{var_list}</div>"
+                    f"</details>"
+                )
+            else:
+                vars_cell = "<span class='ods-none'>—</span>"
+
+            title_cell = title if title else "<span class='ods-none'>—</span>"
+            rows_html += (
+                f"<tr>"
+                f"<td><span class='ods-id'>{item.id}</span></td>"
+                f"<td>{title_cell}</td>"
+                f"<td>{platform}</td>"
+                f"<td>{start}</td>"
+                f"<td>{end}</td>"
+                f"<td>{vars_cell}</td>"
+                f"</tr>"
+            )
+
+        col_badge = (
+            f"<span class='ods-badge-neutral'>{self.Collection.id}</span>"
+            if self.Collection else ""
+        )
+        html = (
+            f"{_NOC_CSS}"
+            f"<div class='ods-card'>"
+            f"  <div class='ods-header'>"
+            f"    Search Results"
+            f"    <span class='ods-badge'>{n} Item{'s' if n != 1 else ''} found</span>"
+            f"    {col_badge}"
+            f"  </div>"
+            f"  <div class='ods-body'>"
+            f"    <table class='ods-table'>"
+            f"      <thead><tr>"
+            f"        <th>Item ID</th><th>Title</th><th>Platform</th>"
+            f"        <th>Start Date</th><th>End Date</th><th>Variables</th>"
+            f"      </tr></thead>"
+            f"      <tbody>{rows_html}</tbody>"
+            f"    </table>"
+            f"  </div>"
+            f"</div>"
+        )
+
+        # ----- Plain-Text Output ----- #
+        col_w = [46, 28, 10, 12, 12, 30]
+        headers = ["Item ID", "Title", "Platform", "Start Date", "End Date", "Variables"]
+        sep = "+" + "+".join("-" * (w + 2) for w in col_w) + "+"
+        header_row = "| " + " | ".join(h.ljust(col_w[i]) for i, h in enumerate(headers)) + " |"
+        text_lines = [f"Search Results — {n} Item{'s' if n != 1 else ''} found", sep, header_row, sep]
+        for item in self.Items:
+            variables = item.properties.get("variables", [])
+            row = [
+                item.id[:col_w[0]],
+                item.properties.get("title", "")[:col_w[1]],
+                item.properties.get("platform", "")[:col_w[2]],
+                item.properties.get("start_datetime", "")[:col_w[3]],
+                item.properties.get("end_datetime", "")[:col_w[4]],
+                (", ".join(variables))[:col_w[5]],
+            ]
+            text_lines.append("| " + " | ".join(v.ljust(col_w[i]) for i, v in enumerate(row)) + " |")
+        text_lines.append(sep)
+        text = "\n".join(text_lines)
+
+        return CatalogSummary(display_text=text, display_html=html)
+
+
+    def collection_summary(self) -> CatalogSummary:
+        """
+        Display a summary table of all Collections in the OceanDataCatalog:
+
+        * In Jupyter / Marimo environments a styled HTML table is displayed.
+        * In plain Python / CLI environments a formatted text table is printed instead.
+        """
+        collections = list(self.Catalog.get_all_collections())
+        n = len(collections)
+
+        def _extent_dates(col):
+            try:
+                ext = col.extent.temporal.intervals
+                start = ext[0][0].strftime("%Y-%m-%d") if ext[0][0] else "—"
+                end   = ext[0][1].strftime("%Y-%m-%d") if ext[0][1] else "present"
+            except Exception:
+                start, end = "—", "—"
+            return start, end
+
+        # ----- HTML Output ----- #
+        rows_html = ""
+        for col in collections:
+            start, end = _extent_dates(col)
+            desc = col.description or ""
+            desc_cell = (
+                f"<details class='ods-details'>"
+                f"<summary>Summary</summary>"
+                f"<div class='ods-detail-body'>{desc.replace('**', '')}</div>"
+                f"</details>"
+                if desc else "<span class='ods-none'>—</span>"
+            )
+            active = " <span class='ods-badge' style='font-size:10px'>active</span>" if (
+                self.Collection and col.id == self.Collection.id
+            ) else ""
+            col_title_cell = col.title if col.title else "<span class='ods-none'>—</span>"
+            rows_html += (
+                f"<tr>"
+                f"<td><span class='ods-id'>{col.id}</span>{active}</td>"
+                f"<td>{col_title_cell}</td>"
+                f"<td>{desc_cell}</td>"
+                f"<td>{start}</td>"
+                f"<td>{end}</td>"
+                f"</tr>"
+            )
+
+        html = (
+            f"{_NOC_CSS}"
+            f"<div class='ods-card'>"
+            f"  <div class='ods-header'>"
+            f"    Collections"
+            f"    <span class='ods-badge'>{n} available</span>"
+            f"  </div>"
+            f"  <div class='ods-body'>"
+            f"    <table class='ods-table'>"
+            f"      <thead><tr>"
+            f"        <th>Collection ID</th><th>Title</th><th>Description</th>"
+            f"        <th>From</th><th>To</th>"
+            f"      </tr></thead>"
+            f"      <tbody>{rows_html}</tbody>"
+            f"    </table>"
+            f"  </div>"
+            f"</div>"
+        )
+
+        # ----- Plain-Text Output ----- #
+        col_w = [30, 42, 12, 12]
+        headers = ["Collection ID", "Title", "From", "To"]
+        sep = "+" + "+".join("-" * (w + 2) for w in col_w) + "+"
+        header_row = "| " + " | ".join(h.ljust(col_w[i]) for i, h in enumerate(headers)) + " |"
+        text_lines = [f"Collections — {n} available", sep, header_row, sep]
+        for col in collections:
+            start, end = _extent_dates(col)
+            row = [
+                col.id[:col_w[0]],
+                (col.title or "")[:col_w[1]],
+                start[:col_w[2]],
+                end[:col_w[3]],
+            ]
+            text_lines.append("| " + " | ".join(v.ljust(col_w[i]) for i, v in enumerate(row)) + " |")
+        text_lines.append(sep)
+        text = "\n".join(text_lines)
+
+        return CatalogSummary(display_text=text, display_html=html)
+
+
+    def item_summary(self, id: str) -> CatalogSummary:
+        """
+        Display detailed metadata for a single OceanDataStore Item.
+
+        Searches the current Items list first; if the Item is not found
+        there it is fetched directly from the Catalog URL.
+        
+        * In Jupyter / Marimo environments a styled HTML card is displayed with collapsible
+        property and asset sections.
+        * In plain Python / CLI environments a formatted text summary is printed instead.
+
+        Parameters
+        ----------
+        id : str
+            Item ID to display metadata for.
+
+        Raises
+        ------
+        TypeError
+            If *id* is not a string.
+        ValueError
+            If the Item ID is not found in the Catalog.
+        """
+        if not isinstance(id, str):
+            raise TypeError("'id' must be a string.")
+
+        # Collect STAC Item properties metadata:
+        item = None
+        if self.Items:
+            for it in self.Items:
+                if it.id == id:
+                    item = it
+                    break
+        if item is None:
+            try:
+                item = self._open_item(id=id)
+            except Exception:
+                raise ValueError(f"Item '{id}' not found in Catalog.")
+
+        props    = item.properties
+        title    = props.get("title", "")
+        desc_raw = props.get("description", "")
+        desc     = desc_raw.split("OceanDataCatalog Access")[0].strip() if desc_raw else ""
+        platform = props.get("platform", "")
+        start    = props.get("start_datetime", "")
+        end      = props.get("end_datetime", "")
+        bbox     = item.bbox
+        bbox_str = (
+            f"{bbox[0]:.2f}, {bbox[1]:.2f}, {bbox[2]:.2f}, {bbox[3]:.2f}"
+            if bbox else "—"
+        )
+
+        # ---- HTML Output (Jupyter) ---- #
+        coll_badge = f"<span class='ods-badge-neutral'>{item.collection_id}</span>" if item.collection_id else ""
+
+        core_stats = (
+            f"<div class='ods-stats'>"
+            f"  <div class='ods-stat'>Platform&nbsp;<span>{platform or '—'}</span></div>"
+            f"  <div class='ods-stat'>Start&nbsp;<span>{start or '—'}</span></div>"
+            f"  <div class='ods-stat'>End&nbsp;<span>{end or '—'}</span></div>"
+            f"  <div class='ods-stat'>BBox&nbsp;<span>({bbox_str})</span></div>"
+            f"</div>"
+        )
+
+        none_span = "<span class='ods-none'>—</span>"
+        if title or desc:
+            title_val = title if title else none_span
+            desc_val  = desc  if desc  else none_span
+            title_row = (
+                f"<table class='ods-table' style='margin-bottom:8px'>"
+                f"  <thead><tr><th>Title</th><th>Description</th></tr></thead>"
+                f"  <tbody><tr><td>{title_val}</td><td>{desc_val.replace('**', '')}</td></tr></tbody>"
+                f"</table>"
+            )
+        else:
+            title_row = ""
+
+        # Properties:
+        _shown = {"title", "description", "platform", "start_datetime", "end_datetime", "datetime"}
+        prop_rows = ""
+        for key, val in props.items():
+            if key in _shown:
+                continue
+            if isinstance(val, list):
+                items_html = "<br>".join(str(v) for v in val)
+                val_cell = (
+                    f"<details class='ods-details'>"
+                    f"<summary>{len(val)} item{'s' if len(val) != 1 else ''}</summary>"
+                    f"<div class='ods-detail-body'>{items_html}</div>"
+                    f"</details>"
+                )
+            elif isinstance(val, dict):
+                dict_html = "<br>".join(f"<b>{k}</b>: {v}" for k, v in val.items())
+                val_cell = (
+                    f"<details class='ods-details'>"
+                    f"<summary>{len(val)} field{'s' if len(val) != 1 else ''}</summary>"
+                    f"<div class='ods-detail-body'>{dict_html}</div>"
+                    f"</details>"
+                )
+            else:
+                val_cell = str(val) if val is not None else none_span
+            prop_rows += f"<tr><td class='ods-id'>{key}</td><td>{val_cell}</td></tr>"
+
+        props_section = ""
+        if prop_rows:
+            props_section = (
+                f"<div class='ods-section-title' style='margin-top:10px'>Properties</div>"
+                f"<table class='ods-table'>"
+                f"  <thead><tr><th>Property</th><th>Value</th></tr></thead>"
+                f"  <tbody>{prop_rows}</tbody>"
+                f"</table>"
+            )
+
+        asset_rows = ""
+        for asset_key, asset in item.assets.items():
+            af = asset.extra_fields
+            media_type = asset.media_type or ""
+            endpoint   = af.get("endpoint_url", "")
+            bucket     = af.get("bucket", "")
+            prefix     = af.get("prefix", "")
+            asset_rows += (
+                f"<tr>"
+                f"<td class='ods-id'>{asset_key}</td>"
+                f"<td>{media_type}</td>"
+                f"<td>{endpoint}</td>"
+                f"<td>{bucket}</td>"
+                f"<td class='ods-id'>{prefix}</td>"
+                f"</tr>"
+            )
+
+        assets_section = ""
+        if asset_rows:
+            assets_section = (
+                f"<div class='ods-section-title' style='margin-top:10px'>Assets</div>"
+                f"<table class='ods-table'>"
+                f"  <thead><tr>"
+                f"    <th>Key</th><th>Media Type</th><th>Endpoint</th><th>Bucket</th><th>Prefix</th>"
+                f"  </tr></thead>"
+                f"  <tbody>{asset_rows}</tbody>"
+                f"</table>"
+            )
+
+        access_str = f"catalog.open_dataset(id='{id}')"
+        _copy_js = (
+            "(function(b){"
+            "var t=document.createElement('textarea');"
+            "t.value=b.dataset.copy;"
+            "document.body.appendChild(t);"
+            "t.select();"
+            "document.execCommand('copy');"
+            "document.body.removeChild(t);"
+            "b.textContent='Copied!';"
+            "setTimeout(function(){b.textContent='Copy'},1500)"
+            "})(this)"
+        )
+        access_section = (
+            f"<div class='ods-section-title' style='margin-top:10px'>Access</div>"
+            f"<div class='ods-code'>"
+            f"  <code>{access_str}</code>"
+            f"  <button class='ods-copy-btn' data-copy=\"{access_str}\" onclick=\"{_copy_js}\">Copy</button>"
+            f"</div>"
+        )
+
+        html = (
+            f"{_NOC_CSS}"
+            f"<div class='ods-card'>"
+            f"  <div class='ods-header'>"
+            f"    {id}"
+            f"    {coll_badge}"
+            f"  </div>"
+            f"  <div class='ods-body'>"
+            f"    {core_stats}"
+            f"    {title_row}"
+            f"    {access_section}"
+            f"    {props_section}"
+            f"    {assets_section}"
+            f"  </div>"
+            f"</div>"
+        )
+
+        # ---- Plain-Text Output ---- #
+        _shown_text = {"title", "description", "platform", "start_datetime", "end_datetime", "datetime"}
+        text_lines = [
+            f"Item: {id}",
+            f"  Title:    {title or '—'}",
+            f"  Platform: {platform or '—'}",
+            f"  Start:    {start or '—'}",
+            f"  End:      {end or '—'}",
+            f"  BBox:     {bbox_str}",
+            "",
+            "  Properties:",
+        ]
+        for key, val in props.items():
+            if key in _shown_text:
+                continue
+            if isinstance(val, list):
+                preview = ", ".join(str(v) for v in val[:5])
+                suffix  = ", ..." if len(val) > 5 else ""
+                text_lines.append(f"    {key}: [{preview}{suffix}]")
+            else:
+                text_lines.append(f"    {key}: {val}")
+        if item.assets:
+            text_lines.append("")
+            text_lines.append("  Assets:")
+            for asset_key, asset in item.assets.items():
+                af  = asset.extra_fields
+                loc = f"{af.get('endpoint_url', '')}/{af.get('bucket', '')}/{af.get('prefix', '')}"
+                text_lines.append(f"    {asset_key}: {asset.media_type or ''} — {loc}")
+        text_lines += ["", f"  Access: {access_str}"]
+        text = "\n".join(text_lines)
+
+        return CatalogSummary(display_text=text, display_html=html)
 
 
     def _filter_items(self,
@@ -210,7 +810,7 @@ class OceanDataCatalog:
                                             standard_name=standard_name,
                                             item_name=item_name
                                             )
-            self.item_summary()
+            return self.summary()
 
 
     def _open_item(
