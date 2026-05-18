@@ -845,28 +845,24 @@ class OceanDataCatalog:
         return item
 
 
-    def _open_icechunk_store(
+    def _open_icechunk_repo(
             self,
             fields: dict,
-            branch: str,
-            ) -> xr.Dataset:
+            ) -> icechunk.Repository:
         """
-        Open STAC Item Icechunk store asset as xarray Dataset.
+        Open STAC Item asset as an Icechunk Repository.
 
         Parameters
         ----------
         fields : dict
-            Dictionary of arguments to s3_storage() defining Icechunk
-            S3 storage instance.
-        branch : str
-            Branch of the Icechunk repository to read.
+            Dictionary of arguments defining Icechunk S3 storage instance.
 
         Returns
         -------
-        xarray.Dataset
-            Dataset read from Item asset.
+        icechunk.Repository
+            Icechunk Repository object for the Item asset.
         """
-        # Define S3 Object Store containing asset:
+        # Define S3 storage configuration:
         storage = icechunk.s3_storage(
             bucket=fields['bucket'],
             prefix=fields['prefix'],
@@ -876,10 +872,40 @@ class OceanDataCatalog:
             force_path_style=True
         )
 
-        # Open Item asset Icechunk repository on specified branch:
+        # Open Icechunk Repository from S3 storage:
         repo = icechunk.Repository.open(storage=storage)
+        return repo
+
+
+    def _open_icechunk_store(
+            self,
+            fields: dict,
+            branch: str,
+            group: str | None = None
+            ) -> xr.Dataset:
+        """
+        Open STAC Item asset Icechunk store as xarray Dataset.
+
+        Parameters
+        ----------
+        fields : dict
+            Dictionary of arguments to s3_storage() defining Icechunk
+            S3 storage instance.
+        branch : str
+            Branch of the Icechunk repository to read.
+        group : str, optional
+            Group within the Icechunk repository to read. Default is None,
+            which reads from the root of the repository.
+
+        Returns
+        -------
+        xarray.Dataset
+            Dataset read from Item asset.
+        """
+        # Open Zarr store from Icechunk repository:
+        repo = self._open_icechunk_repo(fields)
         store = repo.readonly_session(branch=branch).store
-        ds = xr.open_zarr(store, consolidated=False)
+        ds = xr.open_zarr(store, consolidated=False, group=group)
 
         return ds
 
@@ -887,6 +913,8 @@ class OceanDataCatalog:
     def _open_zarr_store(
             self,
             fields: dict,
+            consolidated: bool = True,
+            group: str | None = None
             ) -> xr.Dataset:
         """
         Open STAC Item Zarr store asset as xarray Dataset.
@@ -896,6 +924,12 @@ class OceanDataCatalog:
         fields : dict
             Dictionary of arguments to open_zarr() defining URL
             and version of Zarr store.
+        consolidated : bool, optional
+            Whether to open Zarr store using consolidated metadata capability.
+            Default is True, meaning that consolidated metadata is expected.
+        group : str, optional
+            Group within the Zarr store to read. Default is None,
+            which reads from the root of the store.
 
         Returns
         -------
@@ -904,19 +938,80 @@ class OceanDataCatalog:
         """
         # Open Item asset Zarr store via URL:
         url = f"{fields['endpoint_url']}/{fields['bucket']}/{fields['prefix']}"
-        ds = xr.open_zarr(url, zarr_format=int(fields['zarr_format']), consolidated=True)
+        ds = xr.open_zarr(url, zarr_format=int(fields['zarr_format']), consolidated=consolidated, group=group)
 
         return ds
 
 
+    def open_repo(self,
+                  id: str,
+                  asset_key: Optional[str] = None
+                  ) -> icechunk.Repository:
+        """
+        Open STAC Item asset as an Icechunk Repository.
+
+        Parameters
+        ----------
+        id : str
+            Item ID to open asset.
+        asset_key : str, optional
+            Key of the asset to open. Default is to infer the key from the Item ID.
+
+        Returns
+        -------
+        icechunk.Repository
+            Icechunk Repository for STAC Item asset.
+
+        Raises
+        ------
+        ValueError
+            If the Item ID or asset key is not found in the catalog.
+        ValueError
+            If the asset key is not found in the Item ID.
+        """
+        # -- Validate Inputs -- #
+        if not isinstance(id, str):
+            raise TypeError("'id' must be a string.")
+
+        # -- Collect Item Asset -- #
+        try:
+            item = self._open_item(id=id)
+        except Exception:
+            raise RuntimeError(f"Item ID '{id}' not found in Catalog.")
+
+        # Infer asset key from Item ID if not provided:
+        if asset_key is None:
+            asset_key = list(item.assets.keys())[0]
+        asset = item.assets.get(asset_key)
+        if asset is None:
+            raise ValueError(f"Asset key '{asset_key}' not found in Item ID '{id}'.")
+
+        fields = asset.extra_fields
+
+        # -- Open Icechunk Repository -- #
+        if asset.to_dict()['type'] == "application/vnd.zarr+icechunk":
+            required_fields = ['bucket', 'prefix', 'anonymous', 'endpoint_url']
+            for field in required_fields:
+                if field not in fields:
+                    raise ValueError(f"Missing asset field '{field}' in item '{id}'.")
+            repo = self._open_icechunk_repo(fields=fields)
+        else:
+            raise ValueError(f"Item ID '{id}' asset is not an Icechunk repository.")
+
+        return repo
+
+
     def open_dataset(self,
                      id: str,
+                     group: Optional[str] = None,
                      variable_names: Optional[list[str]] = None,
                      start_datetime: Optional[str] = None,
                      end_datetime: Optional[str] = None,
                      bbox: Optional[tuple[float, float, float, float]] = None,
                      branch: str = "main",
-                     asset_key: Optional[str] = None) -> xr.Dataset:
+                     consolidated: bool = True,
+                     asset_key: Optional[str] = None
+                    ) -> xr.Dataset:
         """
         Open STAC Item asset as an xarray Dataset.
 
@@ -924,6 +1019,9 @@ class OceanDataCatalog:
         ----------
         id : str
             Item ID to open asset.
+        group : str, optional
+            Group within the Zarr or Icechunk repository to read. Default is None,
+            which reads from the root of the repository.
         variable_names : list[str], optional
             List of variable names to be parsed from the dataset.
             Default is to return all variables.
@@ -941,6 +1039,8 @@ class OceanDataCatalog:
             Default is to use the Item bbox.
         branch : str, optional
             Branch of the Icechunk repository to use. Default is to use the "main" branch.
+        consolidated : bool, optional
+            Whether to open Zarr stores using consolidated metadata. Default is True.
         asset_key : str, optional
             Key of the asset to open. Default is to infer the key from the Item ID.
 
@@ -958,9 +1058,11 @@ class OceanDataCatalog:
         KeyError
             If the specified variable(s) are not found in the dataset.
         """
-        # -- Validate inputs -- #
+        # -- Validate Inputs -- #
         if not isinstance(id, str):
             raise TypeError("'id' must be a string.")
+        if group is not None and not isinstance(group, str):
+            raise TypeError("'group' must be a string or None.")
         if not isinstance(variable_names, (type(None), list)):
             raise TypeError("'variable_names' must be a list of strings.")
         if variable_names is not None and not all([isinstance(var, str) for var in variable_names]):
@@ -973,6 +1075,10 @@ class OceanDataCatalog:
             raise TypeError("'bbox' must be a tuple or None.")
         if bbox is not None and (len(bbox) != 4 or not all(isinstance(coord, float) for coord in bbox)):
             raise TypeError("'bbox' must be a tuple of floats in the form (lon_min, lon_max, lat_min, lat_max).")
+        if not isinstance(branch, str):
+            raise TypeError("'branch' must be a string.")
+        if not isinstance(consolidated, bool):
+            raise TypeError("'consolidated' must be a boolean.")
 
         # -- Collect Item Asset -- #
         try:
@@ -995,7 +1101,7 @@ class OceanDataCatalog:
             for field in required_fields:
                 if field not in fields:
                     raise ValueError(f"Missing asset field '{field}' in item '{id}'.")
-            ds = self._open_icechunk_store(fields=fields, branch=branch)
+            ds = self._open_icechunk_store(fields=fields, branch=branch, group=group)
 
         # Open Zarr store as xarray Dataset:
         elif asset.to_dict()['type'] == 'application/vnd.zarr':
@@ -1003,7 +1109,7 @@ class OceanDataCatalog:
             for field in required_fields:
                 if field not in fields:
                     raise ValueError(f"Missing asset field '{field}' in item '{id}'.")
-            ds = self._open_zarr_store(fields=fields)
+            ds = self._open_zarr_store(fields=fields, group=group)
 
         else:
             raise ValueError(f"Unsupported media type {asset.to_dict()['type']} for Item asset.")
