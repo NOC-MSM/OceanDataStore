@@ -37,7 +37,7 @@ dependencies = [
   ]
 
 [project.optional-dependencies]
-test = ["pytest >=8.3.3", "pytest-mock >= 3.15.1"]
+tests = ["pytest >=8.3.3", "pytest-mock >= 3.15.1"]
 
 [project.urls]
 Home = "https://github.com/NOC-MSM/OceanDataStore"
@@ -52,6 +52,9 @@ include = ["OceanDataStore*"]
 
 [tool.setuptools_scm]
 fallback_version = "0.2.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [project.scripts]
 ods = "OceanDataStore.cli.cli:ods"
