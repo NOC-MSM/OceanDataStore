@@ -1,9 +1,9 @@
 {
     "config_kwargs": {
-        "temporary_directory":"/dssgfs01/working/otooth/Software/OceanDataStore/tests/integration/", "local_directory":"/dssgfs01/working/otooth/Software/OceanDataStore/tests/integration/"
+        "temporary_directory":".../OceanDataStore/tests/integration/", "local_directory":".../OceanDataStore/tests/integration/"
     },
     "cluster_kwargs": {
-        "n_workers" : 10,
+        "n_workers" : 3,
         "threads_per_worker" : 1,
         "memory_limit":"2.5GB"
     }

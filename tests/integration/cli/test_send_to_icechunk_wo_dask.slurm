@@ -29,11 +29,11 @@ filedir=/dssgfs01/scratch/npd/simulations/eORCA1_ERA5_v1
 store_credentials_json=.../credentials/jasmin_os_credentials.json
 
 # Filepath to Dask Configuration file:
-dask_config_json=.../OceanDataStore/tests/dask_config.json
+dask_config_json=.../OceanDataStore/tests/integration/cli/dask_config.json
 
 # Bucket and object prefix:
-bucket=npd-eorca1-era5v1
-prefix=test/U1m_icechunk
+bucket=oceandatastore
+prefix=testing/U1m_icechunk
 
 # Define the append dimension:
 append_dim=time_counter
@@ -43,12 +43,12 @@ variables="time_counter_bounds uo umo"
 
 # -- Python Environment -- #
 # Activate miniconda environment:
-source /dssgfs01/working/otooth/miniforge3/bin/activate
-conda activate env_test
+source .../miniforge3/bin/activate
+conda activate env_ods
 
 # -- Send eORCA1 ERA-5 v1 monthly mean outputs to JASMIN OS -- #
 echo "In Progress: Sending eORCA1 ERA-5 v1 U1m variables to JASMIN object store without Dask..."
-filepath_gridU=$filedir/eORCA1_ERA5_1m_grid_U_197*.nc
+filepath_gridU=$filedir/eORCA1_ERA5_1m_grid_U_1976*.nc
 ods send_to_icechunk -f $filepath_gridU -c $store_credentials_json -b $bucket -p $prefix \
                      -gf $filepath_domain -uc '{"nav_lon":"glamu", "nav_lat":"gphiu"}' \
                      -cs '{"x":360,"y":331,"depthu":25}' \
