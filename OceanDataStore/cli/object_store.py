@@ -1,3 +1,16 @@
+# ===================================================================
+# Copyright 2026 National Oceanography Centre
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#  http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# permissions and limitations under the License.
+# ===================================================================
 """
 object_store.py
 
@@ -6,18 +19,17 @@ This module defines the ObjectStoreS3 class, which is a subclass
 of the S3FileSystem class from the s3fs library.
 
 Authors:
+    - Ollie Tooth
     - Joao Morado
     - Tobias Ferreira
-    - Ollie Tooth
 """
 import json
-import zarr
-import s3fs
-import fsspec
-import icechunk
 import logging
-
 from typing import Union
+
+import icechunk
+import s3fs
+
 
 class ObjectStoreS3(s3fs.S3FileSystem):
     """
@@ -67,10 +79,10 @@ class ObjectStoreS3(s3fs.S3FileSystem):
         else:
             self._store_credentials = self.load_store_credentials(store_credentials_json)
 
-        # Configure remote options:
-        self._remote_options = self.get_remote_options()
+        # Configure storage options:
+        self._storage_options = self.get_storage_options()
 
-        super().__init__(*fs_args, **self._remote_options, **fs_kwargs)
+        super().__init__(*fs_args, **self._storage_options, **fs_kwargs)
 
     @staticmethod
     def load_store_credentials(path: str) -> dict:
@@ -106,10 +118,47 @@ class ObjectStoreS3(s3fs.S3FileSystem):
         return store_credentials
 
 
-    def create_bucket(self,
-                      bucket: str,
-                      **kwargs
-                      ) -> None:
+    def get_storage_options(
+        self,
+        set_async: bool=False,
+    ) -> dict:
+        """
+        Get the storage options to access the object store.
+
+        Returns
+        -------
+        storage_options
+            Dictionary containing the storage options to access the object store.
+
+        """
+        # Create storage options dict from credentials:
+        self._storage_options = {
+            "anon": self._anon,
+            "secret": self._store_credentials["secret"],
+            "key": self._store_credentials["token"],
+            "client_kwargs": {
+                "endpoint_url": self._store_credentials["endpoint_url"],
+            },
+            "config_kwargs": {
+                "request_checksum_calculation": "when_required",
+                "response_checksum_validation": "when_required",
+            },
+        }
+
+        if set_async:
+            # Override asynchronous option of ObjectStoreS3:
+            self._storage_options["asynchronous"] = True
+        else:
+            self._storage_options["asynchronous"] = self._asynchronous
+
+        return self._storage_options
+
+
+    def create_bucket(
+        self,
+        bucket: str,
+        **kwargs
+    ) -> None:
         """
         Create a bucket in the object store.
 
@@ -126,92 +175,14 @@ class ObjectStoreS3(s3fs.S3FileSystem):
             logging.info(f"Bucket {bucket} already exists.")
 
 
-    def get_remote_options(self) -> dict:
-        """
-        Get the remote options to access the object store.
-
-        Returns
-        -------
-        remote_options
-            Dictionary containing the remote options to access the object store.
-
-        """
-        # Create remote options dict from credentials:
-        self._remote_options = {
-            "anon": self._anon,
-            "asynchronous": self._asynchronous,
-            "secret": self._store_credentials["secret"],
-            "key": self._store_credentials["token"],
-            "client_kwargs": {
-                "endpoint_url": self._store_credentials["endpoint_url"]
-            },
-        }
-
-        return self._remote_options
-    
-
-    def get_store(self,
-                  path: str,
-                  **get_store_kwargs
-                  ) -> zarr.storage.FsspecStore:
-        """
-        Get a remote store in a desired bucket using fsspec.
-
-        Parameters
-        ----------
-        dest: str, default "s3://"
-            Protocol prefix to object store.
-        **get_store_kwargs
-            Kwargs for zarr.storage.FsspecStore().
-            See: https://zarr.readthedocs.io/en/stable/api/zarr/storage/index.html#zarr.storage.FsspecStore.
-
-        Returns
-        -------
-        store, FsspecStore
-            A remote store based on fsspec.
-        """
-        store = zarr.storage.FsspecStore(fs=self, path=path, **get_store_kwargs)
-
-        return store
-
-
-    def get_mapper(self,
-                   bucket: str,
-                   prefix: str = "s3://",
-                   **get_mapper_kwargs
-                   ) -> fsspec.mapping.FSMap:
-        """
-        Get a MutableMaping interface to the desired bucket.
-
-        Parameters
-        ----------
-        bucket
-            Name of bucket.
-        prefix: str, default "s3://"
-            Protocol prefix to object store.
-        **get_mapper_kwargs
-            Kwargs for get_mapper.
-            See: https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.get_mapper.
-
-        Returns
-        -------
-        mapper
-            Dict-like key-value store.
-        """  # noqa adamwa
-        mapper = fsspec.get_mapper(
-            prefix + bucket, **self._remote_options, **get_mapper_kwargs
-        )
-
-        return mapper
-
-
-    def create_icechunk_repo(self,
-                             bucket: str,
-                             prefix: str,
-                             storage_config_kwargs: dict = {'region': 'us-east-1', 'force_path_style': True},
-                             repository_config_kwargs: dict = {},
-                             storage_settings_kwargs: dict = {'unsafe_use_conditional_update': False, 'unsafe_use_conditional_create': False},
-                             ) -> icechunk.Repository:
+    def create_icechunk_repo(
+        self,
+        bucket: str,
+        prefix: str,
+        storage_config_kwargs: dict = {'region': 'us-east-1', 'force_path_style': True},
+        repository_config_kwargs: dict = {},
+        storage_settings_kwargs: dict = {'unsafe_use_conditional_update': False, 'unsafe_use_conditional_create': False},
+    ) -> icechunk.Repository:
         """
         Create a new Icechunk repository in cloud object storage.
 
@@ -263,13 +234,14 @@ class ObjectStoreS3(s3fs.S3FileSystem):
         return repo
 
 
-    def open_icechunk_repo(self,
-                           bucket: str,
-                           prefix: str,
-                           storage_config_kwargs: dict = {'region': 'us-east-1', 'force_path_style': True},
-                           repository_config_kwargs: dict = {},
-                           storage_settings_kwargs: dict = {'unsafe_use_conditional_update': False, 'unsafe_use_conditional_create': False},
-                           ) -> icechunk.Repository:
+    def open_icechunk_repo(
+        self,
+        bucket: str,
+        prefix: str,
+        storage_config_kwargs: dict = {'region': 'us-east-1', 'force_path_style': True},
+        repository_config_kwargs: dict = {},
+        storage_settings_kwargs: dict = {'unsafe_use_conditional_update': False, 'unsafe_use_conditional_create': False},
+    ) -> icechunk.Repository:
         """
         Open an existing Icechunk repository in cloud object storage.
 

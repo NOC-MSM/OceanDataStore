@@ -1,18 +1,30 @@
+# ===================================================================
+# Copyright 2026 National Oceanography Centre
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#  http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# permissions and limitations under the License.
+# ===================================================================
 """
-main_cli.py
+cli.py
 
 Description:
-This module defines the command line interface
-for the OceanDataStore package.
+This module defines the command line interface for the OceanDataStore
+package.
 
 Authors:
+    - Ollie Tooth
     - Joao Morado
     - Tobias Ferreira
-    - Ollie Tooth
 """
 import sys
 import json
-import asyncio
 import logging
 
 from OceanDataStore.cli import (
@@ -22,35 +34,10 @@ from OceanDataStore.cli import (
     update_icechunk,
     list_objects
 )
-from OceanDataStore.cli.arg_parser import __version__, create_parser
+from OceanDataStore.cli.arg_parser import create_parser
+from OceanDataStore.cli.logging import initialise_logging
 
 logger = logging.getLogger(__name__)
-
-
-def banner():
-    """Log the OceanDataStore banner."""
-    logger.info(
-        f"""
-         .~~~.
-       .(     ).~~~~~~.
-     ~(               ).~~~.
-   .(    OceanDataStore     ).  
-  (___________________________).
-        version: {__version__}
-
-""",
-        extra={"simple": True},
-    )
-
-
-def initialise_logging():
-    """Initialise logging configuration."""
-    logging.basicConfig(
-        stream=sys.stdout,
-        format="🌐  OceanDataStore  🌐 | %(levelname)10s | %(asctime)s | %(message)s",
-        level=logging.INFO,
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
 
 
 def process_action(args):
@@ -105,7 +92,6 @@ def process_action(args):
     # === Process Actions === #
     if args.action == "send_to_zarr":
 
-        asyncio.run(
         send_to_zarr(
             file=filepaths,
             bucket=args.bucket,
@@ -117,14 +103,14 @@ def process_action(args):
             update_coords=args.update_coords,
             rechunk=args.chunk_strategy,
             attrs=args.attrs,
+            client=None,
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
             zarr_version=zarr_version,
-            ))
+            )
     
     elif args.action == "update_zarr":
 
-        asyncio.run(
         update_zarr(
             file=filepaths,
             bucket=args.bucket,
@@ -136,10 +122,11 @@ def process_action(args):
             update_coords=args.update_coords,
             rechunk=args.chunk_strategy,
             attrs=args.attrs,
+            client=None,
             dask_config_kwargs=dask_config["config_kwargs"],
             dask_cluster_kwargs=dask_config["cluster_kwargs"],
             zarr_version=zarr_version,
-            ))
+            )
 
     elif args.action == "send_to_icechunk":
 
@@ -202,9 +189,10 @@ def process_action(args):
 
 
 def ods():
-    """Run the OceanDataStore CLI."""
+    """
+    Run the OceanDataStore CLI.
+    """
     initialise_logging()
-    banner()
 
     parser = create_parser()
     args = parser.parse_args()
