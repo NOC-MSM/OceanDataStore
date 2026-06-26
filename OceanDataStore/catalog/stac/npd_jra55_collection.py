@@ -48,7 +48,7 @@ def create_npd_jra55_collection(
         keywords=["NOC", "JRA55-do", "Near-Present Day", "AtlantiS", "hindcast", "global", "model", "ocean", "sea-ice"],
         providers=[
             pystac.Provider(
-                name="National Oceanography Centre",
+                name="National Oceanography Centre (NOC)",
                 description="National Oceanography Centre (United Kingdom) - Ocean Modelling Group.",
                 roles=[pystac.ProviderRole.PRODUCER, pystac.ProviderRole.LICENSOR],
                 url="https://noc-msm.github.io/NOC_Near_Present_Day/"
@@ -71,7 +71,7 @@ def create_npd_jra55_collection(
         description="Catalog of eORCA1 JRA55-do Near-Present Day ocean sea-ice simulations performed by the National Oceanography Centre."
         )
 
-    logging.info(f"Completed: Created NOC STAC Catalog with ID: {npd_eorca1_jra55v1.id}")
+    logging.info(f"Completed: Created STAC Catalog with ID: {npd_eorca1_jra55v1.id}")
 
     npd_eorca025_jra55v1 = pystac.Catalog(
         id="npd-eorca025-jra55v1",
@@ -79,7 +79,7 @@ def create_npd_jra55_collection(
         description="Catalog of eORCA025 JRA55-do Near-Present Day ocean sea-ice simulations performed by the National Oceanography Centre.",
         )
 
-    logging.info(f"Completed: Created NOC STAC Catalog with ID: {npd_eorca025_jra55v1.id}")
+    logging.info(f"Completed: Created STAC Catalog with ID: {npd_eorca025_jra55v1.id}")
 
     # ==== Define NOC Near-Present Day Model Variant Catalogs ==== #
     r1i1c1f1_eorca1_jra55v1 = pystac.Catalog(
@@ -88,7 +88,7 @@ def create_npd_jra55_collection(
         description="Catalog of eORCA1 JRA55-do Near-Present Day ocean physics & sea-ice outputs for model variant: r1i1c1f1.\n\n**Variant Label:**\n\nRealisation=1, Initialisation=1, Configuration=1, Forcing=1."
         )
 
-    logging.info(f"Completed: Created NOC STAC Catalog with ID: {r1i1c1f1_eorca1_jra55v1.id}")
+    logging.info(f"Completed: Created STAC Catalog with ID: {r1i1c1f1_eorca1_jra55v1.id}")
 
     r1i1c1f1_eorca025_jra55v1 = pystac.Catalog(
         id="r1i1c1f1",
@@ -96,27 +96,7 @@ def create_npd_jra55_collection(
         description="Catalog of eORCA025 JRA55-do Near-Present Day ocean physics & sea-ice outputs for model variant: r1i1c1f1.\n\n**Variant Label:**\n\nRealisation=1, Initialisation=1, Configuration=1, Forcing=1.",
         )
 
-    logging.info(f"Completed: Created NOC STAC Catalog with ID: {r1i1c1f1_eorca025_jra55v1.id}")
-
-    # ==== Define NOC Near-Present Day Platform Sub-Catalogs ==== #
-    # Note: Options for platforms are: "gn", "gr", "tn", "tr".
-    # where gn = native model grids, gr = regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
-
-    gn_eorca1_jra55v1 = pystac.Catalog(
-        id="gn",
-        title="eORCA1 JRA55v1 NPD: Global Native Model Grid Catalog",
-        description="Catalog of global ocean physics & sea-ice outputs stored on the native eORCA1 curvilinear NEMO model grid."
-        )
-    
-    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca1_jra55v1.id}")
-
-    gn_eorca025_jra55v1 = pystac.Catalog(
-        id="gn",
-        title="eORCA025 JRA55v1 NPD: Global Native Model Grid Catalog",
-        description="Catalog of global ocean physics & sea-ice outputs stored on the native eORCA025 curvilinear NEMO model grid."
-        )
-    
-    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca025_jra55v1.id}")
+    logging.info(f"Completed: Created STAC Catalog with ID: {r1i1c1f1_eorca025_jra55v1.id}")
 
     # -- Add Items to NOC Near-Present Day eORCA1 JRA55v1 {gn} Sub-Catalog -- #
     # Define url & bucket for eORCA1 JRA55v1 NPD data:
@@ -141,22 +121,24 @@ def create_npd_jra55_collection(
             operation = "5-day mean"
 
         item = create_item_with_zarr_asset(
-            id=f"noc-npd-jra55/{bucket}/{variant}/gn/{prefix}",
+            id=f"noc-npd-jra55/{bucket}/{variant}/{prefix}",
             ds=ds,
             bucket=bucket,
-            platform="gn",
             prefix=prefix,
+            title=f"NPD eORCA1 JRA55v1 {prefix}",
+            platform="gn",
+            horizontal_grid_resolution="1 degree",
             variant=variant,
             start_date="1976-01-01",
             end_date="2024-01-31",
-            config="eORCA1 JRA55v1 NPD",
             operation=operation,
-            zarr_format=3
+            zarr_format=3,
+            variable_stores=False,
         )
         # Add item to the eORCA1 JRA55v1 NPD global native model grid catalog:
-        gn_eorca1_jra55v1.add_item(item)
+        r1i1c1f1_eorca1_jra55v1.add_item(item)
 
-    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {gn_eorca1_jra55v1.id}")
+    logging.info(f"Completed: Added Items to STAC Catalog with ID: {r1i1c1f1_eorca1_jra55v1.id}")
 
     # -- Add Items to NOC Near-Present Day eORCA025 JRA55v1 {gn} Sub-Catalog -- #
     # Define url & bucket for eORCA025 JRA55v1 NPD data:
@@ -182,27 +164,26 @@ def create_npd_jra55_collection(
             operation = "5-day mean"
 
         item = create_item_with_zarr_asset(
-            id=f"noc-npd-jra55/{bucket}/{variant}/gn/{prefix}",
+            id=f"noc-npd-jra55/{bucket}/{variant}/{prefix}",
             ds=ds,
             bucket=bucket,
-            platform="gn",
             prefix=prefix,
+            title=f"NPD eORCA025 JRA55v1 {prefix}",
+            platform="gn",
+            horizontal_grid_resolution="1/4 degree",
             variant=variant,
             start_date="1976-01-01",
             end_date="2024-01-31",
-            config="eORCA025 JRA55v1 NPD",
             operation=operation,
-            zarr_format=3
+            zarr_format=3,
+            variable_stores=False
         )
         # Add item to the eORCA025 JRA55v1 NPD global native model grid catalog:
-        gn_eorca025_jra55v1.add_item(item)
+        r1i1c1f1_eorca025_jra55v1.add_item(item)
 
-    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {gn_eorca025_jra55v1.id}")
+    logging.info(f"Completed: Added Items to STAC Catalog with ID: {r1i1c1f1_eorca025_jra55v1.id}")
 
     # ==== Add Nested Catalogs to NOC Near-Present Day Collection ==== #
-    # Global Native Model Grid Catalogs -> Model Simulation Variant Catalogs:
-    r1i1c1f1_eorca1_jra55v1.add_child(gn_eorca1_jra55v1)
-    r1i1c1f1_eorca025_jra55v1.add_child(gn_eorca025_jra55v1)
 
     # Model Simulation Variant Catalogs -> Model Simulation Catalogs:
     npd_eorca1_jra55v1.add_child(r1i1c1f1_eorca1_jra55v1)
