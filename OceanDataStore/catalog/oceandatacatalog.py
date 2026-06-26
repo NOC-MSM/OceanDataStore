@@ -9,7 +9,6 @@ using pystac, Zarr and Icechunk.
 Authors:
     - Ollie Tooth
 """
-import os
 from typing import Optional
 
 import icechunk
@@ -792,20 +791,24 @@ class OceanDataCatalog:
 
     def _filter_items(self,
                       items: list[pystac.Item],
-                      platform: Optional[str] = None,
+                      dataset_type: Optional[str] = None,
+                      product_type: Optional[str] = None,
                       variable_name: Optional[str] = None,
                       standard_name: Optional[str] = None,
                       item_name: Optional[str] = None
                       ):
         """
-        Filter Items based on specified platform and variable.
+        Filter Items based on specified dataset type, product type,
+        variable name, and standard name.
 
         Parameters
         ----------
         items : list[pystac.Item]
             List of STAC Items to filter.
-        platform : str, optional
-            Platform name to filter Items by.
+        dataset_type : str, optional
+            Dataset type to filter Items by.
+        product_type : str, optional
+            Product type to filter Items by.
         variable_name : str, optional
             Variable name to filter Items by.
         standard_name : str, optional
@@ -813,8 +816,10 @@ class OceanDataCatalog:
         item_name : str, optional
             Substring to filter Item IDs by.
         """
-        if platform:
-            items = [item for item in items if platform in item.properties.get('platform', '')]
+        if dataset_type:
+            items = [item for item in items if dataset_type in str(item.properties.get('dataset_type', ''))]
+        if product_type:
+            items = [item for item in items if product_type in str(item.properties.get('product_type', ''))]
         if variable_name:
             items = [item for item in items if any(variable_name in var for var in item.properties.get('variables', []))]
         if standard_name:
@@ -823,29 +828,42 @@ class OceanDataCatalog:
             items = [item for item in items if item_name in item.id]
 
         return items
+    
+
+    def clear(self) -> None:
+        """
+        Clear the Active Collection and Items returned from
+        the latest OceanDataCatalog search.
+        """
+        self.Collection = None
+        self.Items = None
 
 
     def search(self,
                collection: Optional[str] = None,
-               platform: Optional[str] = None,
+               dataset_type: Optional[str] = None,
+               product_type: Optional[str] = None,
                variable_name: Optional[str] = None,
                standard_name: Optional[str] = None,
                item_name: Optional[str] = None
                ) -> None:
         """
-        Search the NOC STAC Catalog for Items matching the specified criteria.
+        Search the OceanDataCatalog for Items matching the specified criteria.
 
-        When both a platform and a variable / standard name are provided,
-        the search returns all Items which match both criteria.
+        When both dataset_type / product_type and variable / standard names are
+        provided, the search returns all Items which match both criteria.
 
         Parameters
         ----------
         collection : str, optional
             Collection name to search for. Default is None,
             which searches the entire root Catalog.
-        platform : str, optional
-            Platform name to search for. Default is None,
-            which retrieves Items from all platforms.
+        dataset_type : str, optional
+            Dataset type to search for (e.g., 'model', 'observation').
+            Default is None, which retrieves Items from all dataset types.
+        product_type : str, optional
+            Product type to search for (e.g., 'timeseries', 'climatology').
+            Default is None, which retrieves Items from all product types.
         variable_name : str, optional
             Variable name to search for. Default is None,
             which retrieves all Items.
@@ -865,10 +883,13 @@ class OceanDataCatalog:
         TypeError
             If any of the input parameters are of incorrect type.
         """
+        # -- Validate Inputs -- #
         if not isinstance(collection, (type(None), str)):
             raise TypeError("'collection' must be a string or None.")
-        if not isinstance(platform, (type(None), str)):
-            raise TypeError("'platform' must be a string or None.")
+        if not isinstance(dataset_type, (type(None), str)):
+            raise TypeError("'dataset_type' must be a string or None.")
+        if not isinstance(product_type, (type(None), str)):
+            raise TypeError("'product_type' must be a string or None.")
         if not isinstance(variable_name, (type(None), str)):
             raise TypeError("'variable_name' must be a string or None.")
         if not isinstance(standard_name, (type(None), str)):
@@ -890,7 +911,8 @@ class OceanDataCatalog:
             raise ValueError("Only one of 'variable_name' or 'standard_name' can be specified.")
         else:
             self.Items = self._filter_items(items=items,
-                                            platform=platform,
+                                            dataset_type=dataset_type,
+                                            product_type=product_type,
                                             variable_name=variable_name,
                                             standard_name=standard_name,
                                             item_name=item_name
@@ -903,7 +925,7 @@ class OceanDataCatalog:
             id: str,
         ) -> pystac.Item:
         """
-        Open a STAC Item directly from URL using Item ID.
+        Open a STAC Item directly from the Item ID.
 
         Parameters
         ----------
@@ -915,17 +937,21 @@ class OceanDataCatalog:
         pystac.Item
             STAC Item object.
         """
-        # Define base URL to the root catalog:
-        base_url = os.path.dirname(self._stac_url)
+        # Define components of Item ID path:
+        parts = id.split("/")
+        # Initialise node to root Catalog:
+        node = self.Catalog
 
-        # Construct URL to the Item JSON file:
-        # Assumes Item IDs use path-like representation.
-        id_list = [f"{id_n}/" for id_n in id.split("/")]
-        id_prefix = "".join(id_list[:4])
-        item_url = f"{base_url}/{id_prefix}{id}/{id}.json"
-
-        # Open the Item from the constructed URL:
-        item = pystac.Item.from_file(item_url)
+        # Iterate over ID components:
+        for _, part in enumerate(parts):
+            # Traverse Catalog to child node containing Item:
+            child = node.get_child(part)
+            if child is not None:
+                node = child
+                continue
+            else:
+                # Collect STAC Item from child node:
+                item =  node.get_item(id)
 
         return item
 
