@@ -951,7 +951,7 @@ class OceanDataCatalog:
                 continue
             else:
                 # Collect STAC Item from child node:
-                item =  node.get_item(id)
+                item =  next(node.get_items(id), None)
 
         return item
 
