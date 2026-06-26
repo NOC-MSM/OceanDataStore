@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=oisstv2_daily_climatology
+#SBATCH --job-name=hadisst1_monthly
 #SBATCH --partition=test
 #SBATCH --time=00:20:00
 #SBATCH --ntasks-per-core=1
@@ -8,13 +8,13 @@
 #SBATCH --nodes=1
 
 # ==============================================================
-# run_send_OISSTv2_daily_climatology_to_os.slurm
+# run_send_HadISST1_monthly_to_os.slurm
 #
-# Description: SLURM script to send the OISSTv2.1 daily 
-# climatology datasets to Icechunk repository.
+# Description: SLURM script to send the HadISST1 monthly 
+# time-series dataset to Icechunk repository.
 #
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
-# Created On: 2026-06-09
+# Created On: 2026-06-24
 #
 # ==============================================================
 set -euo pipefail
@@ -24,9 +24,9 @@ set -euo pipefail
 source /dssgfs01/working/otooth/miniforge3/bin/activate
 conda activate env_ods
 
-# -- Send OISSTv2.1 daily climatology datasets to JASMIN OS -- #
-echo "In Progress: Sending OISSTv2.1 daily climatology to Icechunk..."
+# -- Send HadISST1 monthly time-series datasets to JASMIN OS -- #
+echo "In Progress: Sending HadISST1 monthly time-series to Icechunk..."
 
-python3 send_OISSTv2_daily_climatology_to_os.py
+python3 send_HadISST1_monthly_to_os.py
 
-echo "Completed: Sent OISSTv2.1 daily climatology to Icechunk."
+echo "Completed: Sent HadISST1 monthly time-series to Icechunk."
