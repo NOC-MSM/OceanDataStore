@@ -19,7 +19,7 @@ from OceanDataStore.cli.object_store import ObjectStoreS3
 from OceanDataStore.catalog.stac.utils import create_item_with_zarr_asset
 
 def create_rapid_evo_collection(
-    credentials_json: str = "/dssgfs01/working/otooth/AtlantiS/jasmin_os/credentials/rapid_evo_credentials.json"
+    credentials_json: str
     ) -> pystac.Collection:
     """
     Create the NOC Rapid Evolution STAC Collection.
@@ -63,7 +63,7 @@ def create_rapid_evo_collection(
         keywords=["NOC", "Rapid Evolution", "hindcast", "global", "nested", "model", "ocean", "sea-ice"],
         providers=[
             pystac.Provider(
-                name="National Oceanography Centre",
+                name="National Oceanography Centre (NOC)",
                 description="National Oceanography Centre (United Kingdom) - Ocean Modelling Group.",
                 roles=[pystac.ProviderRole.PRODUCER, pystac.ProviderRole.LICENSOR],
                 url="https://rapid.ac.uk/rapid-evolution"
@@ -77,7 +77,7 @@ def create_rapid_evo_collection(
         ],
     )
 
-    logging.info(f"Completed: Created NOC STAC Collection with ID: {rapid_evo_collection.id}")
+    logging.info(f"Completed: Created STAC Collection: {rapid_evo_collection}")
 
     # -- Define NOC RAPID-Evolution Model Configuration Catalogs -- #
     r_evo_eorca025 = pystac.Catalog(
@@ -86,7 +86,7 @@ def create_rapid_evo_collection(
         description="Catalog of eORCA025 JRA55-do global parent domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre."
     )
 
-    logging.info(f"Completed: Created NOC STAC Catalog with ID: {r_evo_eorca025.id}")
+    logging.info(f"Completed: Created STAC Catalog: {r_evo_eorca025}")
 
     r_evo_rapid12 = pystac.Catalog(
         id="r_evo_rapid12",
@@ -94,7 +94,7 @@ def create_rapid_evo_collection(
         description="Catalog of RAPID12 JRA55-do nested child domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre.",
     )
 
-    logging.info(f"Completed: Created NOC STAC Catalog with ID: {r_evo_rapid12.id}")
+    logging.info(f"Completed: Created STAC Catalog: {r_evo_rapid12}")
 
     r_evo_rapid36 = pystac.Catalog(
         id="r_evo_rapid36",
@@ -102,35 +102,7 @@ def create_rapid_evo_collection(
         description="Catalog of RAPID36 JRA55-do nested grandchild domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre.",
     )
 
-    logging.info(f"Completed: Created NOC STAC Catalog with ID: {r_evo_rapid36.id}")
-
-    # Define NOC RAPID-Evolution Platform Sub-Catalogs -- #
-    # Note: Options for platforms are: "gn", "gr", "tn", "tr".
-    # where gn = native model grids, gr = regridded grids, tn = transects on native model grids, tr = transects on regridded grids.
-
-    gn_eorca025 = pystac.Catalog(
-        id="gn",
-        title="RAPID12 JRA55-do global parent domain native model grid Catalog",
-        description="Catalog of global ocean physics outputs stored on the native global eORCA025 curvilinear model grid."
-        )
-
-    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_eorca025.id}")
-
-    gn_rapid12 = pystac.Catalog(
-        id="gn",
-        title="RAPID12 JRA55-do nested child domain native model grid Catalog",
-        description="Catalog of ocean physics outputs stored on the native nested RAPID12 curvilinear model grid."
-        )
-
-    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_rapid12.id}")
-
-    gn_rapid36 = pystac.Catalog(
-        id="gn",
-        title="RAPID36 JRA55-do nested grandchild domain native model grid Catalog",
-        description="Catalog of ocean physics outputs stored on the native nested RAPID36 curvilinear model grid."
-        )
-
-    logging.info(f"Completed: Created NOC STAC Nested Catalog with ID: {gn_rapid36.id}")
+    logging.info(f"Completed: Created STAC Catalog: {r_evo_rapid36}")
 
     # -- Add Items to NOC RAPID-Evolution eORCA025 global parent Sub-Catalog -- #
     # Define url for eORCA025 RAPID-Evolution data:
@@ -145,21 +117,22 @@ def create_rapid_evo_collection(
             # Open domain_cfg dataset from Zarr store:
             ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
             item = create_item_with_zarr_asset(
-                id="noc-rapid-evolution/r_evo_eorca025/gn/domain_cfg",
+                id="noc-rapid-evolution/r_evo_eorca025/domain_cfg",
                 ds=ds,
                 bucket=bucket,
                 platform="gn",
                 prefix=prefix,
+                title=f"RAPID-Evolution eORCA025 {prefix}",
+                horizontal_grid_resolution="1/4 degree",
                 start_date="1976-01-01",
                 end_date="2023-12-31",
                 collection="noc-rapid-evolution",
-                config="eORCA025 RAPID-Evolution global parent",
                 operation=operation,
                 endpoint_url=endpoint_url,
                 zarr_format=3,
             )
             # Add item to the eORCA025 RAPID-Evolution global parent domain native model grid catalog:
-            gn_eorca025.add_item(item)
+            r_evo_eorca025.add_item(item)
         
         else:
             bucket="r-evo1-eorca025-rapid12-rapid36"
@@ -179,23 +152,24 @@ def create_rapid_evo_collection(
                 # Open dataset from Zarr store:
                 ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}/{var}", consolidated=True)
                 item = create_item_with_zarr_asset(
-                    id=f"noc-rapid-evolution/r_evo_eorca025/gn/{prefix}/{var}",
+                    id=f"noc-rapid-evolution/r_evo_eorca025/{prefix}/{var}",
                     ds=ds,
                     bucket=bucket,
                     platform="gn",
                     prefix=f"{prefix}/{var}",
+                    title=f"RAPID-Evolution eORCA025 {prefix}/{var}",
+                    horizontal_grid_resolution="1/4 degree",
                     start_date="1976-01-01",
                     end_date="2023-12-31",
                     collection="noc-rapid-evolution",
-                    config="eORCA025 RAPID-Evolution global parent",
                     operation=operation,
                     endpoint_url=endpoint_url,
                     zarr_format=3,
                 )
                 # Add item to the eORCA025 RAPID-Evolution global parent domain native model grid catalog:
-                gn_eorca025.add_item(item)
+                r_evo_eorca025.add_item(item)
 
-    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {gn_eorca025.id}")
+    logging.info(f"Completed: Added Items to STAC Catalog: {r_evo_eorca025}")
 
     # -- Add Items to NOC RAPID-Evolution RAPID12 nested child domain Sub-Catalog -- #
     for prefix in ["T1m", "U1m", "V1m", "W1m", "S1m", "eORCA025_RAPID12_domain_cfg"]:
@@ -207,22 +181,23 @@ def create_rapid_evo_collection(
             # Open domain_cfg dataset from Zarr store:
             ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
             item = create_item_with_zarr_asset(
-                id="noc-rapid-evolution/r_evo_rapid12/gn/domain_cfg",
+                id="noc-rapid-evolution/r_evo_rapid12/domain_cfg",
                 ds=ds,
                 bucket=bucket,
                 platform="gn",
                 prefix=prefix,
+                title=f"RAPID-Evolution RAPID12 {prefix}",
+                horizontal_grid_resolution="1/12 degree",
                 start_date="1976-01-01",
                 end_date="2023-12-31",
                 bbox=(-100.143814, 6.0719233, -1.8753614, 42.41955),
                 collection="noc-rapid-evolution",
-                config="RAPID12 RAPID-Evolution child nest",
                 operation=operation,
                 endpoint_url=endpoint_url,
                 zarr_format=3,
             )
             # Add item to the RAPID12 RAPID-Evolution nested child domain native model grid catalog:
-            gn_rapid12.add_item(item)
+            r_evo_rapid12.add_item(item)
         
         else:
             bucket="r-evo1-eorca025-rapid12-rapid36"
@@ -241,24 +216,25 @@ def create_rapid_evo_collection(
                 # Open dataset from Zarr store:
                 ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}/{var}", consolidated=True)
                 item = create_item_with_zarr_asset(
-                    id=f"noc-rapid-evolution/r_evo_rapid12/gn/{prefix}/{var}",
+                    id=f"noc-rapid-evolution/r_evo_rapid12/{prefix}/{var}",
                     ds=ds,
                     bucket=bucket,
                     platform="gn",
                     prefix=f"{prefix}/{var}",
+                    title=f"RAPID-Evolution RAPID12 {prefix}/{var}",
+                    horizontal_grid_resolution="1/12 degree",
                     start_date="1976-01-01",
                     end_date="2023-12-31",
                     bbox=(-100.143814, 6.0719233, -1.8753614, 42.41955),
                     collection="noc-rapid-evolution",
-                    config="RAPID12 RAPID-Evolution child nest",
                     operation=operation,
                     endpoint_url=endpoint_url,
                     zarr_format=3,
                 )
                 # Add item to the RAPID12 RAPID-Evolution nested child domain native model grid catalog:
-                gn_rapid12.add_item(item)
+                r_evo_rapid12.add_item(item)
 
-    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {gn_rapid12.id}")
+    logging.info(f"Completed: Added Items to STAC Catalog: {r_evo_rapid12}")
 
     # -- Add Items to NOC RAPID-Evolution RAPID36 nested grandchild domain Sub-Catalog -- #
     for prefix in ["T1m", "U1m", "V1m", "W1m", "S1m", "eORCA025_RAPID36_domain_cfg"]:
@@ -270,22 +246,23 @@ def create_rapid_evo_collection(
             # Open domain_cfg dataset from Zarr store:
             ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
             item = create_item_with_zarr_asset(
-                id="noc-rapid-evolution/r_evo_rapid36/gn/domain_cfg",
+                id="noc-rapid-evolution/r_evo_rapid36/domain_cfg",
                 ds=ds,
                 bucket=bucket,
                 platform="gn",
                 prefix=prefix,
+                title=f"RAPID-Evolution RAPID36 {prefix}",
+                horizontal_grid_resolution="1/36 degree",
                 start_date="1976-01-01",
                 end_date="2023-12-31",
                 bbox=(-98.530975, 17.34014, -8.879465, 30.447763),
                 collection="noc-rapid-evolution",
-                config="RAPID36 RAPID-Evolution grandchild nest",
                 operation=operation,
                 endpoint_url=endpoint_url,
                 zarr_format=3,
             )
             # Add item to the RAPID36 RAPID-Evolution nested grandchild domain native model grid catalog:
-            gn_rapid36.add_item(item)
+            r_evo_rapid36.add_item(item)
         
         else:
             bucket="r-evo1-eorca025-rapid12-rapid36"
@@ -304,30 +281,27 @@ def create_rapid_evo_collection(
                 # Open dataset from Zarr store:
                 ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}/{var}", consolidated=True)
                 item = create_item_with_zarr_asset(
-                    id=f"noc-rapid-evolution/r_evo_rapid36/gn/{prefix}/{var}",
+                    id=f"noc-rapid-evolution/r_evo_rapid36/{prefix}/{var}",
                     ds=ds,
                     bucket=bucket,
                     platform="gn",
+                    horizontal_grid_resolution="1/36 degree",
                     start_date="1976-01-01",
                     end_date="2023-12-31",
                     prefix=f"{prefix}/{var}",
                     bbox=(-98.530975, 17.34014, -8.879465, 30.447763),
                     collection="noc-rapid-evolution",
-                    config="RAPID36 RAPID-Evolution grandchild nest",
+                    title=f"RAPID-Evolution RAPID36 {prefix}/{var}",
                     operation=operation,
                     endpoint_url=endpoint_url,
                     zarr_format=3,
                 )
                 # Add item to the RAPID36 RAPID-Evolution nested grandchild domain native model grid catalog:
-                gn_rapid36.add_item(item)
+                r_evo_rapid36.add_item(item)
 
-    logging.info(f"Completed: Added Items to NOC STAC Catalog with ID: {gn_rapid36.id}")
+    logging.info(f"Completed: Added Items to STAC Catalog: {r_evo_rapid36}")
 
     # -- Add Nested Catalogs to NOC RAPID-Evolution Collection -- #
-    r_evo_eorca025.add_child(gn_eorca025)
-    r_evo_rapid12.add_child(gn_rapid12)
-    r_evo_rapid36.add_child(gn_rapid36)
-
     rapid_evo_collection.add_child(r_evo_eorca025)
     rapid_evo_collection.add_child(r_evo_rapid12)
     rapid_evo_collection.add_child(r_evo_rapid36)

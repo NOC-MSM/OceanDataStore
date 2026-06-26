@@ -9,7 +9,6 @@ using pystac, Zarr and Icechunk.
 Authors:
     - Ollie Tooth
 """
-import os
 from typing import Optional
 
 import icechunk
@@ -395,6 +394,41 @@ class OceanDataCatalog:
             if self.Items is not None
             else "<span class='ods-none'>no search yet</span>"
         )
+
+        def _extent_dates(col):
+            try:
+                ext = col.extent.temporal.intervals
+                start = ext[0][0].strftime("%Y-%m-%d") if ext[0][0] else "—"
+                end   = ext[0][1].strftime("%Y-%m-%d") if ext[0][1] else "present"
+            except Exception:
+                start, end = "—", "—"
+            return start, end
+
+        rows_html = ""
+        for col in list(self.Catalog.get_all_collections()):
+            start, end = _extent_dates(col)
+            desc = col.description or ""
+            desc_cell = (
+                f"<details class='ods-details'>"
+                f"<summary>Summary</summary>"
+                f"<div class='ods-detail-body'>{desc.replace('**', '')}</div>"
+                f"</details>"
+                if desc else "<span class='ods-none'>—</span>"
+            )
+            active = " <span class='ods-badge' style='font-size:10px'>active</span>" if (
+                self.Collection and col.id == self.Collection.id
+            ) else ""
+            col_title_cell = col.title if col.title else "<span class='ods-none'>—</span>"
+            rows_html += (
+                f"<tr>"
+                f"<td><span class='ods-id'>{col.id}</span>{active}</td>"
+                f"<td>{col_title_cell}</td>"
+                f"<td>{desc_cell}</td>"
+                f"<td>{start}</td>"
+                f"<td>{end}</td>"
+                f"</tr>"
+            )
+
         return (
             f"{_NOC_CSS}"
             f"<div class='ods-card'>"
@@ -404,11 +438,20 @@ class OceanDataCatalog:
             f"  </div>"
             f"  <div class='ods-body'>"
             f"    <div class='ods-stats'>"
+            f"      <div class='ods-stat'>Version&nbsp;<span>{self.Catalog.extra_fields.get('catalog_version', 'None')}</span></div>"
             f"      <div class='ods-stat'>Collections&nbsp;<span>{n_collections}</span></div>"
             f"      <div class='ods-stat'>Active collection&nbsp;<span>{col_name}</span></div>"
             f"      <div class='ods-stat'>Last search&nbsp;<span>{n_items}</span></div>"
             f"    </div>"
-            f"    <div class='ods-url'>URL <a href='{self._stac_url}' target='_blank'>{self._stac_url}</a></div>"
+            f"    <table class='ods-table'>"
+            f"      <thead><tr>"
+            f"        <th>Collection ID</th><th>Title</th><th>Description</th>"
+            f"        <th>From</th><th>To</th>"
+            f"      </tr></thead>"
+            f"      <tbody>{rows_html}</tbody>"
+            f"    </table>"
+            f"    <div class='ods-section-title' style='margin-top:10px'>Source URL</div>"
+            f"    <div class='ods-url'> <a href='{self._stac_url}' target='_blank'>{self._stac_url}</a></div>"
             f"  </div>"
             f"</div>"
         )
@@ -431,9 +474,9 @@ class OceanDataCatalog:
             # Return all Item IDs from the most recent search:
             return [item.id for item in self.Items]
         else:
-            # Return first 25 Item IDs from the current Collection or root Catalog:
+            # Return all Item IDs from the current Collection or root Catalog:
             scope = self.Collection if self.Collection else self.Catalog
-            return [next(scope.get_items(recursive=True), None).id for _ in range(25)]
+            return list(item.id for item in scope.get_items(recursive=True))
 
 
     def summary(self) -> CatalogSummary:
@@ -527,94 +570,9 @@ class OceanDataCatalog:
         return CatalogSummary(display_text=text, display_html=html)
 
 
-    def collection_summary(self) -> CatalogSummary:
-        """
-        Display a summary table of all Collections in the OceanDataCatalog:
-
-        * In Jupyter / Marimo environments a styled HTML table is displayed.
-        * In plain Python / CLI environments a formatted text table is printed instead.
-        """
-        collections = list(self.Catalog.get_all_collections())
-        n = len(collections)
-
-        def _extent_dates(col):
-            try:
-                ext = col.extent.temporal.intervals
-                start = ext[0][0].strftime("%Y-%m-%d") if ext[0][0] else "—"
-                end   = ext[0][1].strftime("%Y-%m-%d") if ext[0][1] else "present"
-            except Exception:
-                start, end = "—", "—"
-            return start, end
-
-        # ----- HTML Output ----- #
-        rows_html = ""
-        for col in collections:
-            start, end = _extent_dates(col)
-            desc = col.description or ""
-            desc_cell = (
-                f"<details class='ods-details'>"
-                f"<summary>Summary</summary>"
-                f"<div class='ods-detail-body'>{desc.replace('**', '')}</div>"
-                f"</details>"
-                if desc else "<span class='ods-none'>—</span>"
-            )
-            active = " <span class='ods-badge' style='font-size:10px'>active</span>" if (
-                self.Collection and col.id == self.Collection.id
-            ) else ""
-            col_title_cell = col.title if col.title else "<span class='ods-none'>—</span>"
-            rows_html += (
-                f"<tr>"
-                f"<td><span class='ods-id'>{col.id}</span>{active}</td>"
-                f"<td>{col_title_cell}</td>"
-                f"<td>{desc_cell}</td>"
-                f"<td>{start}</td>"
-                f"<td>{end}</td>"
-                f"</tr>"
-            )
-
-        html = (
-            f"{_NOC_CSS}"
-            f"<div class='ods-card'>"
-            f"  <div class='ods-header'>"
-            f"    Collections"
-            f"    <span class='ods-badge'>{n} available</span>"
-            f"  </div>"
-            f"  <div class='ods-body'>"
-            f"    <table class='ods-table'>"
-            f"      <thead><tr>"
-            f"        <th>Collection ID</th><th>Title</th><th>Description</th>"
-            f"        <th>From</th><th>To</th>"
-            f"      </tr></thead>"
-            f"      <tbody>{rows_html}</tbody>"
-            f"    </table>"
-            f"  </div>"
-            f"</div>"
-        )
-
-        # ----- Plain-Text Output ----- #
-        col_w = [30, 42, 12, 12]
-        headers = ["Collection ID", "Title", "From", "To"]
-        sep = "+" + "+".join("-" * (w + 2) for w in col_w) + "+"
-        header_row = "| " + " | ".join(h.ljust(col_w[i]) for i, h in enumerate(headers)) + " |"
-        text_lines = [f"Collections — {n} available", sep, header_row, sep]
-        for col in collections:
-            start, end = _extent_dates(col)
-            row = [
-                col.id[:col_w[0]],
-                (col.title or "")[:col_w[1]],
-                start[:col_w[2]],
-                end[:col_w[3]],
-            ]
-            text_lines.append("| " + " | ".join(v.ljust(col_w[i]) for i, v in enumerate(row)) + " |")
-        text_lines.append(sep)
-        text = "\n".join(text_lines)
-
-        return CatalogSummary(display_text=text, display_html=html)
-
-
     def item_summary(self, id: str) -> CatalogSummary:
         """
-        Display detailed metadata for a single OceanDataStore Item.
+        Display the detailed summary for a single OceanDataStore Item.
 
         Searches the current Items list first; if the Item is not found
         there it is fetched directly from the Catalog URL.
@@ -754,7 +712,8 @@ class OceanDataCatalog:
                 f"</table>"
             )
 
-        access_str = f"catalog.open_dataset(id='{id}')"
+        access_ds_str = f"catalog.open_dataset(id='{id}')"
+        access_repo_str = f"catalog.open_repo(id='{id}')"
         _copy_js = (
             "(function(b){"
             "var t=document.createElement('textarea');"
@@ -770,8 +729,12 @@ class OceanDataCatalog:
         access_section = (
             f"<div class='ods-section-title' style='margin-top:10px'>Access</div>"
             f"<div class='ods-code'>"
-            f"  <code>{access_str}</code>"
-            f"  <button class='ods-copy-btn' data-copy=\"{access_str}\" onclick=\"{_copy_js}\">Copy</button>"
+            f"  <code>{access_ds_str}</code>"
+            f"  <button class='ods-copy-btn' data-copy=\"{access_ds_str}\" onclick=\"{_copy_js}\">Copy</button>"
+            f"</div>"
+            f"<div class='ods-code'>"
+            f"  <code>{access_repo_str}</code>"
+            f"  <button class='ods-copy-btn' data-copy=\"{access_repo_str}\" onclick=\"{_copy_js}\">Copy</button>"
             f"</div>"
         )
 
@@ -820,7 +783,7 @@ class OceanDataCatalog:
                 af  = asset.extra_fields
                 loc = f"{af.get('endpoint_url', '')}/{af.get('bucket', '')}/{af.get('prefix', '')}"
                 text_lines.append(f"    {asset_key}: {asset.media_type or ''} — {loc}")
-        text_lines += ["", f"  Access: {access_str}"]
+        text_lines += ["", f"  Access: {access_ds_str}"]
         text = "\n".join(text_lines)
 
         return CatalogSummary(display_text=text, display_html=html)
@@ -828,20 +791,24 @@ class OceanDataCatalog:
 
     def _filter_items(self,
                       items: list[pystac.Item],
-                      platform: Optional[str] = None,
+                      dataset_type: Optional[str] = None,
+                      product_type: Optional[str] = None,
                       variable_name: Optional[str] = None,
                       standard_name: Optional[str] = None,
                       item_name: Optional[str] = None
                       ):
         """
-        Filter Items based on specified platform and variable.
+        Filter Items based on specified dataset type, product type,
+        variable name, and standard name.
 
         Parameters
         ----------
         items : list[pystac.Item]
             List of STAC Items to filter.
-        platform : str, optional
-            Platform name to filter Items by.
+        dataset_type : str, optional
+            Dataset type to filter Items by.
+        product_type : str, optional
+            Product type to filter Items by.
         variable_name : str, optional
             Variable name to filter Items by.
         standard_name : str, optional
@@ -849,8 +816,10 @@ class OceanDataCatalog:
         item_name : str, optional
             Substring to filter Item IDs by.
         """
-        if platform:
-            items = [item for item in items if platform in item.properties.get('platform', '')]
+        if dataset_type:
+            items = [item for item in items if dataset_type in str(item.properties.get('dataset_type', ''))]
+        if product_type:
+            items = [item for item in items if product_type in str(item.properties.get('product_type', ''))]
         if variable_name:
             items = [item for item in items if any(variable_name in var for var in item.properties.get('variables', []))]
         if standard_name:
@@ -859,29 +828,42 @@ class OceanDataCatalog:
             items = [item for item in items if item_name in item.id]
 
         return items
+    
+
+    def clear(self) -> None:
+        """
+        Clear the Active Collection and Items returned from
+        the latest OceanDataCatalog search.
+        """
+        self.Collection = None
+        self.Items = None
 
 
     def search(self,
                collection: Optional[str] = None,
-               platform: Optional[str] = None,
+               dataset_type: Optional[str] = None,
+               product_type: Optional[str] = None,
                variable_name: Optional[str] = None,
                standard_name: Optional[str] = None,
                item_name: Optional[str] = None
                ) -> None:
         """
-        Search the NOC STAC Catalog for Items matching the specified criteria.
+        Search the OceanDataCatalog for Items matching the specified criteria.
 
-        When both a platform and a variable / standard name are provided,
-        the search returns all Items which match both criteria.
+        When both dataset_type / product_type and variable / standard names are
+        provided, the search returns all Items which match both criteria.
 
         Parameters
         ----------
         collection : str, optional
             Collection name to search for. Default is None,
             which searches the entire root Catalog.
-        platform : str, optional
-            Platform name to search for. Default is None,
-            which retrieves Items from all platforms.
+        dataset_type : str, optional
+            Dataset type to search for (e.g., 'model', 'observation').
+            Default is None, which retrieves Items from all dataset types.
+        product_type : str, optional
+            Product type to search for (e.g., 'timeseries', 'climatology').
+            Default is None, which retrieves Items from all product types.
         variable_name : str, optional
             Variable name to search for. Default is None,
             which retrieves all Items.
@@ -901,10 +883,13 @@ class OceanDataCatalog:
         TypeError
             If any of the input parameters are of incorrect type.
         """
+        # -- Validate Inputs -- #
         if not isinstance(collection, (type(None), str)):
             raise TypeError("'collection' must be a string or None.")
-        if not isinstance(platform, (type(None), str)):
-            raise TypeError("'platform' must be a string or None.")
+        if not isinstance(dataset_type, (type(None), str)):
+            raise TypeError("'dataset_type' must be a string or None.")
+        if not isinstance(product_type, (type(None), str)):
+            raise TypeError("'product_type' must be a string or None.")
         if not isinstance(variable_name, (type(None), str)):
             raise TypeError("'variable_name' must be a string or None.")
         if not isinstance(standard_name, (type(None), str)):
@@ -926,7 +911,8 @@ class OceanDataCatalog:
             raise ValueError("Only one of 'variable_name' or 'standard_name' can be specified.")
         else:
             self.Items = self._filter_items(items=items,
-                                            platform=platform,
+                                            dataset_type=dataset_type,
+                                            product_type=product_type,
                                             variable_name=variable_name,
                                             standard_name=standard_name,
                                             item_name=item_name
@@ -939,7 +925,7 @@ class OceanDataCatalog:
             id: str,
         ) -> pystac.Item:
         """
-        Open a STAC Item directly from URL using Item ID.
+        Open a STAC Item directly from the Item ID.
 
         Parameters
         ----------
@@ -951,17 +937,21 @@ class OceanDataCatalog:
         pystac.Item
             STAC Item object.
         """
-        # Define base URL to the root catalog:
-        base_url = os.path.dirname(self._stac_url)
+        # Define components of Item ID path:
+        parts = id.split("/")
+        # Initialise node to root Catalog:
+        node = self.Catalog
 
-        # Construct URL to the Item JSON file:
-        # Assumes Item IDs use path-like representation.
-        id_list = [f"{id_n}/" for id_n in id.split("/")]
-        id_prefix = "".join(id_list[:4])
-        item_url = f"{base_url}/{id_prefix}{id}/{id}.json"
-
-        # Open the Item from the constructed URL:
-        item = pystac.Item.from_file(item_url)
+        # Iterate over ID components:
+        for _, part in enumerate(parts):
+            # Traverse Catalog to child node containing Item:
+            child = node.get_child(part)
+            if child is not None:
+                node = child
+                continue
+            else:
+                # Collect STAC Item from child node:
+                item =  next(node.get_items(id), None)
 
         return item
 

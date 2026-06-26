@@ -40,9 +40,13 @@ class TestOceanDataCatalogSearch:
         with pytest.raises(TypeError, match="'collection' must be a string or None"):
             catalog_instance.search(collection=1234)
 
-    def test_search_platform_type_error(self, catalog_instance):
-        with pytest.raises(TypeError, match="'platform' must be a string or None"):
-            catalog_instance.search(platform=["gn"])
+    def test_search_dataset_type_error(self, catalog_instance):
+        with pytest.raises(TypeError, match="'dataset_type' must be a string or None"):
+            catalog_instance.search(dataset_type=["observation"])
+
+    def test_search_product_type_error(self, catalog_instance):
+        with pytest.raises(TypeError, match="'product_type' must be a string or None"):
+            catalog_instance.search(product_type=["timeseries"])
 
     def test_search_variable_name_type_error(self, catalog_instance):
         with pytest.raises(TypeError, match="'variable_name' must be a string or None"):
@@ -72,15 +76,27 @@ class TestOceanDataCatalogFilterItems:
         result = catalog_instance._filter_items(items=catalog_instance.Items)
         assert result == catalog_instance.Items
 
-    def test_filter_by_platform_match(self, catalog_instance):
+    def test_filter_by_dataset_type_match(self, catalog_instance):
         result = catalog_instance._filter_items(
-            items=catalog_instance.Items, platform="gn"
+            items=catalog_instance.Items, dataset_type="model"
         )
         assert len(result) == 2
 
-    def test_filter_by_platform_no_match(self, catalog_instance):
+    def test_filter_by_dataset_type_no_match(self, catalog_instance):
         result = catalog_instance._filter_items(
-            items=catalog_instance.Items, platform="xy"
+            items=catalog_instance.Items, dataset_type="observation"
+        )
+        assert result == []
+
+    def test_filter_by_product_type_match(self, catalog_instance):
+        result = catalog_instance._filter_items(
+            items=catalog_instance.Items, product_type="timeseries"
+        )
+        assert len(result) == 1
+
+    def test_filter_by_product_type_no_match(self, catalog_instance):
+        result = catalog_instance._filter_items(
+            items=catalog_instance.Items, product_type="climatology"
         )
         assert result == []
 
@@ -105,14 +121,14 @@ class TestOceanDataCatalogFilterItems:
         assert len(result) == 1
         assert "domain" in result[0].id
 
-    def test_filter_combined_platform_and_variable(self, catalog_instance):
+    def test_filter_combined_dataset_type_and_variable(self, catalog_instance):
         result = catalog_instance._filter_items(
-            items=catalog_instance.Items, platform="gn", variable_name="tos_con"
+            items=catalog_instance.Items, dataset_type="model", variable_name="tos_con"
         )
         assert len(result) == 1
 
     def test_filter_empty_items_list(self, catalog_instance):
-        result = catalog_instance._filter_items(items=[], platform="gn")
+        result = catalog_instance._filter_items(items=[], dataset_type="model")
         assert result == []
 
 
@@ -125,18 +141,14 @@ class TestOceanDataCatalogSummary:
         result = catalog_instance.summary()
         assert "2" in repr(result)
 
+    def test_summary_contains_collection_id(self, catalog_instance):
+        result = catalog_instance.summary()
+        assert "noc-npd-era5" in repr(result)
+
     def test_summary_raises_without_items(self, catalog_instance):
         catalog_instance.Items = None
         with pytest.raises(ValueError, match="No Items returned"):
             catalog_instance.summary()
-
-    def test_collection_summary_returns_catalog_summary(self, catalog_instance):
-        result = catalog_instance.collection_summary()
-        assert isinstance(result, CatalogSummary)
-
-    def test_collection_summary_contains_collection_id(self, catalog_instance):
-        result = catalog_instance.collection_summary()
-        assert "noc-npd-era5" in repr(result)
 
 
 class TestOceanDataCatalogItemSummary:
