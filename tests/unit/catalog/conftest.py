@@ -87,6 +87,8 @@ def catalog_instance(mock_catalog):
                 "sea_surface_salinity",
             ],
             "title": "Test ERA5 Item",
+            "dataset_type": "model",
+            "product_type": "timeseries",
             "start_datetime": "1976-01-01",
             "end_datetime": "2020-12-31",
         },
@@ -98,6 +100,8 @@ def catalog_instance(mock_catalog):
             "variables": [],
             "variable_standard_names": [],
             "title": "Domain Item",
+            "dataset_type": "model",
+            "product_type": "ancillary",
         },
     )
     catalog.Items = [item_era5, item_domain]

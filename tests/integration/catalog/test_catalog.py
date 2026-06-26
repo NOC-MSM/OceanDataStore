@@ -47,7 +47,7 @@ def test_available_items(catalog):
     assert all(isinstance(i, str) for i in items)
 
 def test_available_search_items(catalog):
-    catalog.search(platform="gn")
+    catalog.search(item_name="domain_cfg")
     items = catalog.available_items
     assert isinstance(items, list)
     assert all(isinstance(i, str) for i in items)
