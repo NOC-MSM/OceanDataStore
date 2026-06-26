@@ -40,9 +40,10 @@ def main():
     
     logging.info(f"In Progress: Sending OISSTv2.1 daily climatology for {start_yr}-{end_yr} to Icechunk...")
     # Open OISSTv2 dataset:
-    filepath = f"/dssgfs01/scratch/otooth/npd_data/observations/OISST/climatology/oisst_climatology_{start_yr}-{end_yr}.nc"
-    ds = xr.open_dataset(filepath, engine="h5netcdf")
-
+    filepaths = [f"/dssgfs01/scratch/otooth/npd_data/observations/OISST/icec.day.mean.ltm.{start_yr}-{end_yr}.nc",
+                 f"/dssgfs01/scratch/otooth/npd_data/observations/OISST/sst.day.mean.ltm.{start_yr}-{end_yr}.nc"
+                ]
+    ds = xr.merge([xr.open_dataset(filepath, decode_times=False).drop_vars("valid_yr_count") for filepath in filepaths], compat="no_conflicts")
     # Open OISSTv2 land-sea mask dataset:
     ds_mask = xr.open_dataset("http://psl.noaa.gov/thredds/dodsC/Datasets/noaa.oisst.v2.highres/lsmask.oisst.nc", decode_times=False)
     ds_mask = ds_mask.squeeze(drop=True).rename({"lon": "longitude", "lat": "latitude", "lsmask": "mask"})
@@ -51,7 +52,7 @@ def main():
     )
 
     # Standardise coordinate dimension names:
-    ds = ds.rename({"lon": "longitude", "lat": "latitude", "dayofyear": "day"})
+    ds = ds.rename({"lon": "longitude", "lat": "latitude", "time": "day"})
 
     # Update longitude coordinates to be in the range [-180, 180]:
     ds = ds.assign_coords(
@@ -59,21 +60,21 @@ def main():
     )
     ds = ds.sortby("longitude")
 
-    # Add day of year coordinate (1-366):
+    # Add day of year coordinate (1-365):
     ds = ds.assign_coords(
-        day=np.arange(1, 367)
+        day=np.arange(1, 366)
     )
 
     # Rename variables to standard names:
-    ds = ds.rename({"sst_mean": "tos_mean",
-                    "sst_p10": "tos_p10",
-                    "sst_p90": "tos_p90",
+    ds = ds.rename({"sst": "tos",
+                    "icec": "siconc",
+                    "climatology_bounds": "time_bnds",
                     })
 
     # Add standard names and units:
-    ds["tos_mean"].attrs["long_name"] = "Daily Mean Sea Surface Temperature Climatology"
-    ds["tos_p10"].attrs["long_name"] = "Daily 10th Percentile Sea Surface Temperature Climatology"
-    ds["tos_p90"].attrs["long_name"] = "Daily 90th Percentile Sea Surface Temperature Climatology"
+    ds["tos"].attrs["standard_name"] = "sea_surface_temperature"
+    ds["siconc"].attrs["standard_name"] = "sea_ice_area_fraction"
+    ds["siconc"].attrs["units"] = "1"
 
     # Add OISSTv2 land mask:
     ds["mask"] = ds_mask["mask"]
@@ -89,11 +90,7 @@ def main():
     ds['cell_area'] = compute_cell_area(ds)
 
     # Update time bounds to reflect climatological period:
-    ds['time_bnds'] = xr.DataArray(
-        np.zeros((ds['day'].size, 2), dtype='datetime64[ns]'),
-        dims=('day', 'bnds'),
-        coords={'day': ds['day']},
-    )
+    ds['time_bnds'] = ds['time_bnds'].astype('datetime64[ns]')
     ds['time_bnds'].data[:, 0] = (np.datetime64(f'{start_yr}-01', 'M') + (np.timedelta64(1, 'D') * np.arange(ds['day'].size))).astype('datetime64[ns]')
     ds['time_bnds'].data[:, 1] = (np.datetime64(f'{end_yr}-01', 'M') + (np.timedelta64(1, 'D') * np.arange(ds['day'].size))).astype('datetime64[ns]')
     ds.time_bnds.attrs.clear()
@@ -103,7 +100,7 @@ def main():
     ds = ds.assign_attrs({
         "Conventions": "CF-1.5",
         "title": f"NOAA OISSTv2.1 Daily Climatology ({start_yr}-{end_yr})",
-        "description": f"NOAA 1/4° Daily Optimum Interpolation Sea Surface Temperature (OISST) version 2.1 daily sea surface temperature climatology ({start_yr}-{end_yr}).",
+        "description": f"NOAA 1/4° Daily Optimum Interpolation Sea Surface Temperature (OISST) version 2.1 daily sea surface temperature and sea ice fraction climatology ({start_yr}-{end_yr}).",
         "source": "Numerical models: Optimal Interpolation. In-situ observations: ICOADS-D R3.0.2, Argo GDAC. Satellite observations: Advanced Very High Resolution Radiometer (AVHRR).",
         "dataset_type": "observation",
         "product_type": "climatology",
