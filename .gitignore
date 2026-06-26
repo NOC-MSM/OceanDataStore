@@ -10,6 +10,9 @@ __pycache__/
 *noc-model-stac/
 *noc-stac/
 
+# Dask
+*dask-scratch-space/
+
 # SLURM output files
 slurm-*.out
 
