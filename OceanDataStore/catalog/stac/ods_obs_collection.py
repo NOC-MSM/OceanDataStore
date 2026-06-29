@@ -532,3 +532,92 @@ def create_era5_collection() -> pystac.Collection:
     logging.info(f"Completed: Added Items to STAC Collection with ID: {era5_collection.id}")
 
     return era5_collection
+
+
+def create_ostia_collection() -> pystac.Collection:
+    """
+    Create the OSTIA STAC Collection.
+    
+    Returns:
+    -------
+    ostia_collection : pystac.Collection
+        OSTIA STAC Collection.
+    """
+    # ==== Define OSTIA Collection ==== #
+    # Define the spatial extent for the collection:
+    spatial_extent = pystac.SpatialExtent(bboxes=[[-44.975, 13.975, 31.025, 84.975]])
+
+    # Define the current temporal extent for the collection:
+    collection_interval = sorted([datetime.datetime(year=1993, month=1, day=1), datetime.datetime(year=2024, month=12, day=31)])
+    temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
+
+    # Define the OSTIA Collection:
+    ostia_collection = pystac.Collection(
+        id="ostia",
+        title="OSTIA Collection",
+        description="**About:**\n\nCollection of OSTIA Sea Surface Datasets.\n\n**More Information:**\n - [OSTIA](https://doi.org/10.48670/moi-00165)",
+        extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
+        license="Copernicus Marine Environment Monitoring Service Service Level Agreement (SLA)",
+        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="OceanDataStore", status="ongoing", update_frequency="quarterly", last_data_update="2025-11-01"),
+        keywords=["OSTIA", "North Atlantic", "observation", "sea surface temperature", "sea ice concentration"],
+        providers=[
+            pystac.Provider(
+                name="Met Office",
+                description="Met Office, United Kingdom.",
+                roles=[pystac.ProviderRole.PRODUCER],
+                url="https://www.metoffice.gov.uk",
+            ),
+            pystac.Provider(
+                name="Copernicus Marine Service",
+                description="Copernicus Marine Service, Mercator Ocean International, France.",
+                roles=[pystac.ProviderRole.LICENSOR],
+                url="https://marine.copernicus.eu",
+            ),
+            pystac.Provider(
+                name="JASMIN",
+                description="JASMIN Environmental Data Analysis Facility (United Kingdom).",
+                roles=[pystac.ProviderRole.HOST],
+                url="https://jasmin.ac.uk"
+            )
+        ],
+    )
+
+    logging.info(f"Completed: Created STAC Collection: {ostia_collection}")
+
+    # -- Add Items to OSTIA Collection -- #
+    bucket = "ostia"
+    for prefix in ["ostia_rep_na_1991_2020_daily_climatology",
+                   "ostia_rep_na_1996_2025_daily_climatology",
+                   "ostia_rep_na_daily_timeseries",
+                   "ostia_nrt_na_daily_timeseries",
+                   "ostia_rep_na_daily_spatial",
+                   "ostia_nrt_na_daily_spatial"
+                   ]:
+        # Open dataset from Icechunk repository:
+        ds = open_icechunk_store(bucket=bucket, prefix=prefix, branch="main")
+
+        if "19" in prefix:
+            start_date = f"{prefix.split('_')[3]}-01-01"
+            end_date = f"{prefix.split('_')[4]}-12-31"
+        elif "rep" in prefix:
+            start_date = "1981-10-01"
+            end_date = "2025-12-18"
+        else:
+            start_date = "2025-01-01"
+            end_date = "2026-06-28"
+
+        item = create_item_with_icechunk_asset(
+            ds=ds,
+            id=f"{bucket}/{prefix}",
+            bucket=bucket,
+            prefix=prefix,
+            start_date=start_date,
+            end_date=end_date,
+            collection=bucket
+            )
+        # Add item to the OSTIA Collection:
+        ostia_collection.add_item(item)
+
+    logging.info(f"Completed: Added Items to STAC Collection with ID: {ostia_collection.id}")
+
+    return ostia_collection

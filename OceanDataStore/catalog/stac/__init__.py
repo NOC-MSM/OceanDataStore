@@ -13,7 +13,8 @@ from OceanDataStore.catalog.stac.ods_obs_collection import (
     create_en4_collection,
     create_armor3d_collection,
     create_hadisst_collection,
-    create_era5_collection
+    create_era5_collection,
+    create_ostia_collection
 )
 
 __all__ = (
@@ -26,5 +27,6 @@ __all__ = (
     "create_en4_collection",
     "create_armor3d_collection",
     "create_hadisst_collection",
-    "create_era5_collection"
+    "create_era5_collection",
+    "create_ostia_collection",
 )

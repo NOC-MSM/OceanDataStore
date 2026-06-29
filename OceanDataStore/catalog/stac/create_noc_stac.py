@@ -25,7 +25,8 @@ from OceanDataStore.catalog.stac import (
     create_en4_collection,
     create_armor3d_collection,
     create_hadisst_collection,
-    create_era5_collection
+    create_era5_collection,
+    create_ostia_collection
 )
 from OceanDataStore.cli import initialise_logging
 
@@ -93,6 +94,10 @@ def create_noc_stac():
     # -- Add ERA5 Collection to NOC STAC Catalog -- #
     era5_collection = create_era5_collection()
     noc_stac.add_child(era5_collection)
+
+    # -- Add OSTIA Collection to NOC STAC Catalog -- #
+    ostia_collection = create_ostia_collection()
+    noc_stac.add_child(ostia_collection)
 
     logging.info(f"Completed: Added Ocean Observation Collections to NOC STAC: {noc_stac.id}")
 
