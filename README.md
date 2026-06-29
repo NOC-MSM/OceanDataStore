@@ -1,83 +1,143 @@
-# OceanDataStore
-
 <p align="left">
-    <img src="./docs/docs/assets/icons/noc_logo_black.png" alt="Logo" width="210" height="75">
-    &nbsp
-    &nbsp
-    <img src="./docs/docs/assets/icons/OceanDataStore_logo.png" alt="Logo" width="170" height="110">
+    <img src="./docs/docs/assets/icons/noc_logo_black.png" alt="National Oceanography Centre logo" width="190" height="65">
+    &nbsp;&nbsp;
+    <img src="./docs/docs/assets/icons/OceanDataStore_logo.png" alt="OceanDataStore logo" width="150" height="100">
 </p>
 
-*A library designed to streamline writing, updating & accessing ocean model and observational data stored in cloud object storage.*
+# **OceanDataStore**
 
-## Installation
+[![Xarray](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydata/xarray/refs/heads/main/doc/badge.json)](https://xarray.dev)
+[![Powered by Pixi](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json)](https://pixi.sh)
+[![Tests](https://github.com/NOC-MSM/OceanDataStore/actions/workflows/ci_tests.yml/badge.svg?branch=dev)](https://github.com/NOC-MSM/OceanDataStore/actions/workflows/ci_tests.yml?query=branch%3Adev)
+[![Docs](https://github.com/NOC-MSM/OceanDataStore/actions/workflows/ci_docs.yml/badge.svg?branch=dev)](https://github.com/NOC-MSM/OceanDataStore/actions/workflows/ci_docs.yml?query=branch%3Adev)
 
-We recommend downloading and installing **OceanDataStore** into a new virtual environment via GitHub.
+**OceanDataStore** is an open-source Python library for creating, publishing, discovering, and accessing cloud-native ocean datasets.
 
-After activating a new virtual environment, pip install **OceanDataStore** from GitHub:
-```{bash}
+**OceanDataStore** enables ocean modelling and observational communities to work with Analysis-Ready, Cloud-Optimised (**ARCO**) datasets stored in object storage, including a:
+
+* Command Line Interface (**CLI**) to convert traditional ocean datasets into scalable cloud formats such as Zarr stores and Icechunk repositories.
+
+* Intuitive **OceanDataCatalog** API to discover and access datasets using Spatio-Temporal Asset Catalog (**STAC**) metadata.
+
+
+## **Why OceanDataStore?**
+
+Traditional ocean datasets are often distributed as collections of thousands of NetCDF files stored on HPC systems or remote archives. Accessing these datasets can require substantial data transfers, complex file management, and bespoke workflows.
+
+**OceanDataStore** adopts a cloud-native approach where datasets are stored in **ARCO** formats and described through a searchable **STAC** catalogue.
+
+This enables users to:
+
+* Access only the variables, time periods, and spatial domains required for analysis.
+* Open datasets directly as `xarray.Dataset` objects without downloading complete archives.
+* Work seamlessly with the scientific Python ecosystem, including xarray, dask, and zarr.
+* Build scalable, reproducible workflows for ocean science.
+
+## **Key Features**
+
+🌊 **Discover and access ocean datasets with OceanDataCatalog**
+* Search STAC catalogs for available ocean model and observational datasets.
+* Explore dataset metadata and available variables.
+* Open cloud-hosted datasets directly as lazy `xarray.Dataset` objects.
+
+☁️ **Create and publish ARCO ocean datasets**
+* Convert collections of NetCDF files into cloud-native Zarr datasets.
+* Write directly to S3-compatible object storage.
+* Use Dask for parallel processing of large simulations and observational products.
+
+🔄 **Support reproducible ocean data workflows**
+* Integrate ocean model output and observations through a common access interface.
+* Develop scalable model validation workflows.
+* Facilitate FAIR data practices for ocean science.
+
+
+## **Installation**
+We recommend installing **OceanDataStore** within a dedicated Python environment using venv, conda, or mamba.
+Install the latest development version directly from GitHub:
+
+```bash
 pip install git+https://github.com/NOC-MSM/OceanDataStore.git
 ```
 
-**Note:** we strongly recommend installing **OceanDataStore** into a new virtual environment using either ``venv`` or ``conda / mamba``.
+### **Quick Start**
 
-## Examples
+**1. Create and Publish an ARCO Dataset**
 
-### Writing Ocean Model Data to the Cloud...
+**OceanDataStore** provides command-line tools for converting collections of NetCDF files into Zarr datasets stored in S3-compatible object storage.
 
-* To create a new Zarr store in an S3-compatible object store using a large number of files, we can use [dask](https://www.dask.org) with the `send_to_zarr` command:
+For example, a large ocean model simulation can be converted into a cloud-native dataset using:
 
 ```bash
-ods send_to_zarr -f /path/to/files*.nc -c credentials.json -b bucket_name -p prefix \
-                 -gf /path/to/domain_cfg.nc -uc '{"lon":"lon_new", "lat":"lat_new"}' \
-                 -cs '{"x":2160, "y":1803}' -dc dask_config.json -zv 3
+ods send_to_zarr \
+    -f /path/to/files*.nc \
+    -c credentials.json \
+    -b my_bucket \
+    -p my_ocean_model \
+    -cs '{"x": 2160, "y": 1803}' \
+    -dc dask_config.json \
+    -zv 3
 ```
 
-For examples of how to implement the commands in **OceanDataStore CLI** in your own workflows, see the bash scripts in the `examples` directory.
+More complete publishing workflows and examples are available in the `examples` directory and documentation.
 
-### Accessing Ocean Data in the Cloud...
 
-* To access monthly-mean sea surface temperature data from the NOC Near-Present Day eORCA1 ERA5v1 (1-degree) global ocean sea-ice hindcast between 2004-2010 as an `xarray.Dataset`:
+**2. Discover and Access Ocean Datasets**
+
+**OceanDataCatalog** provides a Python interface for searching, exploring, and opening datasets described by **STAC** metadata.
 
 ```python
-# Initialise default NOC STAC:
+from oceandatastore import OceanDataCatalog
+
+# Connect to the NOC STAC catalog:
 catalog = OceanDataCatalog(catalog_name="noc-stac")
 
-# Open ocean model data as xarray.Dataset:
-catalog.open_dataset(id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/T1m",
-                     variable_names=["tos_con"]
-                     start_datetime='2004-01',
-                     end_datetime='2008-12',
-                    )
+# Search the catalog:
+catalog.search(
+    collection="noc-npd-era5"
+)
+
+# Open a dataset directly as an xarray.Dataset:
+ds = catalog.open_dataset(
+    id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/T1m",
+    variable_names=["tos_con"],
+    start_datetime="2004-01",
+    end_datetime="2008-12",
+)
 ```
 
-## Documentation
+Since datasets are opened lazily using xarray and dask, analyses can scale from a laptop to HPC and cloud environments.
 
-To learn more about OceanDataStore, click [**here**](https://noc-msm.github.io/OceanDataStore/) to explore the documentation.
 
-## OceanDataStore CLI Reference
 
-### Mandatory Arguments
+## **Scientific Use Cases**
 
-| Long version | Short Version | Description |
-|---|---|---|
-| action | | Specify the action: `send` to send a file or `update` to update an existing object. |
-| `--filepaths` | `-f` | Paths to the files to send or update. |
-| `--credentials` | `-c` | Path to the JSON file containing the credentials for the object store. |
-| `--bucket` | `-b` | Bucket name. |
+**OceanDataStore** supports a broad range of ocean science workflows, including:
 
-### Optional Arguments
+**Ocean Model Validation**
+* Compare ocean simulations against observational products using a common data access pattern.
 
-| Flag | Short Version | Description |
-|---|---|---|
-| `--prefix` | `-p` | Object prefix (default=`None`). |
-| `--append-dim` | `-ad` | Append dimension (default=`time_counter`). |
-| `--variables` | `-v` | Variables to send (default=`None`). If `None`, all variables will be sent. |
-| `--variable-stores` | `-vs` | Flag to send variables to independent stores. |
-| `--chunk-strategy` | `-cs` | Chunk strategy as a JSON string (default=`None`). E.g., '{\"time_counter\": 1, \"x\": 100, \"y\": 100}' |
-| `--dask-configuration` | `-dc` | Path to the JSON file defining the Dask Local Cluster configuration (default=`None`). |
-| `--grid-filepath` | `-gf` | File path to model grid file containing domain information (default=`None`). |
-| `--update-coords` | `-uc` | Coordinate dimensions to update as a JSON string (default=`None`). E.g., '{\"nav_lon\": \"glamt\", \"nav_lat\": \"gphit\"}' |
-| `--attributes` | `-at` | Attributes to add to the dataset as a JSON string. E.g., '{\"title\": \"my_dataset\"}' |
-| `--zarr-version` | `-zv` | Zarr version used to create the zarr store (default=`3`). Options are `2` (v2) or `3` (v3). |
+* Build reproducible evaluation workflows across multiple models and experiments.
 
----
+**Cloud-Native Model Archives**
+* Publish large-scale ocean simulations as FAIR, discoverable datasets without sharing raw file archives.
+
+**Ocean Observations**
+* Access observational products alongside model output through a single catalog interface.
+
+
+### **Documentation**
+Documentation, examples, and API references are available [**here**](https://noc-msm.github.io/OceanDataStore/)
+
+
+## **Contributing**
+**OceanDataStore** is under active development and we welcome feedback and contributions from the ocean modelling, observational, and wider marine data communities.
+
+
+## **Funding**
+The ongoing development of OceanDataStore is funded by the following projects: 
+
+- **AtlantiS**: [Atlantic Climate and Environment Strategic Science](https://atlantis.ac.uk)
+
+## **Contact**
+
+Ollie Tooth (oliver.tooth@noc.ac.uk)
