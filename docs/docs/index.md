@@ -3,7 +3,8 @@
 <img src="./assets/icons/OceanDataStore_logo.png" alt="Logo"  width="180" height="120"/>
 
 ## About
-**OceanDataStore** is a Python library designed to streamline writing, updating and accessing ocean model and observational data stored in cloud object storage.
+
+**OceanDataStore** is an open-source Python library for creating, publishing, discovering, and accessing cloud-native ocean datasets.
 
 ### :material-cloud-upload: Writing Ocean Data to Cloud Object Storage
 
@@ -35,6 +36,12 @@ To get started exploring our publicly available ocean data, visit our interactiv
 We recommend downloading and installing **OceanDataStore** into a new virtual environment via GitHub.
 
 After activating a new virtual environment, pip install **OceanDataStore** from GitHub:
+```{bash}
+pip install oceandatastore
+```
+
+Alternatively, users can install **OceanDataStore** (including the latest commits) via GitHub:
+
 ```{bash}
 pip install git+https://github.com/NOC-MSM/OceanDataStore.git
 ```

@@ -49,18 +49,12 @@ Catalog: noc-model-stac
     |
     ├── Catalog: npd-eorca1-era5v1
     |   └── Catalog: r1i1c1f1
-    |       ├── Catalog: gn
-    |       └── Catalog: tn
     |
     ├── Catalog: npd-eorca025-era5v1
     |   └── Catalog: r1i1c1f1
-    |       ├── Catalog: gn
-    |       └── Catalog: tn
     |
     └── Catalog: npd-eorca12-era5v1
         └── Catalog: r1i1c1f1
-            ├── Catalog: gn
-            └── Catalog: tn
 
 ```
 
@@ -70,9 +64,6 @@ The `noc-npd-era5` **Collection** contains three **Catalogs** corresponding to t
 
 Each `npd-eorca{}-era5v1` **Catalog** in-turn contains one or more variant **Catalogs** containing the outputs associated with an individual ocean sea-ice hindcast simulation. Variant labels use a similar nomenclature to the Coupled Model Intercomparison Project (CMIP); `r1i1c1f1` corresponds to Realisation = 1, Initialisation = 1, Configuration = 1, and Forcing = 1, where integers > 1 correspond to a variant of the original ocean sea-ice configuration.
 
-In the case of NOC Near-Present Day, each variant **Catalog** (e.g., `r1i1c1f1`) contains two **Catalogs** used to differentiate between ocean model outputs stored on their native global model grid `gn` and those diagnostics stored along transects of the native model grid `tn`.
-
-Inside each of the `gn` and `tn` **Catalogs** are STAC **Items** corresponding to ocean model output datasets. These are named according to both the location on the native NEMO model grid where variables are stored and the temporal frequency at which they are output by the NEMO ocean model (see table below).
 
 | Example     | Grid               |   Frequency   |
 | ----------- | ------------------ | --------------|
@@ -84,7 +75,7 @@ Inside each of the `gn` and `tn` **Catalogs** are STAC **Items** corresponding t
 
 To improve the accesibility of NOC ocean model assets, each **Item** is given a unique path-like identifier describing its relationship within the wider `noc-model-stac` **Catalog**.
 
-For example, `noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/T1y` identifies the **Item** containing monthly-mean scalar variables (e.g., conservative temperature) for the eORCA1-ERA5v1 (1-degree) simulation contained in the NOC Near-Present Day ERA-5 **Collection**.
+For example, `noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/T1y` identifies the **Item** containing monthly-mean scalar variables (e.g., conservative temperature) for the eORCA1-ERA5v1 (1-degree) simulation contained in the NOC Near-Present Day ERA-5 **Collection**.
 
 ## How To...
 
@@ -124,7 +115,9 @@ Users can search the root **Catalog** using any combination of the following par
 
 * `collection` : Activity **Collection** name (e.g., `noc-npd-era5`).
 
-* `platform` : Platform **Catalog** name (e.g., `gn`).
+* `dataset_type` : Type of Dataset name (e.g., `observation`, `model`, `reanalysis`).
+
+* `product_type` : Type of Data Product (e.g., `climatology`, `timeseries`, `ancillary`)
 
 * `variable_name` : Variable name contained in **Item** **Asset** (e.g., `tos_con`).
 
@@ -139,7 +132,7 @@ Users can search the root **Catalog** using any combination of the following par
 Once we have searched the `noc-model-stac` and found the unique identifier of the **Item** we would like to explore further, we can then open its associated **Asset** as a lazy `xarray.Dataset` using the `.open_dataset()` method:
 
 ```python
-catalog.open_dataset(id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/T1m",
+catalog.open_dataset(id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/T1m",
                      variable_names=["tos_con", "sos_abs"]
                      start_datetime='2004-01',
                      end_datetime='2008-12',

@@ -32,18 +32,6 @@ theme:
     # Light Mode (system preference)
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      toggle:
-        icon: material/toggle-switch
-        name: Light Mode
-      primary: red
-      accent: light blue
-
-    # Dark Mode (system preference)
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      toggle:
-        icon: material/toggle-switch-off-outline
-        name: Dark Mode
       primary: red
       accent: light blue
 
@@ -74,16 +62,19 @@ markdown_extensions:
 
 nav:
   - Getting Started: index.md
-  - CLI:
+  - Publish Data:
     - User Guide: cli_guide.md
-  - OceanDataCatalog:
+  - Explore Data: catalog.md
+  - Access Data:
     - User Guide: catalog_guide.md
     - Examples:
-      - OceanDataCatalog_example.ipynb
-  - Catalog Browser: catalog.md
+      - OceanDataCatalog + Models: OceanDataCatalog_example.ipynb
+      - OceanDataCatalog + Observations: OceanDataCatalog_obs_example.ipynb
   - Reference:
     - OceanDataCatalog: catalog_reference.md
     - CLI: cli_reference.md
+  - Contributing: contributing.md
+  - Release Notes: release_notes.md
 
 plugins:
   - search
