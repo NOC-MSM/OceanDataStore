@@ -22,11 +22,11 @@ def catalog():
 
 @pytest.fixture(scope="module")
 def icechunk_item_id():
-    return "noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/T1y"
+    return "noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/T1y"
 
 @pytest.fixture(scope="module")
 def zarr_item_id():
-    return "noc-npd-jra55/npd-eorca1-jra55v1/r1i1c1f1/gn/T1y"
+    return "noc-npd-jra55/npd-eorca1-jra55v1/r1i1c1f1/T1y"
 
 def test_catalog_initialization(catalog):
     assert catalog.Catalog is not None
