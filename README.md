@@ -52,10 +52,16 @@ This enables users to:
 
 
 ## **Installation**
-We recommend installing **OceanDataStore** within a dedicated Python environment using venv, conda, or mamba.
-Install the latest development version directly from GitHub:
+We recommend downloading and installing **OceanDataStore** into a new virtual environment via GitHub.
 
-```bash
+After activating a new virtual environment, pip install **OceanDataStore** from GitHub:
+```{bash}
+pip install oceandatastore
+```
+
+Alternatively, users can install **OceanDataStore** (including the latest commits) via GitHub:
+
+```{bash}
 pip install git+https://github.com/NOC-MSM/OceanDataStore.git
 ```
 
