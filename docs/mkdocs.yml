@@ -8,7 +8,7 @@ edit_uri: edit/main/docs/
 theme:
   name: material
   language: en
-  logo: assets/icons/oceandatastore_logo.png
+  logo: assets/icons/OceanDataStore_logo.png
   favicon: assets/icons/favicon.ico
   custom_dir: overrides
   icon:
