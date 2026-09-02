@@ -1,0 +1,132 @@
+{% extends "main.html" %}
+
+{% block container %}
+<div class="md-content--home">
+
+  <!-- ================================================================
+       Hero banner
+       ================================================================ -->
+  <section class="ods-hero">
+    <div class="ods-hero__inner">
+
+      <div class="ods-hero__logos">
+        <img src="{{ 'assets/icons/noc_logo.png' | url }}" alt="National Oceanography Centre" style="filter: none; height: 50px;" />
+        <img src="{{ 'assets/icons/atlantis_logo.svg' | url }}" alt="AtlantiS" style="filter: none; height: 40px;" />
+        <img src="{{ 'assets/icons/bodc_logo_dark.png' | url }}" alt="British Oceanographic Data Centre" style="filter: none; height: 50px;" />
+      </div>
+
+      <h1 class="ods-hero__title">OceanDataStore</h1>
+
+      <p class="ods-hero__subtitle">
+        <strong>A Cloud Data Platform for Advancing Ocean Science</strong>
+      </p>
+
+      <div class="ods-hero__badges">
+        <a href="https://pypi.org/project/oceandatastore" target="_blank" rel="noopener">
+          <img src="https://img.shields.io/pypi/v/oceandatastore?logo=pypi&logoColor=ffde57&label=pypi&style=for-the-badge"
+               alt="PyPI version" />
+        </a>
+        <a href="https://github.com/NOC-MSM/OceanDataStore" target="_blank" rel="noopener">
+          <img src="https://img.shields.io/github/stars/NOC-MSM/OceanDataStore?style=for-the-badge&logo=github"
+               alt="GitHub stars" />
+        </a>
+        <a href="https://github.com/NOC-MSM/OceanDataStore/blob/main/LICENSE" target="_blank" rel="noopener">
+          <img src="https://img.shields.io/github/license/NOC-MSM/OceanDataStore?style=for-the-badge"
+               alt="License" />
+        </a>
+      </div>
+
+      <div class="ods-hero__cta">
+        <a class="ods-btn ods-btn--primary" href="{{ 'getting_started/' | url }}">
+          Get Started
+        </a>
+        <a class="ods-btn ods-btn--secondary" href="{{ 'overview/' | url }}">
+          Overview
+        </a>
+      </div>
+
+      <img class="ods-hero__image"
+           src="{{ 'assets/images/oceandatastore_noc_npd.png' | url }}"
+           alt="Global sea surface temperature — NOC NPD" />
+
+    </div>
+  </section>
+
+  <!-- ================================================================
+       Feature cards
+       ================================================================ -->
+  <section class="ods-features">
+    <h2 class="ods-features__heading">Publish · Discover · Analyse</h2>
+    <div class="ods-features__grid">
+
+      <div class="ods-feature-card">
+        <span class="ods-feature-card__icon">☁️</span>
+        <h3 class="ods-feature-card__title">Publish</h3>
+        <p class="ods-feature-card__desc">
+          Transform local NetCDF files into Analysis-Ready Cloud-Optimised (ARCO) datasets using <strong>Zarr</strong> and
+          <strong>Icechunk</strong> formats.
+        </p>
+        <a class="ods-feature-card__link" href="{{ 'publish_userguide/' | url }}">
+          Publish →
+        </a>
+      </div>
+
+      <div class="ods-feature-card">
+        <span class="ods-feature-card__icon">🗂️</span>
+        <h3 class="ods-feature-card__title">Discover</h3>
+        <p class="ods-feature-card__desc">
+          Discover ocean model and observational data using the <strong>OceanDataCatalog</strong> and <strong>STAC</strong>.
+        </p>
+        <a class="ods-feature-card__link" href="{{ 'catalog/' | url }}">
+          Discover →
+        </a>
+      </div>
+
+      <div class="ods-feature-card">
+        <span class="ods-feature-card__icon">🌊</span>
+        <h3 class="ods-feature-card__title">Analyse</h3>
+        <p class="ods-feature-card__desc">
+          Leverage <strong>domain-aware</strong> scientific data structures for reproducible
+          ocean analysis.
+        </p>
+        <a class="ods-feature-card__link" href="{{ 'catalog_userguide/' | url }}">
+          Analyse →
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================================================================
+       Quick-start install
+       ================================================================ -->
+  <section class="ods-quickstart">
+    <div class="ods-quickstart__inner">
+      <h2 class="ods-quickstart__heading">⚡ Quick Install</h2>
+
+      <div class="ods-copy-block">
+        <pre><code>pip install oceandatastore</code></pre>
+        <button class="ods-copy-btn" aria-label="Copy to clipboard"
+          onclick="(function(b){var t=b.closest('.ods-copy-block').querySelector('code');navigator.clipboard.writeText(t.textContent).then(function(){b.innerHTML='<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path d=\'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z\'/></svg>';setTimeout(function(){b.innerHTML='<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path d=\'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z\'/></svg>'},1500)});})(this)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+      </div>
+
+      <p style="margin-top: 14px; font-size: 0.875rem; color: inherit;">
+        Or install the latest commits from GitHub:
+      </p>
+
+      <div class="ods-copy-block">
+        <pre><code>pip install git+https://github.com/NOC-MSM/OceanDataStore.git</code></pre>
+        <button class="ods-copy-btn" aria-label="Copy to clipboard"
+          onclick="(function(b){var t=b.closest('.ods-copy-block').querySelector('code');navigator.clipboard.writeText(t.textContent).then(function(){b.innerHTML='<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path d=\'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z\'/></svg>';setTimeout(function(){b.innerHTML='<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'><path d=\'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z\'/></svg>'},1500)});})(this)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button>
+      </div>
+
+      <p style="margin-top: 20px; font-size: 0.875rem;">
+        For further guidance, see the <strong><a href="{{ 'getting_started/' | url }}">Getting Started</a></strong> page.
+      </p>
+    </div>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block footer %}{{ super() }}{% endblock %}

@@ -1,3 +1,3 @@
-# OceanDataCatalog API :material-cloud-download:
+# OceanDataCatalog API :material-cloud-download: :material-cog:
 
 ::: OceanDataStore.catalog.OceanDataCatalog

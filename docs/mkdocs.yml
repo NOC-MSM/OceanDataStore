@@ -8,15 +8,15 @@ edit_uri: edit/main/docs/
 theme:
   name: material
   language: en
-  logo: assets/icons/noc_logo.png
+  logo: assets/icons/oceandatastore_logo.png
   favicon: assets/icons/favicon.ico
+  custom_dir: overrides
   icon:
-    edit: material/pencil 
+    edit: material/pencil
     view: material/eye
     repo: fontawesome/brands/git-alt
-  font:
-    text: Roboto
-    code: Roboto Mono
+  # Font served via noc.css (system-UI stack) to match OceanDataCatalog HTML repr
+  font: false
   features:
     - content.action.edit
     - content.tabs.link
@@ -29,11 +29,20 @@ theme:
     - navigation.footer
     - search.suggest
   palette:
-    # Light Mode (system preference)
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: red
-      accent: light blue
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
 
 markdown_extensions:
   - attr_list
@@ -61,18 +70,23 @@ markdown_extensions:
   - pymdownx.blocks.caption
 
 nav:
-  - Getting Started: index.md
-  - Publish Data:
-    - User Guide: cli_guide.md
-  - Explore Data: catalog.md
-  - Access Data:
-    - User Guide: catalog_guide.md
+  - Overview: overview.md
+  - Getting Started: getting_started.md
+  - Publish:
+    - User Guide: publish_userguide.md
+    - How-To Guide: publish_howto.md
+    - Examples: publish_examples.md
+    - Reference: cli_reference.md
+  - Discover:
+    - OceanDataCatalog: catalog.md
+    - User Guide: catalog_userguide.md
+    - How-To Guide: catalog_howto.md
+  - Analyse:
+    - How-To Guide: analyse_howto.md
     - Examples:
       - OceanDataCatalog + Models: OceanDataCatalog_example.ipynb
       - OceanDataCatalog + Observations: OceanDataCatalog_obs_example.ipynb
-  - Reference:
-    - OceanDataCatalog: catalog_reference.md
-    - CLI: cli_reference.md
+    - Reference: catalog_reference.md
   - Contributing: contributing.md
   - Release Notes: release_notes.md
 
@@ -99,9 +113,12 @@ plugins:
 
 extra:
   social:
-    - icon: fontawesome/brands/github 
+    - icon: fontawesome/brands/github
       link: https://github.com/NOC-MSM/OceanDataStore
       name: GitHub
+
+extra_css:
+  - stylesheets/noc.css
 
 extra_javascript:
   - javascripts/mathjax.js

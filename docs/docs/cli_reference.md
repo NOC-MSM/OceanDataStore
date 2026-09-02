@@ -38,3 +38,10 @@
 ::: OceanDataStore.cli.send_to_icechunk
 
 ::: OceanDataStore.cli.update_icechunk
+
+---
+
+## Next Steps
+
+* [How-To Guide](publish_howto.md) — concise how-to-guide of the most common OceanDataStore publishing operations
+* [Examples](publish_examples.md) — End-to-end examples of publishing datasets with OceanDataStore
