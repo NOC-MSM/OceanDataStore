@@ -9,8 +9,6 @@ using pystac, Zarr and Icechunk.
 Authors:
     - Ollie Tooth
 """
-from typing import Optional
-
 import icechunk
 import numpy as np
 import pystac
@@ -191,9 +189,9 @@ def apply_bbox(ds: xr.Dataset,
     """
     # -- Validate Inputs -- #
     if not isinstance(ds, xr.Dataset):
-        raise ValueError("'ds' must be an xarray Dataset.")
+        raise TypeError("'ds' must be an xarray Dataset.")
     if not (isinstance(bbox, tuple) and len(bbox) == 4):
-        raise ValueError("'bbox' must be a tuple of the form (min_lon, max_lon, min_lat, max_lat).")
+        raise TypeError("'bbox' must be a tuple of the form (min_lon, max_lon, min_lat, max_lat).")
     
     # -- Identify geographical coordinate names & dimensions -- #
     # Default lat/lon coord names:
@@ -270,13 +268,11 @@ def apply_time_bounds(ds: xr.Dataset,
     """
     # -- Validate Inputs -- #
     if not isinstance(ds, xr.Dataset):
-        raise ValueError("'ds' must be an xarray Dataset.")
-    if start_datetime is not None:
-        if not isinstance(start_datetime, str):
+        raise TypeError("'ds' must be an xarray Dataset.")
+    if (start_datetime is not None) and not isinstance(start_datetime, str):
             raise ValueError("'start_datetime' must be a string in ISO format (e.g., 'YYYY-MM-DDTHH:MM:SS').")
-    if end_datetime is not None:
-        if not isinstance(end_datetime, str):
-            raise ValueError("'end_datetime' must be a string in ISO format (e.g., 'YYYY-MM-DDTHH:MM:SS').")
+    if (end_datetime is not None) and not isinstance(end_datetime, str):
+        raise ValueError("'end_datetime' must be a string in ISO format (e.g., 'YYYY-MM-DDTHH:MM:SS').")
 
     # -- Identify time dimension -- #
     for coord in ds.dims:
@@ -353,7 +349,7 @@ class OceanDataCatalog:
     """
     def __init__(self,
                  catalog_name: str = "noc-stac",
-                 catalog_url: str = None
+                 catalog_url: str | None = None
                  ):
         # Define the URL to the NOC STAC root catalog:
         self._stac_url = catalog_url or f"https://noc-msm-o.s3-ext.jc.rl.ac.uk/oceandatastore/{catalog_name}/catalog.json"
@@ -476,7 +472,7 @@ class OceanDataCatalog:
         else:
             # Return all Item IDs from the current Collection or root Catalog:
             scope = self.Collection if self.Collection else self.Catalog
-            return list(item.id for item in scope.get_items(recursive=True))
+            return [item.id for item in scope.get_items(recursive=True)]
 
 
     def summary(self) -> CatalogSummary:
@@ -604,10 +600,9 @@ class OceanDataCatalog:
                     item = it
                     break
         if item is None:
-            try:
-                item = self._open_item(id=id)
-            except Exception:
-                raise ValueError(f"Item '{id}' not found in Catalog.")
+            item = self._open_item(id)
+            if item is None:
+                raise RuntimeError(f"Item ID '{id}' not found in Catalog.")
 
         props    = item.properties
         title    = props.get("title", "")
@@ -791,11 +786,11 @@ class OceanDataCatalog:
 
     def _filter_items(self,
                       items: list[pystac.Item],
-                      dataset_type: Optional[str] = None,
-                      product_type: Optional[str] = None,
-                      variable_name: Optional[str] = None,
-                      standard_name: Optional[str] = None,
-                      item_name: Optional[str] = None
+                      dataset_type: str | None = None,
+                      product_type: str | None = None,
+                      variable_name: str | None = None,
+                      standard_name: str | None = None,
+                      item_name: str | None = None
                       ):
         """
         Filter Items based on specified dataset type, product type,
@@ -840,12 +835,12 @@ class OceanDataCatalog:
 
 
     def search(self,
-               collection: Optional[str] = None,
-               dataset_type: Optional[str] = None,
-               product_type: Optional[str] = None,
-               variable_name: Optional[str] = None,
-               standard_name: Optional[str] = None,
-               item_name: Optional[str] = None
+               collection: str | None = None,
+               dataset_type: str | None = None,
+               product_type: str | None = None,
+               variable_name: str | None = None,
+               standard_name: str | None = None,
+               item_name: str | None = None
                ) -> None:
         """
         Search the OceanDataCatalog for Items matching the specified criteria.
@@ -923,7 +918,7 @@ class OceanDataCatalog:
     def _open_item(
             self,
             id: str,
-        ) -> pystac.Item:
+        ) -> pystac.Item | None:
         """
         Open a STAC Item directly from the Item ID.
 
@@ -934,8 +929,8 @@ class OceanDataCatalog:
         
         Returns
         -------
-        pystac.Item
-            STAC Item object.
+        pystac.Item | None
+            STAC Item object if found, otherwise None.
         """
         # Define components of Item ID path:
         parts = id.split("/")
@@ -1056,7 +1051,7 @@ class OceanDataCatalog:
 
     def open_repo(self,
                   id: str,
-                  asset_key: Optional[str] = None
+                  asset_key: str | None = None
                   ) -> icechunk.Repository:
         """
         Open STAC Item asset as an Icechunk Repository.
@@ -1085,14 +1080,13 @@ class OceanDataCatalog:
             raise TypeError("'id' must be a string.")
 
         # -- Collect Item Asset -- #
-        try:
-            item = self._open_item(id=id)
-        except Exception:
+        item = self._open_item(id)
+        if item is None:
             raise RuntimeError(f"Item ID '{id}' not found in Catalog.")
 
         # Infer asset key from Item ID if not provided:
         if asset_key is None:
-            asset_key = list(item.assets.keys())[0]
+            asset_key = next(iter(item.assets.keys()))
         asset = item.assets.get(asset_key)
         if asset is None:
             raise ValueError(f"Asset key '{asset_key}' not found in Item ID '{id}'.")
@@ -1114,14 +1108,14 @@ class OceanDataCatalog:
 
     def open_dataset(self,
                      id: str,
-                     group: Optional[str] = None,
-                     variable_names: Optional[list[str]] = None,
-                     start_datetime: Optional[str] = None,
-                     end_datetime: Optional[str] = None,
-                     bbox: Optional[tuple[float | int, float | int, float | int, float | int]] = None,
+                     group: str | None = None,
+                     variable_names: list[str] | None = None,
+                     start_datetime: str | None = None,
+                     end_datetime: str | None = None,
+                     bbox: tuple[float | int, float | int, float | int, float | int] | None = None,
                      branch: str = "main",
                      consolidated: bool = True,
-                     asset_key: Optional[str] = None
+                     asset_key: str | None = None
                     ) -> xr.Dataset:
         """
         Open STAC Item asset as an xarray Dataset.
@@ -1132,7 +1126,7 @@ class OceanDataCatalog:
             Item ID to open asset.
         group : str, optional
             Group within the Zarr or Icechunk repository to read. Default is None,
-            which reads from the root of the repository.
+            which uses the group specified in the Item asset metadata.
         variable_names : list[str], optional
             List of variable names to be parsed from the dataset.
             Default is to return all variables.
@@ -1176,7 +1170,7 @@ class OceanDataCatalog:
             raise TypeError("'group' must be a string or None.")
         if not isinstance(variable_names, (type(None), list)):
             raise TypeError("'variable_names' must be a list of strings.")
-        if variable_names is not None and not all([isinstance(var, str) for var in variable_names]):
+        if variable_names is not None and not all(isinstance(var, str) for var in variable_names):
             raise TypeError("'variable_names' must be a list of strings.")
         if not isinstance(start_datetime, (type(None), str)):
             raise TypeError("'start_datetime' must be a string or None.")
@@ -1192,14 +1186,13 @@ class OceanDataCatalog:
             raise TypeError("'consolidated' must be a boolean.")
 
         # -- Collect Item Asset -- #
-        try:
-            item = self._open_item(id=id)
-        except Exception:
+        item = self._open_item(id)
+        if item is None:
             raise RuntimeError(f"Item ID '{id}' not found in Catalog.")
 
         # Infer asset key from Item ID if not provided:
         if asset_key is None:
-            asset_key = list(item.assets.keys())[0]
+            asset_key = next(iter(item.assets.keys()))
         asset = item.assets.get(asset_key)
         if asset is None:
             raise ValueError(f"Asset key '{asset_key}' not found in Item ID '{id}'.")
@@ -1208,10 +1201,13 @@ class OceanDataCatalog:
 
         # Open Icechunk Repository as xarray Dataset:
         if asset.to_dict()['type'] == "application/vnd.zarr+icechunk":
-            required_fields = ['bucket', 'prefix', 'anonymous', 'endpoint_url']
+            required_fields = ['bucket', 'prefix', 'group', 'anonymous', 'endpoint_url']
             for field in required_fields:
                 if field not in fields:
                     raise ValueError(f"Missing asset field '{field}' in item '{id}'.")
+            if group is None:
+                # Use default group from asset metadata when undefined:
+                group = fields['group']
             ds = self._open_icechunk_store(fields=fields, branch=branch, group=group)
 
         # Open Zarr store as xarray Dataset:
