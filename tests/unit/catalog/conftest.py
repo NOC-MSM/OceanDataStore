@@ -72,13 +72,13 @@ def catalog_instance(mock_catalog):
     OceanDataCatalog with pystac patched and two mock Items pre-loaded.
 
     Items:
-      - "noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/T1y"  (platform gn, has tos_con/sos_con)
-      - "noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/domain" (platform gn, no variables)
+      - "noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/T1y"  (platform gn, has tos_con/sos_con)
+      - "noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/domain" (platform gn, no variables)
     """
     catalog = OceanDataCatalog()
 
     item_era5 = make_mock_item(
-        item_id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/T1y",
+        item_id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/T1y",
         properties={
             "platform": "gn",
             "variables": ["tos_con", "sos_con"],
@@ -94,7 +94,7 @@ def catalog_instance(mock_catalog):
         },
     )
     item_domain = make_mock_item(
-        item_id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/domain",
+        item_id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/domain",
         properties={
             "platform": "gn",
             "variables": [],
