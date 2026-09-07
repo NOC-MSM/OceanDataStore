@@ -6,10 +6,11 @@ Unit tests for OceanDataCatalog and CatalogSummary.
 Authors:
     - Ollie Tooth
 """
-import pytest
-import numpy as np
-import xarray as xr
 from unittest.mock import MagicMock
+
+import numpy as np
+import pytest
+import xarray as xr
 
 from OceanDataStore.catalog.oceandatacatalog import CatalogSummary
 
@@ -158,17 +159,17 @@ class TestOceanDataCatalogItemSummary:
 
     def test_item_summary_found_in_items(self, catalog_instance):
         result = catalog_instance.item_summary(
-            id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/gn/T1y"
+            id="noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/T1y"
         )
         assert isinstance(result, CatalogSummary)
 
     def test_item_summary_invalid_id_raises(self, catalog_instance, mocker):
         catalog_instance.Items = None
         mocker.patch.object(
-            catalog_instance, "_open_item", side_effect=Exception("not found")
+            catalog_instance, "_open_item", return_value=None
         )
-        with pytest.raises(ValueError, match="Item 'nonexistent' not found in Catalog"):
-            catalog_instance.item_summary(id="nonexistent")
+        with pytest.raises(RuntimeError, match="Item ID 'invalid_id' not found in Catalog."):
+            catalog_instance.item_summary(id="invalid_id")
 
 
 class TestOceanDataCatalogOpenRepo:
@@ -178,9 +179,9 @@ class TestOceanDataCatalogOpenRepo:
 
     def test_open_repo_invalid_id_raises_runtime_error(self, catalog_instance, mocker):
         mocker.patch.object(
-            catalog_instance, "_open_item", side_effect=Exception("not found")
+            catalog_instance, "_open_item", return_value=None
         )
-        with pytest.raises(RuntimeError, match="Item ID 'invalid_id' not found in Catalog"):
+        with pytest.raises(RuntimeError, match="Item ID 'invalid_id' not found in Catalog."):
             catalog_instance.open_repo(id="invalid_id")
 
     def test_open_repo_invalid_asset_key(self, catalog_instance, mocker):
@@ -250,9 +251,9 @@ class TestOceanDataCatalogOpenDataset:
 
     def test_open_dataset_invalid_id_raises_runtime_error(self, catalog_instance, mocker):
         mocker.patch.object(
-            catalog_instance, "_open_item", side_effect=Exception("not found")
+            catalog_instance, "_open_item", return_value=None
         )
-        with pytest.raises(RuntimeError, match="Item ID 'invalid_id' not found in Catalog"):
+        with pytest.raises(RuntimeError, match="Item ID 'invalid_id' not found in Catalog."):
             catalog_instance.open_dataset(id="invalid_id")
 
     def test_open_dataset_invalid_variable_names(self, catalog_instance, mocker):
@@ -261,6 +262,7 @@ class TestOceanDataCatalogOpenDataset:
         mock_asset.extra_fields = {
             "bucket": "my-bucket",
             "prefix": "my-prefix",
+            "group": None,
             "anonymous": True,
             "endpoint_url": "https://example.com",
         }
