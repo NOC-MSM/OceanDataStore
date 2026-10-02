@@ -18,6 +18,7 @@ import xarray as xr
 
 from OceanDataStore.cli import initialise_logging
 
+logger = logging.getLogger(name=__name__)
 
 # -- Define Utility Functions -- #
 def get_datetimes_from_filenames(file_list):
@@ -34,7 +35,7 @@ def main():
     # ========== Initialize Logging and Print Banner ========== #
     initialise_logging()
 
-    logging.info('In Progress: Post-Processing NSIDC Sea Ice Index Antarctic Observations...')
+    logger.info('In Progress: Post-Processing NSIDC Sea Ice Index Antarctic Observations...')
 
     # ========== Load NSIDC Ancillary Data ========== #
     # Define filepath to ancillary data:
@@ -46,7 +47,7 @@ def main():
     area_fpath = "/dssgfs01/scratch/otooth/npd_data/observations/NSIDC/ancillary/NSIDC0771_CellArea_PS_S25km_v1.0.nc"
     # Open NSIDC grid cell area:
     ds_area = xr.open_dataset(area_fpath)
-    logging.info("-> Completed: Loaded NSIDC ancillary data and grid cell area.")
+    logger.info("-> Completed: Loaded NSIDC ancillary data and grid cell area.")
 
     # ========== Load NSIDC Monthly Data ========== #
     # Define directory path:
@@ -66,7 +67,7 @@ def main():
     time_simask = xr.DataArray(data=get_datetimes_from_filenames(file_list=mask_files), dims='time', name='time')
     # Load and concatenate all sea ice mask GeoTIFFs:
     simask = xr.concat([xr.open_dataset(i) for i in mask_files], dim=time_simask)
-    logging.info("-> Completed: Loaded NSIDC sea ice mask and concentration GeoTIFF files.")
+    logger.info("-> Completed: Loaded NSIDC sea ice mask and concentration GeoTIFF files.")
 
     # Sea Ice Mask is defined by [1: sea ice, 0: ocean]:
     # Values greater than 1 (missing or land) are set to NaN:
@@ -78,7 +79,7 @@ def main():
     time_siconc = xr.DataArray(data=get_datetimes_from_filenames(file_list=conc_files), dims='time', name='time')
     # Load and concatenate all sea ice extent GeoTIFFs:
     siconc = xr.concat([xr.open_dataset(i) for i in conc_files], dim=time_siconc)
-    logging.info("-> Completed: Loaded NSIDC sea ice concentration GeoTIFF files.")
+    logger.info("-> Completed: Loaded NSIDC sea ice concentration GeoTIFF files.")
 
     # Sea Ice Area Fraction:
     # Note concentration percentage is scaled by 10 -> requires division by 1000.
@@ -118,13 +119,13 @@ def main():
     # Define output filepath:
     out_fpath = "/dssgfs01/scratch/otooth/npd_data/observations/NSIDC/NSIDC_Sea_Ice_Index_v4_Antarctic_combined_1978_2025.nc"
     # Save dataset to netCDF file:
-    logging.info(f'In Progress: Saving NSIDC Sea Ice Index Antarctic Observations to netCDF file: {out_fpath}...')
+    logger.info(f'In Progress: Saving NSIDC Sea Ice Index Antarctic Observations to netCDF file: {out_fpath}...')
     ds_si.to_netcdf(out_fpath, unlimited_dims='time')
     # Close files associated with datasets:
     ds_si.close()
     ds_area.close()
 
-    logging.info(f'Completed: Saved NSIDC Sea Ice Index Antarctic Observations to netCDF file: {out_fpath}.')
+    logger.info(f'Completed: Saved NSIDC Sea Ice Index Antarctic Observations to netCDF file: {out_fpath}.')
 
 if __name__ == "__main__":
     main()
