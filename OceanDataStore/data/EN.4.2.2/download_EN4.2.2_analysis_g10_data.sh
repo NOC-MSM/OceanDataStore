@@ -26,7 +26,7 @@ echo "               Oliver J. Tooth, NOC"
 echo "==================================================="
 echo "In Progress: Downloading EN.4.2.2 analyses dataset..."
 # Iterate over years:
-for yr in {1990..2026}; do
+for yr in {2026..2026}; do
     # Construct URL for current year:
     if [ $yr -ge 2021 ]; then
         url="$base_url/EN.4.2.2.analyses.g10.${yr}.zip"
@@ -37,6 +37,13 @@ for yr in {1990..2026}; do
     # Download and unzip file if not in output directory:
     nc_files=("${output_dir}/EN.4.2.2.f.analysis.g10.${yr}"*.nc)
     filepath="$output_dir/$(basename $url)"
+
+    if [ -f "$filepath" ]; then
+        echo "! Found existing output file..."
+        rm -f "$filepath"
+        echo "-> Removed existing file $filepath."
+    fi
+
     if [ ${#nc_files[@]} -ne 12 ]; then
         wget -P $output_dir $url
         echo "-> Completed: Downloaded $filepath."
