@@ -16,10 +16,10 @@ import zarr
 
 # == Utility Functions == #
 def compute_gc_distance(
-        lat1: xr.DataArray,
-        lon1: xr.DataArray,
-        lat2: xr.DataArray,
-        lon2: xr.DataArray
+        lat1: xr.DataArray | np.ndarray,
+        lon1: xr.DataArray | np.ndarray,
+        lat2: xr.DataArray | np.ndarray,
+        lon2: xr.DataArray | np.ndarray
 ) -> xr.DataArray:
     """
     Calculate the Great-Circle distance between two sets of
@@ -332,6 +332,7 @@ def update_icechunk_global_attrs(
         attrs: dict,
         commit_message: str,
         branch: str='main',
+        group: str | None=None,
         region: str='us-east-1',
         force_path_style: bool=True,
 ) -> str:
@@ -355,6 +356,9 @@ def update_icechunk_global_attrs(
         Commit message describing the update to the Icechunk store.
     branch : str, optional
         Branch of the Icechunk repository to update (default: 'main').
+    group : str, optional
+        Path to the group within the Icechunk store where attributes should be updated
+        (default: root group).
     region : str, optional
         AWS region where the S3 bucket is located (default: 'us-east-1').
     force_path_style : bool, optional
@@ -378,6 +382,8 @@ def update_icechunk_global_attrs(
         raise TypeError("commit_message must be a string.")
     if not isinstance(branch, str):
         raise TypeError("branch must be a string.")
+    if not isinstance(group, (str, type(None))):
+        raise TypeError("group must be a string or None.")
     if not isinstance(region, str):
         raise TypeError("region must be a string.")
     if not isinstance(force_path_style, bool):
@@ -385,7 +391,8 @@ def update_icechunk_global_attrs(
 
     # -- Update Icechunk Global Attributes -- #
     # Load Icechunk S3 storage credentials from JSON file:
-    store_credentials = json.load(open(credentials_filepath, 'r'))
+    with open(file=credentials_filepath, mode='r') as file:
+        store_credentials = json.load(fp=file)
 
     # Define Icechunk storage:
     storage = icechunk.s3_storage(
@@ -404,10 +411,10 @@ def update_icechunk_global_attrs(
 
     # Open a writable session on root group:
     session = repo.writable_session(branch=branch)
-    root = zarr.open_group(session.store)
+    root = zarr.open_group(store=session.store, path=group)
     # Update global attributes & commit changes to repo:
     root.attrs.update(attrs)
-    print(f"Updated global attributes via new commit on branch '{branch}' with commit message -> '{commit_message}'")
+    print(f"Updated global attributes in '{group or 'root group'}' via new commit on branch '{branch}' with commit message -> '{commit_message}'")
     
     return session.commit(message=commit_message)
 
@@ -477,7 +484,8 @@ def update_icechunk_variable_attrs(
 
     # -- Update Icechunk Global Attributes -- #
     # Load Icechunk S3 storage credentials from JSON file:
-    store_credentials = json.load(open(credentials_filepath, 'r'))
+    with open(file=credentials_filepath, mode='r') as file:
+        store_credentials = json.load(fp=file)
 
     # Define Icechunk storage:
     storage = icechunk.s3_storage(
