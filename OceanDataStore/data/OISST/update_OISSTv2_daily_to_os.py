@@ -7,11 +7,12 @@
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
 import logging
-from pathlib import Path
 
+import numpy as np
 import xarray as xr
 import zarr
 
+from OceanDataStore import OceanDataCatalog
 from OceanDataStore.cli import initialise_logging, update_icechunk
 from OceanDataStore.data.utils import (
     compute_cell_area,
@@ -19,14 +20,25 @@ from OceanDataStore.data.utils import (
     compute_dy,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(name=__name__)
 
 
 def main():
     # ========== Initialise OceanDataStore Logging ========== #
     initialise_logging()
 
+    # ========== Initialise OceanDataStore Catalog ========== #
+    # Open OSTIA Dataset from Icechunk repository in OceanDataStore:
+    catalog = OceanDataCatalog(catalog_name="noc-stac")
+    ds_ods = catalog.open_dataset(id="oisst/oisst_v2.1_daily")
+
+    latest_datetime = ds_ods["time"][-1].values
+    logger.info(f"Latest OISSTv2 Daily Data in OceanDataStore Icechunk repository -> {latest_datetime}")
+    start_datetime = str(latest_datetime + np.timedelta64(1, "D"))
+    end_datetime = str(latest_datetime + np.timedelta64(2, "D"))
+
     # ========== Update Icechunk Repository ========== #
+    year = ds_ods["time"][-1].dt.year.item()
     bucket = "oisst"
     store_credentials_json = ".../credentials/jasmin_os_credentials.json"
     branch = "main"
@@ -40,17 +52,12 @@ def main():
             "memory_limit":"6GB"
         }
     
-    logging.info("In Progress: Updating OISSTv2.1 daily mean time series in Icechunk...")
+    logger.info("In Progress: Updating OISSTv2.1 daily mean time series in Icechunk...")
     # Open OISSTv2 dataset:
-    filepaths = []
-    base = Path("/dssgfs01/scratch/otooth/npd_data/observations/OISST/daily/")
-    for year in range(2026, 2027):
-        filepaths.extend(sorted(base.glob(f"sst.day.mean.{year}.nc")))   
-    ds = xr.open_mfdataset(filepaths,
-                           combine="by_coords",
-                           data_vars="all",
-                           engine="h5netcdf",
-                           )
+    filepath = f"/dssgfs01/scratch/otooth/npd_data/observations/OISST/daily/sst.day.mean.{year}.nc"
+    ds = xr.open_dataset(filename_or_obj=filepath, engine="h5netcdf")
+    # Select latest time slice based on OceanDataStore Icechunk repository:
+    ds = ds.sel(time=slice(start_datetime, end_datetime))
 
     # Open OISSTv2 land-sea mask dataset:
     ds_mask = xr.open_dataset("http://psl.noaa.gov/thredds/dodsC/Datasets/noaa.oisst.v2.highres/lsmask.oisst.nc", decode_times=False)
@@ -81,6 +88,15 @@ def main():
                                           "standard_name": "sea_binary_mask",
                                           "comment": "1 = sea, 0 = land"
                                           })
+
+    # Add climatological day coordinate:
+    doy = ds['time'].dt.dayofyear
+    is_leap = ds['time'].dt.is_leap_year
+    after_feb28 = (~is_leap) & (doy >= 60)
+    clim_day = xr.where(after_feb28, doy + 1, doy)
+    ds = ds.assign_coords(clim_day=("time", clim_day.data))
+    ds["clim_day"].attrs["long_name"] = "Climatological Day of Year"
+    ds["clim_day"].attrs["description"] = "Climatological calendar day of year (1-366) with leap-year alignment for daily climatology calculations."
 
     # Add horizontal grid cell area:
     ds["dx"] = compute_dx(ds)
@@ -113,18 +129,18 @@ def main():
         "bbox": "[-180.0, 180.0, -90.0, 90.0]",
     })
 
-    # Optimise chunk sizes for time-series analysis:
-    ds = ds.chunk({'time': ds['time'].size, 'latitude': 50, 'longitude': 50})
+    # Optimise chunk sizes for spatial analysis:
+    ds = ds.chunk({'time': 1, 'latitude': 720, 'longitude': 1440})
 
     # Update variable encodings:
-    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=3, shuffle=zarr.codecs.BloscShuffle.shuffle)
+    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=3, shuffle="shuffle")
     for var in list(ds.data_vars) + list(ds.coords):
         ds[var].encoding.clear()
         ds[var].encoding['compressors'] = [blosccodec]
 
     # Define prefix and commit message based on climatology period:
     prefix = "oisst_v2.1_daily"
-    commit_message = "Added OISSTv2.1 Sea Surface Temperature Daily Timeseries (2026-01-2026-06)." 
+    commit_message = f"Added OISSTv2.1 Sea Surface Temperature Daily Timeseries ({start_datetime}-{end_datetime})." 
 
     update_icechunk(
         file=ds,

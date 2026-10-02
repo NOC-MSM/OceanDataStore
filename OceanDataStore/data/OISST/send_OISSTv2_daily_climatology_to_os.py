@@ -19,7 +19,6 @@ from OceanDataStore.data.utils import (
     compute_dy,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +37,7 @@ def main():
     start_yr = 1991
     end_yr = 2020
     
-    logging.info(f"In Progress: Sending OISSTv2.1 daily climatology for {start_yr}-{end_yr} to Icechunk...")
+    logger.info(f"In Progress: Sending OISSTv2.1 daily climatology for {start_yr}-{end_yr} to Icechunk...")
     # Open OISSTv2 dataset:
     filepath = f"/dssgfs01/scratch/otooth/npd_data/observations/OISST/climatology/oisst_climatology_{start_yr}-{end_yr}.nc"
     ds = xr.open_dataset(filepath, engine="h5netcdf")
@@ -83,6 +82,15 @@ def main():
                                           "comment": "1 = sea, 0 = land"
                                           })
 
+    # Add climatological day coordinate:
+    doy = ds['time'].dt.dayofyear
+    is_leap = ds['time'].dt.is_leap_year
+    after_feb28 = (~is_leap) & (doy >= 60)
+    clim_day = xr.where(after_feb28, doy + 1, doy)
+    ds = ds.assign_coords(clim_day=("time", clim_day.data))
+    ds["clim_day"].attrs["long_name"] = "Climatological Day of Year"
+    ds["clim_day"].attrs["description"] = "Climatological calendar day of year (1-366) with leap-year alignment for daily climatology calculations."
+
     # Add horizontal grid cell area:
     ds['dx'] = compute_dx(ds)
     ds['dy'] = compute_dy(ds)
@@ -102,11 +110,11 @@ def main():
     ds.attrs.clear()
     ds = ds.assign_attrs({
         "Conventions": "CF-1.5",
-        "title": f"NOAA OISSTv2.1 Daily Climatology ({start_yr}-{end_yr})",
-        "description": f"NOAA 1/4° Daily Optimum Interpolation Sea Surface Temperature (OISST) version 2.1 daily sea surface temperature climatology ({start_yr}-{end_yr}).",
+        "title": "NOAA OISSTv2.1 Daily Timeseries",
+        "description": "NOAA 1/4° Daily Optimum Interpolation Sea Surface Temperature (OISST) version 2.1 daily sea surface temperature timeseries.",
         "source": "Numerical models: Optimal Interpolation. In-situ observations: ICOADS-D R3.0.2, Argo GDAC. Satellite observations: Advanced Very High Resolution Radiometer (AVHRR).",
         "dataset_type": "observation",
-        "product_type": "climatology",
+        "product_type": "timeseries",
         "product_version": "2.1",
         "institution": "NOAA National Centers for Environmental Information (NCEI)",
         "citation": "Huang, B., C. Liu, V. Banzon, E. Freeman, G. Graham, B. Hankins, T. Smith, and H.-M. Zhang, 2021: Improvements of the Daily Optimum Interpolation Sea Surface Temperature (DOISST) Version 2.1, Journal of Climate, 34, 2923-2939. doi: 10.1175/JCLI-D-20-0166.1",
@@ -119,8 +127,8 @@ def main():
         "horizontal_grid_resolution": "0.25 degree",
         "aggregation": "mean",
         "aggregation_frequency": "daily",
-        "status": "completed",
-        "update_frequency": "None",
+        "status": "ongoing",
+        "update_frequency": "quarterly",
         "bbox": "[-180.0, 180.0, -90.0, 90.0]",
     })
 

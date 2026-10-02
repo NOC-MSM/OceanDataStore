@@ -19,7 +19,6 @@ from OceanDataStore.data.utils import (
     compute_dy,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +37,7 @@ def main():
     start_yr = 1991
     end_yr = 2020
     
-    logging.info(f"In Progress: Sending OISSTv2.1 daily climatology for {start_yr}-{end_yr} to Icechunk...")
+    logger.info(f"In Progress: Sending OISSTv2.1 daily climatology for {start_yr}-{end_yr} to Icechunk...")
     # Open OISSTv2 dataset:
     filepaths = [f"/dssgfs01/scratch/otooth/npd_data/observations/OISST/icec.day.mean.ltm.{start_yr}-{end_yr}.nc",
                  f"/dssgfs01/scratch/otooth/npd_data/observations/OISST/sst.day.mean.ltm.{start_yr}-{end_yr}.nc"
@@ -125,7 +124,7 @@ def main():
     ds = ds.chunk({'day': 5, 'latitude': 720, 'longitude': 1440})
 
     # Update variable encodings:
-    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=3, shuffle=zarr.codecs.BloscShuffle.shuffle)
+    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=3, shuffle="shuffle")
     for var in list(ds.data_vars) + list(ds.coords):
         ds[var].encoding['compressors'] = [blosccodec]
 

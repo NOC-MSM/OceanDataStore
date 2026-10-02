@@ -26,7 +26,7 @@ echo "               Oliver J. Tooth, NOC"
 echo "==================================================="
 echo "In Progress: Downloading OISSTv2 dataset..."
 # Iterate over years:
-for yr in {2012..2026}; do
+for yr in {2026..2026}; do
     # Construct URL for current year:
     url="$base_url/sst.day.mean.${yr}.nc"
 

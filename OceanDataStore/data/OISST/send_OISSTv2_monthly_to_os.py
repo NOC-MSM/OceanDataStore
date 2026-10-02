@@ -33,7 +33,7 @@ def main():
     branch = "main"
     variable_commits = True
     
-    logging.info("In Progress: Sending OISSTv2.1 monthly mean time series to Icechunk...")
+    logger.info("In Progress: Sending OISSTv2.1 monthly mean time series to Icechunk...")
     # Open OISSTv2 dataset:
     filepaths = ["/dssgfs01/scratch/otooth/npd_data/observations/OISST/icec.mon.mean.nc",
                  "/dssgfs01/scratch/otooth/npd_data/observations/OISST/sst.mon.mean.nc"
@@ -119,7 +119,7 @@ def main():
     ds = ds.chunk({'time': 1, 'latitude': 720, 'longitude': 1440})
 
     # Update variable encodings:
-    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=3, shuffle=zarr.codecs.BloscShuffle.shuffle)
+    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=3, shuffle="shuffle")
     for var in list(ds.data_vars) + list(ds.coords):
         ds[var].encoding['compressors'] = [blosccodec]
 
