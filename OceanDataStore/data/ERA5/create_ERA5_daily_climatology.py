@@ -6,12 +6,14 @@
 #
 # Created By: Adam Blaker (atb299@noc.ac.uk)
 # =========================================================
+import argparse
+import glob
+import re
+
 import numpy as np
 import xarray as xr
-import glob
-import argparse
-import re
 from dask.distributed import Client
+
 
 def extract_year(filename):
     """Extract year from filename like sst_y2011m07.nc"""
@@ -63,10 +65,10 @@ def main(start_year, end_year, data_path="./", output="sst_climatology.nc"):
     var = g_sst.var("time")
     var = var.persist()
 
-    p10 = g_sst.quantile(0.10, dim="time")
+    p10 = ds["sst"].groupby("time.dayofyear").quantile(0.10, dim="time")
     p10 = p10.persist()
 
-    p90 = g_sst.quantile(0.90, dim="time")
+    p90 = ds["sst"].groupby("time.dayofyear").quantile(0.90, dim="time")
     p90 = p90.persist()
 
     minimum = g_sst.min("time")

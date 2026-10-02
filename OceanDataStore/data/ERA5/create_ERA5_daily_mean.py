@@ -7,8 +7,9 @@
 # Created By: Adam Blaker (atb299@noc.ac.uk)
 # =========================================================
 import logging
-import xarray as xr
+
 import numpy as np
+import xarray as xr
 
 from OceanDataStore.cli import initialise_logging
 
@@ -20,13 +21,13 @@ def main(filepath: str, outpath: str) -> None:
     initialise_logging()
 
     # ========== Calculate Daily Mean, Min, Max, and Variance ========== #
-    logging.info(f"In Progress: Calculating ERA5 SST daily mean, min, max and variance for {year}-{month:02d}...")
+    logger.info(f"In Progress: Calculating ERA5 SST daily mean, min, max and variance for {year}-{month:02d}...")
     ds = xr.open_dataset(filepath, chunks={"time": -1, "latitude": -1, "longitude": -1})
-    logging.info(f"Completed: Read ERA5 Hourly SST data from {filepath}.")
+    logger.info(f"Completed: Read ERA5 Hourly SST data from {filepath}.")
 
     # Experimental: see https://confluence.ecmwf.int/pages/viewpage.action?pageId=173385064
     if 'expver' in [i for i in ds.dims]:
-        print(f"Dimension 'expver' present in {filepath}")
+        logger.info(f"Dimension 'expver' present in {filepath}")
         ds = ds.reduce(np.nansum,dim='expver')
 
     # Catch and rename the time dimension for consistency
@@ -36,9 +37,9 @@ def main(filepath: str, outpath: str) -> None:
     ds2 = ds.resample(time='1D').mean()
 
     for var in ds.data_vars:
-        ds2[var+'_min'] = ds[var].resample(time='1D').min()
-        ds2[var+'_max'] = ds[var].resample(time='1D').max()
-        ds2[var+'_var'] = ds[var].resample(time='1D').var()
+        ds2[f"{var}_min"] = ds[var].resample(time='1D').min()
+        ds2[f"{var}_max"] = ds[var].resample(time='1D').max()
+        ds2[f"{var}_var"] = ds[var].resample(time='1D').var()
 
     vv = [i for i in ds2.data_vars]
     z_chunks={vv[0]: {'chunksizes': (1, 24, 24), "zlib": True, "complevel": 1},
@@ -47,9 +48,9 @@ def main(filepath: str, outpath: str) -> None:
             vv[3]: {'chunksizes': (1, 24, 24), "zlib": True, "complevel": 1}
     }
 
-    logging.info(f"In Progress: Writing ERA5 Daily SST data to {outpath}...")
+    logger.info(f"In Progress: Writing ERA5 Daily SST data to {outpath}...")
     ds2.to_netcdf(outpath, encoding=z_chunks)
-    logging.info(f"Completed: ERA5 Daily SST data saved to {outpath}.")
+    logger.info(f"Completed: ERA5 Daily SST data saved to {outpath}.")
 
 
 if __name__ == "__main__":
