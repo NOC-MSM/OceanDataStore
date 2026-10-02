@@ -15,10 +15,10 @@ import zarr
 
 from OceanDataStore.cli import initialise_logging
 from OceanDataStore.data.utils import (
-    compute_dx,
-    compute_dy,
     compute_cell_area,
     compute_cell_thickness,
+    compute_dx,
+    compute_dy,
     compute_land_sea_mask,
 )
 
@@ -31,8 +31,8 @@ def main():
     # ========== Prepare Data ========== #
     # Open complete ARMOR3D REP monthly climatology dataset:
     filepath = "/dssgfs01/scratch/otooth/npd_data/observations/ARMOR3D/armor-3d_rep_monthly_NA_*.zarr"
-    ds = xr.open_mfdataset(filepath, compat="no_conflicts", data_vars="all", engine="zarr")
-    logging.info("-> Completed: Opened ARMOR-3D REP monthly climatology dataset from Zarr stores.")
+    ds = xr.open_mfdataset(filepath, compat="no_conflicts", data_vars="all", engine="zarr", chunks={'time': 1, 'depth': 5})
+    logger.info("-> Completed: Opened ARMOR-3D REP monthly climatology dataset from Zarr stores.")
 
     # Rename variables to standard names:
     ds = ds.rename({"to": "thetao",
@@ -69,7 +69,7 @@ def main():
         "bbox": "[-180.0, 180.0, -90.0, 90.0]",
     })
 
-    logging.info("-> Completed: Updated ARMOR3D CF-metadata.")
+    logger.info("-> Completed: Updated ARMOR3D CF-metadata.")
 
     # -- Calculate climate normal monthly climatologies -- #
     output_dir = "/dssgfs01/scratch/otooth/npd_data/observations/ARMOR3D/climatology/"
@@ -77,7 +77,7 @@ def main():
     end_years = [2000, 2010, 2020]
 
     for start_year, end_year in zip(start_years, end_years):
-        logging.info(f"In Progress: Calculating monthly climatology for {start_year}-{end_year} climate normal period...")
+        logger.info(f"In Progress: Calculating monthly climatology for {start_year}-{end_year} climate normal period...")
         # Calculate monthly climatology for the specified period:
         ds_climatology = ds.sel(time=slice(f'{start_year}-01', f'{end_year}-12')).groupby('time.month').mean()
 
@@ -101,7 +101,7 @@ def main():
         ds_climatology['time_bnds'] = xr.DataArray(data=np.zeros((12, 2), dtype='datetime64[M]'), dims=('month', 'bnds'))
         ds_climatology['time_bnds'][:, 0] = np.arange(f'{start_year}-01', f'{start_year+1}-01', dtype='datetime64[M]')
         ds_climatology['time_bnds'][:, 1] = np.arange(f'{end_year}-01', f'{end_year+1}-01', dtype='datetime64[M]')
-        logging.info(f"-> Completed: Calculated monthly climatology for {start_year}-{end_year} climate normal period.")
+        logger.info(f"-> Completed: Calculated monthly climatology for {start_year}-{end_year} climate normal period.")
 
         # Update title attribute to reflect climatological period:
         ds_climatology.attrs['title'] = f"Multi Observation Global Ocean 3D Temperature Salinity Height Geostrophic Current and MLD monthly climatology ({start_year}-{end_year})."
@@ -109,7 +109,7 @@ def main():
         ds_climatology.attrs['end_datetime'] = f"{end_year}-12-31"
 
         # Update variable encodings:
-        blosccodec = zarr.codecs.BloscCodec(cname="lz4", clevel=5, shuffle=zarr.codecs.BloscShuffle.shuffle)
+        blosccodec = zarr.codecs.BloscCodec(cname="lz4", clevel=5, shuffle="shuffle")
 
         # Infer variable chunk sizes (preserve source chunking):
         for var in list(ds_climatology.data_vars) + list(ds_climatology.coords):
@@ -125,7 +125,7 @@ def main():
         # Write monthly climatology to Zarr:
         output_filepath = f"{output_dir}ARMOR3D_global_{start_year}_{end_year}_monthly_climatology.zarr"
         ds_climatology.to_zarr(output_filepath, zarr_format=3, mode="w")
-        logging.info(f"-> Completed: Saved monthly climatology for {start_year}-{end_year} climate normal period to {output_filepath}.")
+        logger.info(f"-> Completed: Saved monthly climatology for {start_year}-{end_year} climate normal period to {output_filepath}.")
 
     # -- Close ARMOR3D analysis datasets -- #
     ds_climatology.close()

@@ -11,7 +11,7 @@ import logging
 import xarray as xr
 import zarr
 
-from OceanDataStore.cli import send_to_icechunk, initialise_logging
+from OceanDataStore.cli import initialise_logging, send_to_icechunk
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ def main():
                 ds[var].encoding['chunks'] = (50,)
 
         # Update variable encodings:
-        blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=5, shuffle=zarr.codecs.BloscShuffle.shuffle)
+        blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=5, shuffle="shuffle")
         for var in list(ds.data_vars) + list(ds.coords):
             ds[var].encoding['compressors'] = [blosccodec]
 

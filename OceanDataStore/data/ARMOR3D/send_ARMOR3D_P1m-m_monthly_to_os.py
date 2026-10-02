@@ -1,8 +1,8 @@
 # =========================================================
-# send_EN4.2.2_analyses_g10_to_os.py
+# send_ARMOR3D_P1m-m_monthly_to_os.py
 #
-# Script to write EN.4.2.2 analyses to Icechunk repository
-# in JASMIN cloud object storage.
+# Script to write ARMOR3D REP monthly data to Icechunk
+# repository in JASMIN cloud object storage.
 #
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
@@ -13,10 +13,10 @@ import zarr
 
 from OceanDataStore.cli import initialise_logging, send_to_icechunk
 from OceanDataStore.data.utils import (
-    compute_dx,
-    compute_dy,
     compute_cell_area,
     compute_cell_thickness,
+    compute_dx,
+    compute_dy,
     compute_land_sea_mask,
 )
 
@@ -31,7 +31,7 @@ def main():
     # Open complete ARMOR3D REP monthly climatology dataset:
     filepath = "/dssgfs01/scratch/otooth/npd_data/observations/ARMOR3D/armor-3d_rep_monthly_NA_*.zarr"
     ds = xr.open_mfdataset(filepath, compat="no_conflicts", data_vars="all", engine="zarr")
-    logging.info("-> Completed: Opened ARMOR-3D REP monthly climatology dataset from Zarr stores.")
+    logger.info("-> Completed: Opened ARMOR-3D REP monthly climatology dataset from Zarr stores.")
 
     # Rename variables to standard names:
     ds = ds.rename({"to": "thetao",
@@ -121,7 +121,7 @@ def main():
             ds[var].encoding['chunks'] = (50,)
 
     # Update variable encodings:
-    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=5, shuffle=zarr.codecs.BloscShuffle.shuffle)
+    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=5, shuffle="shuffle")
     for var in list(ds.data_vars) + list(ds.coords):
         ds[var].encoding['compressors'] = [blosccodec]
 
