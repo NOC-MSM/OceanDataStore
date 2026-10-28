@@ -10,10 +10,12 @@ Authors:
     - Ollie Tooth
 """
 
-import pytest
 import numpy as np
+import pytest
 import xarray as xr
+
 from OceanDataStore.catalog import OceanDataCatalog
+
 
 # Fixture to instantiate catalog using the default URL
 @pytest.fixture(scope="module")
@@ -22,7 +24,7 @@ def catalog():
 
 @pytest.fixture(scope="module")
 def icechunk_item_id():
-    return "noc-npd-era5/npd-eorca1-era5v1/r1i1c1f1/T1y"
+    return "en4.2.2/en4.2.2_analysis_g10_monthly"
 
 @pytest.fixture(scope="module")
 def zarr_item_id():
@@ -64,13 +66,15 @@ def test_open_zarr_dataset(catalog, zarr_item_id):
     assert isinstance(catalog.open_dataset(id=zarr_item_id), xr.Dataset)
 
 def test_open_dataset_with_time_range(catalog, icechunk_item_id):
-    ds = catalog.open_dataset(id=icechunk_item_id, start_datetime="1976-01", end_datetime="1990-01")
+    ds = catalog.open_dataset(id=icechunk_item_id, start_datetime="2020-01", end_datetime="2025-01")
     assert isinstance(ds, xr.Dataset)
-    assert ds.time_counter.min() >= np.datetime64("1976-01")
-    assert ds.time_counter.max() <= np.datetime64("1990-01")
+    assert ds["time_counter"].min() >= np.datetime64("2020-01")
+    assert ds["time_counter"].max() <= np.datetime64("2025-01")
 
 def test_open_dataset_with_bbox(catalog, icechunk_item_id):
-    ds = catalog.open_dataset(id=icechunk_item_id, bbox=(-180.0, 0.0, 180.0, 90.0))
+    ds = catalog.open_dataset(id=icechunk_item_id, bbox=(-180.0, 0.0, -45.0, 45.0))
     assert isinstance(ds, xr.Dataset)
-    assert ds.nav_lat.min() >= 0.0
-    assert ds.nav_lat.max() <= 90.0
+    assert ds["glamt"].min() >= -180.0
+    assert ds["glamt"].max() <= 0.0
+    assert ds["gphit"].min() >= -45.0
+    assert ds["gphit"].max() <= 45.0
