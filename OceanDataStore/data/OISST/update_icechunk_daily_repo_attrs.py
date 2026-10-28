@@ -1,5 +1,5 @@
 # =========================================================
-# update_icechunk_repo_attrs.py
+# update_icechunk_daily_repo_attrs.py
 #
 # Script to update global and variable attributes in an
 # Icechunk repository.
@@ -10,24 +10,20 @@ from OceanDataStore.data.utils import update_icechunk_global_attrs
 
 # ========= Shared Inputs ========= #
 # Define credential to write to JASMIN OS:
-credentials_filepath = ".../credentials/jasmin_os_credentials.json"
-
-# Define time period for climatology:
-start_year = 1996   # 1982, 1991, 1996
-end_year = 2025     # 2011, 2020, 2025
+credentials_filepath = ".../credentials//jasmin_os_credentials.json"
 
 # Define bucket and prefix to Icechunk repository:
 bucket = "oisst"
-prefix = f"oisst_v2.1_{start_year}_{end_year}_hobday_daily_climatology"
+prefix = "oisst_v2.1_daily"
 
 # ========= Update global attributes ========= #
 attrs = {
         "Conventions": "CF-1.5",
-        "title": f"NOAA OISSTv2.1 Daily Climatology ({start_year}-{end_year})",
-        "description": f"NOAA 1/4° Daily Optimum Interpolation Sea Surface Temperature (OISST) version 2.1 daily sea surface temperature climatology ({start_year}-{end_year}). Climatology is defined following Hobday et al. (2016) methodology, where a ± 5-day pooling is used to calculate daily climatological mean and percentiles.",
+        "title": "NOAA OISSTv2.1 Daily Timeseries",
+        "description": "NOAA 1/4° Daily Optimum Interpolation Sea Surface Temperature (OISST) version 2.1 daily sea surface temperature timeseries.",
         "source": "Numerical models: Optimal Interpolation. In-situ observations: ICOADS-D R3.0.2, Argo GDAC. Satellite observations: Advanced Very High Resolution Radiometer (AVHRR).",
         "dataset_type": "observation",
-        "product_type": "climatology",
+        "product_type": "timeseries",
         "product_version": "2.1",
         "institution": "NOAA National Centers for Environmental Information (NCEI)",
         "citation": "Huang, B., C. Liu, V. Banzon, E. Freeman, G. Graham, B. Hankins, T. Smith, and H.-M. Zhang, 2021: Improvements of the Daily Optimum Interpolation Sea Surface Temperature (DOISST) Version 2.1, Journal of Climate, 34, 2923-2939. doi: 10.1175/JCLI-D-20-0166.1",
@@ -38,14 +34,14 @@ attrs = {
         "platform": "gr",
         "horizontal_grid_type": "regular rectilinear",
         "horizontal_grid_resolution": "0.25 degree",
-        "aggregation": "mean, 10th percentile, 90th percentile",
+        "aggregation": "mean",
         "aggregation_frequency": "daily",
-        "status": "completed",
-        "update_frequency": "None",
+        "status": "ongoing",
+        "update_frequency": "quarterly",
         "bbox": "[-180.0, 180.0, -90.0, 90.0]",
     }
 
-message = f"Updated NOAA OISSTv2.1 Daily Hobday Climatology ({start_year}-{end_year}) -> root group attributes."
+message = "Updated NOAA OISSTv2.1 Daily Timeseries -> root group attributes."
 
 update_icechunk_global_attrs(
         credentials_filepath=credentials_filepath,
