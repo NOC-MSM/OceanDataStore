@@ -9,12 +9,17 @@ Authors:
     - Ollie Tooth (oliver.tooth@noc.ac.uk)
 """
 # -- Import Python Modules -- #
-import logging
-import pystac
 import datetime
+import logging
 
-from OceanDataStore.catalog.stac.utils import open_icechunk_store, create_item_with_icechunk_asset
+import pystac
 
+from OceanDataStore.catalog.stac.utils import (
+    create_item_with_icechunk_asset,
+    open_icechunk_store,
+)
+
+logger = logging.getLogger(__name__)
 
 def create_nsidc_collection() -> pystac.Collection:
     """
@@ -30,7 +35,9 @@ def create_nsidc_collection() -> pystac.Collection:
     spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 180.0, 90.0]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1978, month=11, day=15), datetime.datetime(year=2025, month=12, day=15)])
+    start_datetime = datetime.datetime(year=1978, month=11, day=15, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2025, month=12, day=15, tzinfo=datetime.timezone.utc)
+    collection_interval = sorted([start_datetime, end_datetime])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the NSIDC Sea Ice Index, Version 4 Collection:
@@ -40,7 +47,12 @@ def create_nsidc_collection() -> pystac.Collection:
         description="**About:**\n\nCollection of National Snow and Ice Data Center (NSIDC) Sea Ice Index, Version 4 datasets.\n\n**More Information:**\n - [NSIDC](https://nsidc.org/home)",
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         license="U.S. Government Works License",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="OceanDataStore", status="ongoing", update_frequency="quarterly", last_data_update="2025-12-15"),
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "OceanDataStore",
+                      "status": "ongoing",
+                      "update_frequency": "quarterly",
+                      "last_data_update": end_datetime.strftime("%Y-%m-%d")
+                      },
         keywords=["NSIDC", "arctic", "antarctic", "observation", "sea-ice"],
         providers=[
             pystac.Provider(
@@ -58,7 +70,7 @@ def create_nsidc_collection() -> pystac.Collection:
         ],
     )
 
-    logging.info(f"Completed: Created STAC Collection: {nsidc_collection}")
+    logger.info(f"Completed: Created STAC Collection: {nsidc_collection}")
 
     # -- Add Items to NSIDC Sea Ice Index Collection -- #
     bucket = "nsidc"
@@ -71,14 +83,12 @@ def create_nsidc_collection() -> pystac.Collection:
             id=f"{bucket}/{prefix}",
             bucket=bucket,
             prefix=prefix,
-            start_date="1978-11-15",
-            end_date="2025-12-15",
             collection=bucket
             )
         # Add Item to the NSIDC Sea Ice Index Collection:
         nsidc_collection.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Collection with ID: {nsidc_collection.id}")
+    logger.info(f"Completed: Added Items to STAC Collection with ID: {nsidc_collection.id}")
 
     return nsidc_collection
 
@@ -97,7 +107,9 @@ def create_woa23_collection() -> pystac.Collection:
     spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 180.0, 90.0]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1971, month=1, day=1), datetime.datetime(year=2020, month=12, day=31)])
+    start_datetime = datetime.datetime(year=1971, month=1, day=1, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2020, month=12, day=31, tzinfo=datetime.timezone.utc)
+    collection_interval = sorted([start_datetime, end_datetime])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the World Ocean Atlas 2023 Collection:
@@ -107,7 +119,12 @@ def create_woa23_collection() -> pystac.Collection:
         description="**About:**\n\nCollection of World Ocean Atlas 2023 climatology datasets.\n\n**More Information:**\n - [World Ocean Atlas](https://www.ncei.noaa.gov/access/world-ocean-atlas-2023/)",
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         license="Creative Commons CC0 1.0 Universal License",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="OceanDataStore", status="ongoing", update_frequency="None", last_data_update="2024-02-01"),
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "OceanDataStore",
+                      "status": "ongoing",
+                      "update_frequency": "None",
+                      "last_data_update": end_datetime.strftime("%Y-%m-%d")
+                      },
         keywords=["WOA23", "global", "observation", "temperature", "salinity"],
         providers=[
             pystac.Provider(
@@ -125,7 +142,7 @@ def create_woa23_collection() -> pystac.Collection:
         ],
     )
 
-    logging.info(f"Completed: Created STAC Collection: {woa23_collection}")
+    logger.info(f"Completed: Created STAC Collection: {woa23_collection}")
 
     # -- Add Items to World Ocean Atlas 2023 Collection -- #
     bucket = "woa23"
@@ -151,7 +168,7 @@ def create_woa23_collection() -> pystac.Collection:
         # Add item to the World Ocean Atlas 2023 Collection:
         woa23_collection.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Collection with ID: {woa23_collection.id}")
+    logger.info(f"Completed: Added Items to STAC Collection with ID: {woa23_collection.id}")
 
     return woa23_collection
 
@@ -170,7 +187,9 @@ def create_oisst_collection() -> pystac.Collection:
     spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 180.0, 90.0]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1981, month=9, day=1), datetime.datetime(year=2026, month=5, day=1)])
+    start_datetime = datetime.datetime(year=1981, month=9, day=1, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2026, month=9, day=1, tzinfo=datetime.timezone.utc)
+    collection_interval = sorted([start_datetime, end_datetime])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the OISST Version 2.1 Collection:
@@ -180,7 +199,12 @@ def create_oisst_collection() -> pystac.Collection:
         description="**About:**\n\nCollection of OISST Version 2.1 datasets.\n\n**More Information:**\n - [OISST Version 2.1](https://psl.noaa.gov/data/gridded/data.noaa.oisst.v2.highres.html)",
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         license="Creative Commons CC0 1.0 Universal License",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="OceanDataStore", status="ongoing", update_frequency="quarterly", last_data_update="2026-05-01"),
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "OceanDataStore",
+                      "status": "ongoing",
+                      "update_frequency": "quarterly",
+                      "last_data_update": end_datetime.strftime("%Y-%m-%d")
+                      },
         keywords=["OISSTv2.1", "global", "observation", "sea surface temperature", "sea ice concentration"],
         providers=[
             pystac.Provider(
@@ -198,23 +222,28 @@ def create_oisst_collection() -> pystac.Collection:
         ],
     )
 
-    logging.info(f"Completed: Created STAC Collection: {oisst_collection}")
+    logger.info(f"Completed: Created STAC Collection: {oisst_collection}")
 
     # -- Add Items to OISST Version 2.1 Collection -- #
     bucket = "oisst"
     for prefix in ["oisst_v2.1_monthly",
+                   "oisst_v2.1_daily",
                    "oisst_v2.1_1991_2020_daily_climatology",
+                   "oisst_v2.1_1996_2025_daily_climatology",
                    "oisst_v2.1_1991_2020_monthly_climatology",
+                   "oisst_v2.1_1982_2011_hobday_daily_climatology",
+                   "oisst_v2.1_1991_2020_hobday_daily_climatology",
+                   "oisst_v2.1_1996_2025_hobday_daily_climatology",
                    ]:
         # Open dataset from Icechunk repository:
         ds = open_icechunk_store(bucket=bucket, prefix=prefix, branch="main")
 
-        if "1991_2020" in prefix:
-            start_date = "1991-01-01"
-            end_date = "2020-12-31"
+        if "19" in prefix:
+            start_date = f"{prefix.split('_')[2]}-01-01"
+            end_date = f"{prefix.split('_')[3]}-12-31"
         else:
-            start_date = "1981-09-01"
-            end_date = "2026-05-01"
+            start_date = None
+            end_date = None
 
         item = create_item_with_icechunk_asset(
             ds=ds,
@@ -228,7 +257,7 @@ def create_oisst_collection() -> pystac.Collection:
         # Add item to the OISST Version 2.1 Collection:
         oisst_collection.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Collection with ID: {oisst_collection.id}")
+    logger.info(f"Completed: Added Items to STAC Collection with ID: {oisst_collection.id}")
 
     return oisst_collection
 
@@ -247,7 +276,9 @@ def create_en4_collection() -> pystac.Collection:
     spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 180.0, 90.0]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1950, month=1, day=1), datetime.datetime(year=2026, month=3, day=1)])
+    start_datetime = datetime.datetime(year=1950, month=1, day=1, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2026, month=8, day=15, tzinfo=datetime.timezone.utc)
+    collection_interval = sorted([start_datetime, end_datetime])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the EN4.2.2 Collection:
@@ -257,8 +288,14 @@ def create_en4_collection() -> pystac.Collection:
         description="**About:**\n\nCollection of EN4.2.2 quality Controlled Ocean datasets.\n\n**More Information:**\n - [EN4.2.2](https://www.metoffice.gov.uk/hadobs/en4/)",
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         license="Non-Commercial Government Licence",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="OceanDataStore", status="ongoing", update_frequency="quarterly", last_data_update="2026-05-01"),
-        keywords=["EN4.2.2", "global", "observation", "temperature", "salinity"],
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "OceanDataStore",
+                      "status": "ongoing",
+                      "update_frequency": "quarterly",
+                      "last_data_update": end_datetime.strftime("%Y-%m-%d")
+                      },
+        keywords=["EN4.2.2", "global", "observation",
+                  "temperature", "salinity"],
         providers=[
             pystac.Provider(
                 name="Met Office",
@@ -275,7 +312,7 @@ def create_en4_collection() -> pystac.Collection:
         ],
     )
 
-    logging.info(f"Completed: Created STAC Collection: {en4_collection}")
+    logger.info(f"Completed: Created STAC Collection: {en4_collection}")
 
     # -- Add Items to EN4.2.2 Collection -- #
     bucket = "en4.2.2"
@@ -291,8 +328,8 @@ def create_en4_collection() -> pystac.Collection:
             start_date = f"{prefix.split('_')[3]}-01-01"
             end_date = f"{prefix.split('_')[4]}-12-31"
         else:
-            start_date = "1950-01-01"
-            end_date = "2026-03-12"
+            start_date = None
+            end_date = None
 
         item = create_item_with_icechunk_asset(
             ds=ds,
@@ -306,7 +343,7 @@ def create_en4_collection() -> pystac.Collection:
         # Add item to the EN4.2.2 Collection:
         en4_collection.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Collection with ID: {en4_collection.id}")
+    logger.info(f"Completed: Added Items to STAC Collection with ID: {en4_collection.id}")
 
     return en4_collection
 
@@ -325,7 +362,9 @@ def create_armor3d_collection() -> pystac.Collection:
     spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 180.0, 90.0]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1993, month=1, day=1), datetime.datetime(year=2024, month=12, day=31)])
+    start_datetime = datetime.datetime(year=1993, month=1, day=1, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2024, month=12, day=31, tzinfo=datetime.timezone.utc)
+    collection_interval = sorted([start_datetime, end_datetime])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the ARMOR3D Collection:
@@ -335,7 +374,12 @@ def create_armor3d_collection() -> pystac.Collection:
         description="**About:**\n\nCollection of Multi Observation Global Ocean ARMOR3D Temperature Salinity Height Geostrophic Current and MLD.\n\n**More Information:**\n - [ARMOR3D](https://data.marine.copernicus.eu/product/MULTIOBS_GLO_PHY_TSUV_3D_MYNRT_015_012/description)",
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         license="Copernicus Marine Environment Monitoring Service Service Level Agreement (SLA)",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="OceanDataStore", status="ongoing", update_frequency="quarterly", last_data_update="2025-11-01"),
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "OceanDataStore",
+                      "status": "ongoing",
+                      "update_frequency": "quarterly",
+                      "last_data_update": end_datetime.strftime("%Y-%m-%d")
+                      },
         keywords=["ARMOR3D", "global", "observation", "temperature", "salinity", "dynamic height", "geostrophic current", "mixed layer depth"],
         providers=[
             pystac.Provider(
@@ -353,14 +397,12 @@ def create_armor3d_collection() -> pystac.Collection:
         ],
     )
 
-    logging.info(f"Completed: Created STAC Collection: {armor3d_collection}")
+    logger.info(f"Completed: Created STAC Collection: {armor3d_collection}")
 
     # -- Add Items to ARMOR3D Collection -- #
     bucket = "armor3d"
     for prefix in ["armor3d_global_my_monthly",
-                   "armor3d_global_my_1971_2000_monthly_climatology",
-                   "armor3d_global_my_1981_2010_monthly_climatology",
-                   "armor3d_global_my_1991_2020_monthly_climatology",
+                   "armor3d_global_my_1993_2022_monthly_climatology",
                    ]:
         # Open dataset from Icechunk repository:
         ds = open_icechunk_store(bucket=bucket, prefix=prefix, branch="main")
@@ -369,8 +411,8 @@ def create_armor3d_collection() -> pystac.Collection:
             start_date = f"{prefix.split('_')[3]}-01-01"
             end_date = f"{prefix.split('_')[4]}-12-31"
         else:
-            start_date = "1993-01-01"
-            end_date = "2024-12-31"
+            start_date = None
+            end_date = None
 
         item = create_item_with_icechunk_asset(
             ds=ds,
@@ -384,7 +426,7 @@ def create_armor3d_collection() -> pystac.Collection:
         # Add item to the ARMOR3D Collection:
         armor3d_collection.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Collection with ID: {armor3d_collection.id}")
+    logger.info(f"Completed: Added Items to STAC Collection with ID: {armor3d_collection.id}")
 
     return armor3d_collection
 
@@ -403,7 +445,9 @@ def create_hadisst_collection() -> pystac.Collection:
     spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 180.0, 90.0]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1870, month=1, day=16), datetime.datetime(year=2026, month=4, day=16)])
+    start_datetime = datetime.datetime(year=1870, month=1, day=16, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2026, month=4, day=16, tzinfo=datetime.timezone.utc)
+    collection_interval = sorted([start_datetime, end_datetime])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the HadISST Version 1.1 Collection:
@@ -413,7 +457,12 @@ def create_hadisst_collection() -> pystac.Collection:
         description="**About:**\n\nCollection of HadISST Version 1.1 datasets.\n\n**More Information:**\n - [HadISST Version 1.1](https://www.metoffice.gov.uk/hadobs/hadisst/)",
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         license="Non-Commercial Government Licence",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="OceanDataStore", status="ongoing", update_frequency="quarterly", last_data_update="2026-05-01"),
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "OceanDataStore",
+                      "status": "ongoing",
+                      "update_frequency": "quarterly",
+                      "last_data_update": end_datetime.strftime("%Y-%m-%d")
+                      },
         keywords=["HadISSTv1.1", "global", "observation", "sea surface temperature", "sea ice concentration"],
         providers=[
             pystac.Provider(
@@ -431,7 +480,7 @@ def create_hadisst_collection() -> pystac.Collection:
         ],
     )
 
-    logging.info(f"Completed: Created STAC Collection: {hadisst_collection}")
+    logger.info(f"Completed: Created STAC Collection: {hadisst_collection}")
 
     # -- Add Items to HadISST Version 1.1 Collection -- #
     bucket = "hadisst"
@@ -444,14 +493,14 @@ def create_hadisst_collection() -> pystac.Collection:
             id=f"{bucket}/{prefix}",
             bucket=bucket,
             prefix=prefix,
-            start_date="1870-01-16",
-            end_date="2026-05-01",
+            start_date=None,
+            end_date=None,
             collection=bucket
             )
         # Add item to the HadISST Version 1.1 Collection:
         hadisst_collection.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Collection with ID: {hadisst_collection.id}")
+    logger.info(f"Completed: Added Items to STAC Collection with ID: {hadisst_collection.id}")
 
     return hadisst_collection
 
@@ -470,7 +519,9 @@ def create_era5_collection() -> pystac.Collection:
     spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 180.0, 90.0]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1980, month=1, day=1), datetime.datetime(year=2026, month=6, day=20)])
+    start_datetime = datetime.datetime(year=1980, month=1, day=1, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2026, month=6, day=20, tzinfo=datetime.timezone.utc)
+    collection_interval = sorted([start_datetime, end_datetime])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the ERA5 Collection:
@@ -480,7 +531,12 @@ def create_era5_collection() -> pystac.Collection:
         description="**About:**\n\nCollection of ERA5 datasets.\n\n**More Information:**\n - [ERA5](https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era5)",
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         license="Creative Commons CC-BY-4.0 License",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="OceanDataStore", status="ongoing", update_frequency="quarterly", last_data_update="2026-06-20"),
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "OceanDataStore",
+                      "status": "ongoing",
+                      "update_frequency": "quarterly",
+                      "last_data_update": end_datetime.strftime("%Y-%m-%d")
+                      },
         keywords=["ERA5", "global", "reanalysis", "sea surface temperature", "sea ice concentration"],
         providers=[
             pystac.Provider(
@@ -498,7 +554,7 @@ def create_era5_collection() -> pystac.Collection:
         ],
     )
 
-    logging.info(f"Completed: Created STAC Collection: {era5_collection.id}")
+    logger.info(f"Completed: Created STAC Collection: {era5_collection.id}")
 
     # -- Add Items to ERA5 Collection -- #
     bucket = "era5"
@@ -509,8 +565,8 @@ def create_era5_collection() -> pystac.Collection:
                 ]
     dates = [("1991-01-01", "2020-12-31"),
              ("1996-01-01", "2025-12-31"),
-             ("1980-01-01", "2026-06-20"),
-             ("1980-01-01", "2026-06-20")
+             (None, None),
+             (None, None)
              ]
 
     for prefix, date in zip(prefixes, dates):
@@ -529,7 +585,7 @@ def create_era5_collection() -> pystac.Collection:
         # Add item to the ERA5 Collection:
         era5_collection.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Collection with ID: {era5_collection.id}")
+    logger.info(f"Completed: Added Items to STAC Collection with ID: {era5_collection.id}")
 
     return era5_collection
 
@@ -548,7 +604,9 @@ def create_ostia_collection() -> pystac.Collection:
     spatial_extent = pystac.SpatialExtent(bboxes=[[-44.975, 13.975, 31.025, 84.975]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1993, month=1, day=1), datetime.datetime(year=2024, month=12, day=31)])
+    start_datetime = datetime.datetime(year=1993, month=1, day=1, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2026, month=7, day=30, tzinfo=datetime.timezone.utc)
+    collection_interval = sorted([start_datetime, end_datetime])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the OSTIA Collection:
@@ -558,7 +616,12 @@ def create_ostia_collection() -> pystac.Collection:
         description="**About:**\n\nCollection of OSTIA Sea Surface Datasets.\n\n**More Information:**\n - [OSTIA](https://doi.org/10.48670/moi-00165)",
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         license="Copernicus Marine Environment Monitoring Service Service Level Agreement (SLA)",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="OceanDataStore", status="ongoing", update_frequency="quarterly", last_data_update="2025-11-01"),
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "OceanDataStore",
+                      "status": "ongoing",
+                      "update_frequency": "quarterly",
+                      "last_data_update": end_datetime.strftime("%Y-%m-%d")
+                      },
         keywords=["OSTIA", "North Atlantic", "observation", "sea surface temperature", "sea ice concentration"],
         providers=[
             pystac.Provider(
@@ -582,14 +645,13 @@ def create_ostia_collection() -> pystac.Collection:
         ],
     )
 
-    logging.info(f"Completed: Created STAC Collection: {ostia_collection}")
+    logger.info(f"Completed: Created STAC Collection: {ostia_collection}")
 
     # -- Add Items to OSTIA Collection -- #
     bucket = "ostia"
-    for prefix in ["ostia_rep_na_1991_2020_daily_climatology",
+    for prefix in ["ostia_rep_na_1982_2011_daily_climatology",
+                   "ostia_rep_na_1991_2020_daily_climatology",
                    "ostia_rep_na_1996_2025_daily_climatology",
-                   "ostia_rep_na_daily_timeseries",
-                   "ostia_nrt_na_daily_timeseries",
                    "ostia_rep_na_daily_spatial",
                    "ostia_nrt_na_daily_spatial"
                    ]:
@@ -603,8 +665,8 @@ def create_ostia_collection() -> pystac.Collection:
             start_date = "1981-10-01"
             end_date = "2025-12-18"
         else:
-            start_date = "2025-01-01"
-            end_date = "2026-06-28"
+            start_date = None
+            end_date = None
 
         item = create_item_with_icechunk_asset(
             ds=ds,
@@ -618,6 +680,82 @@ def create_ostia_collection() -> pystac.Collection:
         # Add item to the OSTIA Collection:
         ostia_collection.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Collection with ID: {ostia_collection.id}")
+    logger.info(f"Completed: Added Items to STAC Collection with ID: {ostia_collection.id}")
 
     return ostia_collection
+
+def create_lops_collection() -> pystac.Collection:
+    """
+    Create the LOPS Ifremer STAC Collection.
+    
+    Returns:
+    -------
+    lops_collection : pystac.Collection
+        LOPS Ifremer STAC Collection.
+    """
+    # ==== Define LOPS Ifremer Observations Collection ==== #
+    # Define the spatial extent for the collection:
+    spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 180.0, 90.0]])
+
+    # Define the current temporal extent for the collection:
+    start_datetime = datetime.datetime(year=1970, month=1, day=16, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2021, month=4, day=16, tzinfo=datetime.timezone.utc)
+    start_date_str = start_datetime.strftime("%Y-%m-%d")
+    end_date_str = end_datetime.strftime("%Y-%m-%d")
+    collection_interval = sorted([start_datetime, end_datetime])
+    temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
+
+    # Define the LOPS, IFREMER Collection:
+    lops_collection = pystac.Collection(
+        id="lops",
+        title="LOPS Ifremer Collection",
+        description="**About:**\n\nCollection of LOPS Ifremer ocean observation datasets.\n\n**More Information:**\n - [LOPS MLD](https://doi.org/10.17882/91774)",
+        extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
+        license="Creative Commons CC-BY-4.0 License",
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "OceanDataStore",
+                      "status": "completed",
+                      "update_frequency": "None",
+                      "last_data_update": end_datetime.strftime("%Y-%m-%d")
+                      },
+        keywords=["mixed layer depth", "temperature", "salinity", "global ocean", "observations"],
+        providers=[
+            pystac.Provider(
+                name="LOPS",
+                description="LOPS Laboratory (IFREMER, Univ. of Brest, CNRS, IRD), Brest, France.",
+                roles=[pystac.ProviderRole.PRODUCER, pystac.ProviderRole.LICENSOR],
+                url="https://www.ifremer.fr",
+            ),
+            pystac.Provider(
+                name="JASMIN",
+                description="JASMIN Environmental Data Analysis Facility (United Kingdom).",
+                roles=[pystac.ProviderRole.HOST],
+                url="https://jasmin.ac.uk"
+            )
+        ],
+    )
+
+    logger.info(f"Completed: Created STAC Collection: {lops_collection}")
+
+    # -- Add Items to LOPS Collection -- #
+    bucket = "lops"
+    prefix = "lops_mld_1970_2021_monthly_climatology"
+
+    # Open dataset from Icechunk repository:
+    ds = open_icechunk_store(bucket=bucket, prefix=prefix, branch="main")
+
+    item = create_item_with_icechunk_asset(
+        ds=ds,
+        id=f"{bucket}/{prefix}",
+        bucket=bucket,
+        prefix=prefix,
+        start_date=start_date_str,
+        end_date=end_date_str,
+        collection=bucket
+        )
+    # Add item to the LOPS Collection:
+    lops_collection.add_item(item)
+
+    logger.info(f"Completed: Added Items to STAC Collection with ID: {lops_collection.id}")
+
+    return lops_collection

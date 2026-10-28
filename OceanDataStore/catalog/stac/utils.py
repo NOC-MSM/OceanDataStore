@@ -82,8 +82,8 @@ def create_item_with_zarr_asset(
     biogeochemistry_component: str = "None",
     atmosphere_component: str = "None",
     atmospheric_forcing: str = "JRA55-do",
-    start_date: str = "1976-01-01",
-    end_date: str = "2024-02-01",
+    start_date: str | None = None,
+    end_date: str | None = None,
     bbox: tuple = (-180.0, -90.0, 180.0, 90.0),
     collection : str = "noc-npd-jra55",
     variable_stores: bool = True,
@@ -164,6 +164,20 @@ def create_item_with_zarr_asset(
     pystac.Item
         A STAC Item containing the dataset information and an asset pointing to the data.
     """
+    # === Geometry === #
+    # Define Polygon geometry for the item:
+    polygon = Polygon([
+        (bbox[0], bbox[1]),   # SW corner
+        (bbox[2], bbox[1]),   # SE corner
+        (bbox[2], bbox[3]),   # NE corner
+        (bbox[0], bbox[3]),   # NW corner
+        (bbox[0], bbox[1])    # Closing the polygon back to SW corner
+    ])
+
+    # Convert the Polygon to GeoJSON format:
+    geometry = mapping(polygon)
+
+    # === Properties === #
     # Define the item description based on the prefix:
     var = f"{prefix.split('/')[-1]} output" if variable_stores else "outputs"
 
@@ -181,17 +195,25 @@ def create_item_with_zarr_asset(
     # Add OceanDataCatalog Access Information to the description:
     description += f"\n\n**OceanDataCatalog Access:**\n`catalog.open_dataset(id='{id}')`"
 
-    # Define Polygon geometry for the item:
-    polygon = Polygon([
-        (bbox[0], bbox[1]),   # SW corner
-        (bbox[2], bbox[1]),   # SE corner
-        (bbox[2], bbox[3]),   # NE corner
-        (bbox[0], bbox[3]),   # NW corner
-        (bbox[0], bbox[1])    # Closing the polygon back to SW corner
-    ])
-
-    # Convert the Polygon to GeoJSON format:
-    geometry = mapping(polygon)
+    # Define start and end datetimes for the Item:
+    if start_date is None:
+        if "time_counter" in ds:
+            start_date = ds["time_counter"].dt.strftime("%Y-%m-%d").values[0]
+        elif "time" in ds:
+            start_date = ds["time"].dt.strftime("%Y-%m-%d").values[0]
+        else:
+            start_date = ds.attrs.get("start_date", None)
+        if start_date is None:
+            raise ValueError("'start_date' must be provided either as a parameter or as a global dataset attribute.")
+    if end_date is None:
+        if "time_counter" in ds:
+            end_date = ds["time_counter"].dt.strftime("%Y-%m-%d").values[-1]
+        elif "time" in ds:
+            end_date = ds["time"].dt.strftime("%Y-%m-%d").values[-1]
+        else:
+            end_date = ds.attrs.get("end_date", None)
+        if end_date is None:
+            raise ValueError("'end_date' must be provided either as a parameter or as a global dataset attribute.")
 
     # Create a STAC Item with Asset:
     item = pystac.Item(
@@ -237,13 +259,13 @@ def create_item_with_zarr_asset(
         title=title,
         description=description,
         media_type="application/vnd.zarr",
-        extra_fields=dict(
-            endpoint_url=endpoint_url,
-            bucket=bucket,
-            prefix=prefix,
-            zarr_format=zarr_format,
-            anonymous=True
-        )
+        extra_fields={
+            "endpoint_url": endpoint_url,
+            "bucket": bucket,
+            "prefix": prefix,
+            "zarr_format": zarr_format,
+            "anonymous": True,
+        }
     ))
 
     return item
@@ -399,11 +421,21 @@ def create_item_with_icechunk_asset(
 
     # Define start and end datetimes for the Item:
     if start_date is None:
-        start_date = ds.attrs.get("start_date", None)
+        if "time_counter" in ds:
+            start_date = ds["time_counter"].dt.strftime("%Y-%m-%d").values[0]
+        elif "time" in ds:
+            start_date = ds["time"].dt.strftime("%Y-%m-%d").values[0]
+        else:
+            start_date = ds.attrs.get("start_date", None)
         if start_date is None:
             raise ValueError("'start_date' must be provided either as a parameter or as a global dataset attribute.")
     if end_date is None:
-        end_date = ds.attrs.get("end_date", None)
+        if "time_counter" in ds:
+            end_date = ds["time_counter"].dt.strftime("%Y-%m-%d").values[-1]
+        elif "time" in ds:
+            end_date = ds["time"].dt.strftime("%Y-%m-%d").values[-1]
+        else:
+            end_date = ds.attrs.get("end_date", None)
         if end_date is None:
             raise ValueError("'end_date' must be provided either as a parameter or as a global dataset attribute.")
 
@@ -463,14 +495,14 @@ def create_item_with_icechunk_asset(
         title=ds.attrs.get("title", None) if title is None else title,
         description=description,
         media_type="application/vnd.zarr+icechunk",
-        extra_fields=dict(
-            endpoint_url=endpoint_url,
-            bucket=bucket,
-            prefix=prefix,
-            variant=ds.attrs.get("variant", None) if variant is None else variant,
-            group=group,
-            anonymous=anonymous
-        )
+        extra_fields={
+            "endpoint_url": endpoint_url,
+            "bucket": bucket,
+            "prefix": prefix,
+            "variant": ds.attrs.get("variant", None) if variant is None else variant,
+            "group": group,
+            "anonymous": anonymous,
+        }
     ))
 
     return item

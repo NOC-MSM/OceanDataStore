@@ -10,13 +10,15 @@ Authors:
     - Ollie Tooth (oliver.tooth@noc.ac.uk)
 """
 # -- Import Python Modules -- #
-import logging
-import pystac
 import datetime
+import logging
+
+import pystac
 import xarray as xr
 
 from OceanDataStore.catalog.stac.utils import create_item_with_zarr_asset
 
+logger = logging.getLogger(__name__)
 
 def create_npd_jra55_collection(
     ) -> pystac.Collection:
@@ -33,7 +35,9 @@ def create_npd_jra55_collection(
     spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 0, 180.0, 90.0, 6000]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1976, month=1, day=1), datetime.datetime(year=2024, month=2, day=1)])
+    collection_interval = sorted([datetime.datetime(year=1976, month=1, day=1, tzinfo=datetime.timezone.utc),
+                                  datetime.datetime(year=2024, month=2, day=1, tzinfo=datetime.timezone.utc)
+                                  ])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the Near-Present Day Collection:
@@ -44,7 +48,11 @@ def create_npd_jra55_collection(
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         # Open Government License (OGL) - UK version 3.0 - http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
         license="OGL-UK-3.0",
-        extra_fields=dict(contact="Ollie Tooth (oliver.tooth@noc.ac.uk)", project="AtlantiS", status="completed", last_data_update="2025-05-30"),
+        extra_fields={"contact": "Ollie Tooth (oliver.tooth@noc.ac.uk)",
+                      "project": "AtlantiS",
+                      "status": "completed",
+                      "last_data_update": "2025-05-30"
+                      },
         keywords=["NOC", "JRA55-do", "Near-Present Day", "AtlantiS", "hindcast", "global", "model", "ocean", "sea-ice"],
         providers=[
             pystac.Provider(
@@ -62,7 +70,7 @@ def create_npd_jra55_collection(
         ],
     )
 
-    logging.info(f"Completed: Created NOC STAC Collection with ID: {npd_collection.id}")
+    logger.info(f"Completed: Created NOC STAC Collection with ID: {npd_collection.id}")
 
     # ==== Define NOC Near-Present Day Model Simulations Catalogs ==== #
     npd_eorca1_jra55v1 = pystac.Catalog(
@@ -71,7 +79,7 @@ def create_npd_jra55_collection(
         description="Catalog of eORCA1 JRA55-do Near-Present Day ocean sea-ice simulations performed by the National Oceanography Centre."
         )
 
-    logging.info(f"Completed: Created STAC Catalog with ID: {npd_eorca1_jra55v1.id}")
+    logger.info(f"Completed: Created STAC Catalog with ID: {npd_eorca1_jra55v1.id}")
 
     npd_eorca025_jra55v1 = pystac.Catalog(
         id="npd-eorca025-jra55v1",
@@ -79,7 +87,7 @@ def create_npd_jra55_collection(
         description="Catalog of eORCA025 JRA55-do Near-Present Day ocean sea-ice simulations performed by the National Oceanography Centre.",
         )
 
-    logging.info(f"Completed: Created STAC Catalog with ID: {npd_eorca025_jra55v1.id}")
+    logger.info(f"Completed: Created STAC Catalog with ID: {npd_eorca025_jra55v1.id}")
 
     # ==== Define NOC Near-Present Day Model Variant Catalogs ==== #
     r1i1c1f1_eorca1_jra55v1 = pystac.Catalog(
@@ -88,7 +96,7 @@ def create_npd_jra55_collection(
         description="Catalog of eORCA1 JRA55-do Near-Present Day ocean physics & sea-ice outputs for model variant: r1i1c1f1.\n\n**Variant Label:**\n\nRealisation=1, Initialisation=1, Configuration=1, Forcing=1."
         )
 
-    logging.info(f"Completed: Created STAC Catalog with ID: {r1i1c1f1_eorca1_jra55v1.id}")
+    logger.info(f"Completed: Created STAC Catalog with ID: {r1i1c1f1_eorca1_jra55v1.id}")
 
     r1i1c1f1_eorca025_jra55v1 = pystac.Catalog(
         id="r1i1c1f1",
@@ -96,7 +104,7 @@ def create_npd_jra55_collection(
         description="Catalog of eORCA025 JRA55-do Near-Present Day ocean physics & sea-ice outputs for model variant: r1i1c1f1.\n\n**Variant Label:**\n\nRealisation=1, Initialisation=1, Configuration=1, Forcing=1.",
         )
 
-    logging.info(f"Completed: Created STAC Catalog with ID: {r1i1c1f1_eorca025_jra55v1.id}")
+    logger.info(f"Completed: Created STAC Catalog with ID: {r1i1c1f1_eorca025_jra55v1.id}")
 
     # -- Add Items to NOC Near-Present Day eORCA1 JRA55v1 {gn} Sub-Catalog -- #
     # Define url & bucket for eORCA1 JRA55v1 NPD data:
@@ -138,7 +146,7 @@ def create_npd_jra55_collection(
         # Add item to the eORCA1 JRA55v1 NPD global native model grid catalog:
         r1i1c1f1_eorca1_jra55v1.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Catalog with ID: {r1i1c1f1_eorca1_jra55v1.id}")
+    logger.info(f"Completed: Added Items to STAC Catalog with ID: {npd_collection.id}/{npd_eorca1_jra55v1.id}/{r1i1c1f1_eorca1_jra55v1.id}")
 
     # -- Add Items to NOC Near-Present Day eORCA025 JRA55v1 {gn} Sub-Catalog -- #
     # Define url & bucket for eORCA025 JRA55v1 NPD data:
@@ -181,7 +189,7 @@ def create_npd_jra55_collection(
         # Add item to the eORCA025 JRA55v1 NPD global native model grid catalog:
         r1i1c1f1_eorca025_jra55v1.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Catalog with ID: {r1i1c1f1_eorca025_jra55v1.id}")
+    logger.info(f"Completed: Added Items to STAC Catalog with ID: {npd_collection.id}/{npd_eorca025_jra55v1.id}/{r1i1c1f1_eorca025_jra55v1.id}")
 
     # ==== Add Nested Catalogs to NOC Near-Present Day Collection ==== #
 

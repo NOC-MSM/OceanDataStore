@@ -9,46 +9,41 @@ Authors:
     - Ollie Tooth (oliver.tooth@noc.ac.uk)
 """
 # -- Import Python Modules -- #
-import logging
-import pystac
 import datetime
-import xarray as xr
-from tqdm import tqdm
-from OceanDataStore.cli.object_store import ObjectStoreS3
+import logging
 
-from OceanDataStore.catalog.stac.utils import create_item_with_zarr_asset
+import pystac
+import xarray as xr
+
+from OceanDataStore.catalog.stac.utils import (
+    create_item_with_icechunk_asset,
+    create_item_with_zarr_asset,
+    open_icechunk_store,
+)
+
+logger = logging.getLogger(__name__)
+
 
 def create_rapid_evo_collection(
-    credentials_json: str
     ) -> pystac.Collection:
     """
     Create the NOC Rapid Evolution STAC Collection.
-
-    Parameters:
-    ----------
-    credentials_json : str
-        Path to the JSON file containing the credentials for the S3 object store.
     
     Returns:
     -------
     rapid_evo_collection : pystac.Collection
         NOC Rapid Evolution STAC Collection.
     """
-    # -- Initialise Object Store -- #
-    obj_store = ObjectStoreS3(anon=False,
-                              asynchronous=False,
-                              store_credentials_json=credentials_json
-                              )
-
-    # Define list of variable Zarr stores to exclude from the STAC item creation:
-    exclude_vars = ['depthu_bounds', 'depthv_bounds', 'depthw_bounds', 'deptht_bounds', 'time_counter_bounds', 'time_centered_bounds']
-
     # -- Define NOC Rapid Evolution Collection -- #
     # Define the spatial extent for the collection:
     spatial_extent = pystac.SpatialExtent(bboxes=[[-180.0, -90.0, 0, 180.0, 90.0, 6000]])
 
     # Define the current temporal extent for the collection:
-    collection_interval = sorted([datetime.datetime(year=1976, month=1, day=1), datetime.datetime(year=2024, month=12, day=31)])
+    start_datetime = datetime.datetime(year=1976, month=1, day=1, tzinfo=datetime.timezone.utc)
+    end_datetime = datetime.datetime(year=2023, month=12, day=31, tzinfo=datetime.timezone.utc)
+    start_date_str = start_datetime.strftime("%Y-%m-%d")
+    end_date_str = end_datetime.strftime("%Y-%m-%d")
+    collection_interval = sorted([start_datetime, end_datetime])
     temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
 
     # Define the RAPID-Evolution Collection:
@@ -59,7 +54,11 @@ def create_rapid_evo_collection(
         extent=pystac.Extent(spatial=spatial_extent, temporal=temporal_extent),
         # Open Government License (OGL) - UK version 3.0 - http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
         license="OGL-UK-3.0",
-        extra_fields=dict(contact="Adam Blaker (atb299@noc.ac.uk)", project="RAPID-Evolution", status="complete", last_data_update="2025-05-30"),
+        extra_fields={"contact": "Adam Blaker (atb299@noc.ac.uk)",
+                      "project": "RAPID-Evolution",
+                      "status": "complete",
+                      "last_data_update": end_date_str
+                      },
         keywords=["NOC", "Rapid Evolution", "hindcast", "global", "nested", "model", "ocean", "sea-ice"],
         providers=[
             pystac.Provider(
@@ -77,233 +76,187 @@ def create_rapid_evo_collection(
         ],
     )
 
-    logging.info(f"Completed: Created STAC Collection: {rapid_evo_collection}")
+    logger.info(f"Completed: Created STAC Collection: {rapid_evo_collection}")
 
-    # -- Define NOC RAPID-Evolution Model Configuration Catalogs -- #
-    r_evo_eorca025 = pystac.Catalog(
-        id="r_evo_eorca025",
-        title="eORCA025 RAPID-Evolution global parent domain Catalog",
-        description="Catalog of eORCA025 JRA55-do global parent domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre."
-    )
+    # ==== Define NOC RAPID Evolution Model Simulations Catalogs ==== #
+    r_evo_eorca025_jra55 = pystac.Catalog(
+        id="r-evo-eorca025-jra55",
+        title="eORCA025 JRA55-do RAPID-Evolution Catalog",
+        description="Catalog of eORCA025 JRA55-do RAPID-Evolution nested ocean sea-ice simulations performed by the National Oceanography Centre."
+        )
+    logger.info(f"-> Completed: Created STAC Catalog with ID: {r_evo_eorca025_jra55.id}")
 
-    logging.info(f"Completed: Created STAC Catalog: {r_evo_eorca025}")
+    # ==== Define NOC RAPID Evolution Variant Catalogs ==== #
+    r1i1c1f1_rapid_evo = pystac.Catalog(
+        id="r1i1c1f1",
+        title="NOC RAPID-Evolution: r1i1c1f1 Catalog",
+        description="Catalog of RAPID-Evolution nested ocean physics & sea-ice outputs for model variant: r1i1c1f1.\n\n**Variant Label:**\n\nRealisation=1, Initialisation=1, Configuration=1, Forcing=1."
+        )
 
-    r_evo_rapid12 = pystac.Catalog(
-        id="r_evo_rapid12",
-        title="RAPID12 RAPID-Evolution nested child domain Catalog",
-        description="Catalog of RAPID12 JRA55-do nested child domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre.",
-    )
+    logger.info(f"-> Completed: Created STAC Catalog with ID: {r1i1c1f1_rapid_evo.id}")
 
-    logging.info(f"Completed: Created STAC Catalog: {r_evo_rapid12}")
-
-    r_evo_rapid36 = pystac.Catalog(
-        id="r_evo_rapid36",
-        title="RAPID36 RAPID-Evolution nested grandchild domain Catalog",
-        description="Catalog of RAPID36 JRA55-do nested grandchild domain outputs from the RAPID-Evolution ocean physics simulation performed by the National Oceanography Centre.",
-    )
-
-    logging.info(f"Completed: Created STAC Catalog: {r_evo_rapid36}")
-
-    # -- Add Items to NOC RAPID-Evolution eORCA025 global parent Sub-Catalog -- #
-    # Define url for eORCA025 RAPID-Evolution data:
+    # -- NOC RAPID Evolution Nested NEMODataTree Icechunk Repository -- #
+    # Define endpoint url for RAPID-Evolution data:
     endpoint_url="https://rapidevolution-o.s3-ext.jc.rl.ac.uk"
 
-    for prefix in ["T1m", "U1m", "V1m", "W1m", "S1m", "eORCA025_domain_cfg"]:
-        # Create item with asset for each eORCA025 global parent RAPID-Evolution prefix:
-        if 'domain' in prefix:
-            operation = "None None"
-            bucket="rapid-evolution-ancillaries"
+    # Add root group for hierarchical Icechunk repository:
+    bucket = "rapid-evolution"
+    ds = open_icechunk_store(bucket=bucket, prefix="rapid-evo1-1m", branch="main", endpoint_url=endpoint_url)
+    item = create_item_with_icechunk_asset(
+        ds=ds,
+        id=f"noc-rapid-evolution/r-evo-eorca025-jra55/{ds.attrs.get('variant', 'r1i1c1f1')}/rapid-evo1-1m",
+        bucket=bucket,
+        prefix="rapid-evo1-1m",
+        title="RAPID-Evolution eORCA025 JRA55-do Nested NEMODataTree",
+        description="**Monthly-mean ocean outputs from the eORCA025 global parent domain, RAPID12 regional nested child domain, and RAPID36 regional nested grandchild domain.**",
+        start_date=start_date_str,
+        end_date=end_date_str,
+        collection="noc-rapid-evolution",
+        endpoint_url=endpoint_url,
+        )
+    # Add item to the RAPID-Evolution monthly-mean nested NEMODataTree:
+    r1i1c1f1_rapid_evo.add_item(item)
 
-            # Open domain_cfg dataset from Zarr store:
-            ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
-            item = create_item_with_zarr_asset(
-                id="noc-rapid-evolution/r_evo_eorca025/domain_cfg",
+    # Add individual parent domain groups in hierarchical Icechunk repository:
+    for prefix in ["T1m_parent", "U1m_parent", "V1m_parent", "W1m_parent", "F1m_parent"]:
+        # Open dataset from Icechunk repository:
+        group = f"grid{prefix[0]}"
+        ds = open_icechunk_store(bucket=bucket, prefix="rapid-evo1-1m", branch="main", group=group, endpoint_url=endpoint_url)
+
+        if "time_counter" in ds:
+            item = create_item_with_icechunk_asset(
                 ds=ds,
+                id=f"noc-rapid-evolution/r-evo-eorca025-jra55/{ds.attrs.get('variant', 'r1i1c1f1')}/{prefix}",
                 bucket=bucket,
-                platform="gn",
-                prefix=prefix,
-                title=f"RAPID-Evolution eORCA025 {prefix}",
-                horizontal_grid_resolution="1/4 degree",
-                start_date="1976-01-01",
-                end_date="2023-12-31",
+                prefix="rapid-evo1-1m",
+                title=f"RAPID-Evolution eORCA025 NEMODataTree {prefix[0]}-grid parent node",
+                description=f"**Monthly-mean eORCA025 global parent domain ocean {'scalar' if prefix[0] == 'T' else 'vector'} outputs defined at {prefix[0]}-points.**",
                 collection="noc-rapid-evolution",
-                operation=operation,
+                group=group,
                 endpoint_url=endpoint_url,
-                zarr_format=3,
-            )
-            # Add item to the eORCA025 RAPID-Evolution global parent domain native model grid catalog:
-            r_evo_eorca025.add_item(item)
-        
-        else:
-            bucket="r-evo1-eorca025-rapid12-rapid36"
-            prefix = f"eORCA025/{prefix}"
-
-            if '1y' in prefix:
-                operation = "annual mean"
-            elif '1m' in prefix:
-                operation = "monthly mean"
-
-            # Get variable Zarr stores from JASMIN object store:
-            var_stores = [path.split("/")[-1] for path in obj_store.ls(f"{bucket}/{prefix}") if path.split("/")[-1] not in exclude_vars]
-
-            # Create STAC Item for each variable Zarr store:
-            logging.info(f"In Progress: Adding {prefix} Items...")
-            for var in tqdm(var_stores):
-                # Open dataset from Zarr store:
-                ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}/{var}", consolidated=True)
-                item = create_item_with_zarr_asset(
-                    id=f"noc-rapid-evolution/r_evo_eorca025/{prefix}/{var}",
-                    ds=ds,
-                    bucket=bucket,
-                    platform="gn",
-                    prefix=f"{prefix}/{var}",
-                    title=f"RAPID-Evolution eORCA025 {prefix}/{var}",
-                    horizontal_grid_resolution="1/4 degree",
-                    start_date="1976-01-01",
-                    end_date="2023-12-31",
-                    collection="noc-rapid-evolution",
-                    operation=operation,
-                    endpoint_url=endpoint_url,
-                    zarr_format=3,
                 )
-                # Add item to the eORCA025 RAPID-Evolution global parent domain native model grid catalog:
-                r_evo_eorca025.add_item(item)
+            # Add item to the RAPID-Evolution monthly-mean nested NEMODataTree:
+            r1i1c1f1_rapid_evo.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Catalog: {r_evo_eorca025}")
+    # Add individual child domain groups in hierarchical Icechunk repository:
+    for prefix in ["T1m_child", "U1m_child", "V1m_child", "W1m_child", "F1m_child"]:
+        # Open dataset from Icechunk repository:
+        group = f"grid{prefix[0]}/1_grid{prefix[0]}"
+        ds = open_icechunk_store(bucket=bucket, prefix="rapid-evo1-1m", branch="main", group=group, endpoint_url=endpoint_url)
 
-    # -- Add Items to NOC RAPID-Evolution RAPID12 nested child domain Sub-Catalog -- #
-    for prefix in ["T1m", "U1m", "V1m", "W1m", "S1m", "eORCA025_RAPID12_domain_cfg"]:
-        # Create item with asset for each RAPID12 nested child domain prefix:
-        if 'domain' in prefix:
-            operation = "None None"
-            bucket="rapid-evolution-ancillaries"
-
-            # Open domain_cfg dataset from Zarr store:
-            ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
-            item = create_item_with_zarr_asset(
-                id="noc-rapid-evolution/r_evo_rapid12/domain_cfg",
+        if "time_counter" in ds:
+            item = create_item_with_icechunk_asset(
                 ds=ds,
+                id=f"noc-rapid-evolution/r-evo-eorca025-jra55/{ds.attrs.get('variant', 'r1i1c1f1')}/{prefix}",
                 bucket=bucket,
-                platform="gn",
-                prefix=prefix,
-                title=f"RAPID-Evolution RAPID12 {prefix}",
-                horizontal_grid_resolution="1/12 degree",
-                start_date="1976-01-01",
-                end_date="2023-12-31",
-                bbox=(-100.143814, 6.0719233, -1.8753614, 42.41955),
+                prefix="rapid-evo1-1m",
+                title=f"RAPID-Evolution RAPID12 NEMODataTree {prefix[0]}-grid child node",
+                description=f"**Monthly-mean RAPID12 regional nested child domain ocean {'scalar' if prefix[0] == 'T' else 'vector'} outputs defined at {prefix[0]}-points.**",
                 collection="noc-rapid-evolution",
-                operation=operation,
+                group=group,
                 endpoint_url=endpoint_url,
-                zarr_format=3,
-            )
-            # Add item to the RAPID12 RAPID-Evolution nested child domain native model grid catalog:
-            r_evo_rapid12.add_item(item)
-        
-        else:
-            bucket="r-evo1-eorca025-rapid12-rapid36"
-            prefix = f"RAPID12/{prefix}"
-            if '1y' in prefix:
-                operation = "annual mean"
-            elif '1m' in prefix:
-                operation = "monthly mean"
-
-            # Get variable Zarr stores from JASMIN object store:
-            var_stores = [path.split("/")[-1] for path in obj_store.ls(f"{bucket}/{prefix}") if path.split("/")[-1] not in exclude_vars]
-
-            # Create STAC Item for each variable Zarr store:
-            logging.info(f"In Progress: Adding {prefix} Items...")
-            for var in tqdm(var_stores):
-                # Open dataset from Zarr store:
-                ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}/{var}", consolidated=True)
-                item = create_item_with_zarr_asset(
-                    id=f"noc-rapid-evolution/r_evo_rapid12/{prefix}/{var}",
-                    ds=ds,
-                    bucket=bucket,
-                    platform="gn",
-                    prefix=f"{prefix}/{var}",
-                    title=f"RAPID-Evolution RAPID12 {prefix}/{var}",
-                    horizontal_grid_resolution="1/12 degree",
-                    start_date="1976-01-01",
-                    end_date="2023-12-31",
-                    bbox=(-100.143814, 6.0719233, -1.8753614, 42.41955),
-                    collection="noc-rapid-evolution",
-                    operation=operation,
-                    endpoint_url=endpoint_url,
-                    zarr_format=3,
                 )
-                # Add item to the RAPID12 RAPID-Evolution nested child domain native model grid catalog:
-                r_evo_rapid12.add_item(item)
+            # Add item to the RAPID-Evolution monthly-mean nested NEMODataTree:
+            r1i1c1f1_rapid_evo.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Catalog: {r_evo_rapid12}")
+    # Add individual grandchild domain groups in hierarchical Icechunk repository:
+    for prefix in ["T1m_grandchild", "U1m_grandchild", "V1m_grandchild", "W1m_grandchild", "F1m_grandchild"]:
+        # Open dataset from Icechunk repository:
+        group = f"grid{prefix[0]}/1_grid{prefix[0]}/2_grid{prefix[0]}"
+        ds = open_icechunk_store(bucket=bucket, prefix="rapid-evo1-1m", branch="main", group=group, endpoint_url=endpoint_url)
 
-    # -- Add Items to NOC RAPID-Evolution RAPID36 nested grandchild domain Sub-Catalog -- #
-    for prefix in ["T1m", "U1m", "V1m", "W1m", "S1m", "eORCA025_RAPID36_domain_cfg"]:
-        # Create item with asset for each RAPID36 nested grandchild domain prefix:
-        if 'domain' in prefix:
-            operation = "None None"
-            bucket="rapid-evolution-ancillaries"
-
-            # Open domain_cfg dataset from Zarr store:
-            ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}", consolidated=True)
-            item = create_item_with_zarr_asset(
-                id="noc-rapid-evolution/r_evo_rapid36/domain_cfg",
+        if "time_counter" in ds:
+            item = create_item_with_icechunk_asset(
                 ds=ds,
+                id=f"noc-rapid-evolution/r-evo-eorca025-jra55/{ds.attrs.get('variant', 'r1i1c1f1')}/{prefix}",
                 bucket=bucket,
-                platform="gn",
-                prefix=prefix,
-                title=f"RAPID-Evolution RAPID36 {prefix}",
-                horizontal_grid_resolution="1/36 degree",
-                start_date="1976-01-01",
-                end_date="2023-12-31",
-                bbox=(-98.530975, 17.34014, -8.879465, 30.447763),
+                prefix="rapid-evo1-1m",
+                title=f"RAPID-Evolution RAPID36 NEMODataTree {prefix[0]}-grid grandchild node",
+                description=f"**Monthly-mean RAPID36 regional nested grandchild domain ocean {'scalar' if prefix[0] == 'T' else 'vector'} outputs defined at {prefix[0]}-points.**",
                 collection="noc-rapid-evolution",
-                operation=operation,
-                endpoint_url=endpoint_url,
-                zarr_format=3,
-            )
-            # Add item to the RAPID36 RAPID-Evolution nested grandchild domain native model grid catalog:
-            r_evo_rapid36.add_item(item)
-        
-        else:
-            bucket="r-evo1-eorca025-rapid12-rapid36"
-            prefix = f"RAPID36/{prefix}"
-            if '1y' in prefix:
-                operation = "annual mean"
-            elif '1m' in prefix:
-                operation = "monthly mean"
-
-            # Get variable Zarr stores from JASMIN object store:
-            var_stores = [path.split("/")[-1] for path in obj_store.ls(f"{bucket}/{prefix}") if path.split("/")[-1] not in exclude_vars]
-
-            # Create STAC Item for each variable Zarr store:
-            logging.info(f"In Progress: Adding {prefix} Items...")
-            for var in tqdm(var_stores):
-                # Open dataset from Zarr store:
-                ds = xr.open_zarr(f"{endpoint_url}/{bucket}/{prefix}/{var}", consolidated=True)
-                item = create_item_with_zarr_asset(
-                    id=f"noc-rapid-evolution/r_evo_rapid36/{prefix}/{var}",
-                    ds=ds,
-                    bucket=bucket,
-                    platform="gn",
-                    horizontal_grid_resolution="1/36 degree",
-                    start_date="1976-01-01",
-                    end_date="2023-12-31",
-                    prefix=f"{prefix}/{var}",
-                    bbox=(-98.530975, 17.34014, -8.879465, 30.447763),
-                    collection="noc-rapid-evolution",
-                    title=f"RAPID-Evolution RAPID36 {prefix}/{var}",
-                    operation=operation,
-                    endpoint_url=endpoint_url,
-                    zarr_format=3,
+                group=group,
+                endpoint_url=endpoint_url
                 )
-                # Add item to the RAPID36 RAPID-Evolution nested grandchild domain native model grid catalog:
-                r_evo_rapid36.add_item(item)
+            # Add item to the RAPID-Evolution monthly-mean nested NEMODataTree:
+            r1i1c1f1_rapid_evo.add_item(item)
 
-    logging.info(f"Completed: Added Items to STAC Catalog: {r_evo_rapid36}")
+    logger.info(f"-> Completed: Added Items to STAC Catalog with ID: {rapid_evo_collection.id}/{r_evo_eorca025_jra55.id}/{r1i1c1f1_rapid_evo.id}")
 
-    # -- Add Nested Catalogs to NOC RAPID-Evolution Collection -- #
-    rapid_evo_collection.add_child(r_evo_eorca025)
-    rapid_evo_collection.add_child(r_evo_rapid12)
-    rapid_evo_collection.add_child(r_evo_rapid36)
+    # -- NOC RAPID-Evolution domain_cfg Zarr Stores -- #
+    # Define bucket for RAPID-Evolution ancillary data:
+    bucket="rapid-evolution-ancillaries"
+    operation = "None None"
+
+    # Open eORCA025 parent domain_cfg dataset from Zarr store:
+    ds = xr.open_zarr(f"{endpoint_url}/{bucket}/eORCA025_domain_cfg", consolidated=True)
+    item = create_item_with_zarr_asset(
+        id="noc-rapid-evolution/r-evo-eorca025-jra55/eorca025_domain_cfg",
+        ds=ds,
+        bucket=bucket,
+        platform="gn",
+        prefix="eORCA025_domain_cfg",
+        title="RAPID-Evolution eORCA025 domain_cfg",
+        horizontal_grid_resolution="1/4 degree",
+        start_date=start_date_str,
+        end_date=end_date_str,
+        collection="noc-rapid-evolution",
+        operation=operation,
+        endpoint_url=endpoint_url,
+        zarr_format=3,
+    )
+    # Add Item to RAPID Evolution Collection:
+    r1i1c1f1_rapid_evo.add_item(item)
+
+    # Open RAPID12 child domain_cfg dataset from Zarr store:
+    ds = xr.open_zarr(f"{endpoint_url}/{bucket}/eORCA025_RAPID12_domain_cfg", consolidated=True)
+    item = create_item_with_zarr_asset(
+        id="noc-rapid-evolution/r-evo-eorca025-jra55/rapid12_domain_cfg",
+        ds=ds,
+        bucket=bucket,
+        platform="gn",
+        prefix="eORCA025_RAPID12_domain_cfg",
+        title="RAPID-Evolution RAPID12 domain_cfg",
+        horizontal_grid_resolution="1/12 degree",
+        start_date=start_date_str,
+        end_date=end_date_str,
+        bbox=(-100.143814, 6.0719233, -1.8753614, 42.41955),
+        collection="noc-rapid-evolution",
+        operation=operation,
+        endpoint_url=endpoint_url,
+        zarr_format=3,
+    )
+    # Add Item to RAPID Evolution Collection:
+    r1i1c1f1_rapid_evo.add_item(item)
+
+    # Open RAPID36 grandchild domain_cfg dataset from Zarr store:
+    ds = xr.open_zarr(f"{endpoint_url}/{bucket}/eORCA025_RAPID36_domain_cfg", consolidated=True)
+    item = create_item_with_zarr_asset(
+        id="noc-rapid-evolution/r-evo-eorca025-jra55/rapid36_domain_cfg",
+        ds=ds,
+        bucket=bucket,
+        platform="gn",
+        prefix="eORCA025_RAPID36_domain_cfg",
+        title="RAPID-Evolution RAPID36 domain_cfg",
+        horizontal_grid_resolution="1/36 degree",
+        start_date=start_date_str,
+        end_date=end_date_str,
+        bbox=(-98.530975, 17.34014, -8.879465, 30.447763),
+        collection="noc-rapid-evolution",
+        operation=operation,
+        endpoint_url=endpoint_url,
+        zarr_format=3,
+    )
+    # Add Item to RAPID Evolution Collection:
+    r1i1c1f1_rapid_evo.add_item(item)
+
+    logger.info(f"Completed: Added RAPID Evolution domain_cfg Items to STAC Catalog: {rapid_evo_collection.id}/{r_evo_eorca025_jra55.id}/{r1i1c1f1_rapid_evo.id}")
+
+    # ==== Add Nested Catalogs to NOC RAPID Evolution Collection ==== #
+
+    # Model Simulation Variant Catalogs -> Model Simulation Catalogs:
+    r_evo_eorca025_jra55.add_child(r1i1c1f1_rapid_evo)
+
+    # Model Simulation Catalogs -> RAPID Evolution Collection:
+    rapid_evo_collection.add_child(r_evo_eorca025_jra55)\
 
     return rapid_evo_collection
