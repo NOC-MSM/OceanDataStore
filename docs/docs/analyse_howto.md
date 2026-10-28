@@ -53,11 +53,11 @@ ds = catalog.open_dataset(
 ```python
 ds = catalog.open_dataset(
     id="noc-npd-era5/npd-eorca12-era5v1/r1i1c1f1/T5d",
-    bbox=(-65, 45, 10, 65),
+    bbox=(-65, 10, 45, 65),
 )
 ```
 
-* where `bbox` is a tuple of the form: `(lon_min, lat_min, lon_max, lat_max)`.
+* where `bbox` is a tuple of the form: `(lon_min, lon_max, lat_min, lat_max)`.
 
 ---
 
