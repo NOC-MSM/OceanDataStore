@@ -348,7 +348,7 @@ class OceanDataCatalog:
         The list of STAC Items returned from the most recent query.
     """
     def __init__(self,
-                 catalog_name: str = "noc-stac",
+                 catalog_name: str = "ods-stac",
                  catalog_url: str | None = None
                  ):
         # Define the URL to the NOC STAC root catalog:
