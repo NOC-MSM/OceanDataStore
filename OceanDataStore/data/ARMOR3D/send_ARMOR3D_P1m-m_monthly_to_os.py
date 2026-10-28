@@ -1,12 +1,13 @@
 # =========================================================
 # send_ARMOR3D_P1m-m_monthly_to_os.py
 #
-# Script to write ARMOR3D REP monthly data to Icechunk
+# Script to write ARMOR-3D REP monthly data to Icechunk
 # repository in JASMIN cloud object storage.
 #
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
 import logging
+import os
 
 import xarray as xr
 import zarr
@@ -91,8 +92,8 @@ def main():
     branch = "main"
     variable_commits = True
     config_kwargs = {
-            "temporary_directory":".../OceanDataStore/OceanDataStore/data/ARMOR3D/",
-            "local_directory":".../OceanDataStore/OceanDataStore/data/ARMOR3D/"
+            "temporary_directory":f"{os.getcwd()}",
+            "local_directory":f"{os.getcwd()}"
         }
     cluster_kwargs = {
             "n_workers" : 25,

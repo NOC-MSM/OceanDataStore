@@ -1,37 +1,40 @@
 # =========================================================
-# update_EN4.2.2_analyses_g10_to_os.py
+# update_ARMOR3D_P1m-m_monthly_to_os.py
 #
-# Script to update EN.4.2.2 analyses in Icechunk repository
+# Script to update ARMOR-3D analyses in Icechunk repository
 # in JASMIN cloud object storage.
 #
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
 import logging
+import os
 
 import xarray as xr
 import zarr
 
 from OceanDataStore.cli import initialise_logging, update_icechunk
 from OceanDataStore.data.utils import (
-    compute_dx,
-    compute_dy,
     compute_cell_area,
     compute_cell_thickness,
+    compute_dx,
+    compute_dy,
     compute_land_sea_mask,
 )
 
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main(
+    year: int = 2025,
+    ) -> None:
     # ========== Initialise OceanDataStore Logging ========== #
     initialise_logging()
 
     # ========== Prepare Data ========== #
     # Open complete ARMOR3D REP monthly climatology dataset:
-    filepath = "/dssgfs01/scratch/otooth/npd_data/observations/ARMOR3D/armor-3d_rep_monthly_NA_*.zarr"
-    ds = xr.open_mfdataset(filepath, compat="no_conflicts", data_vars="all", engine="zarr")
-    logging.info("-> Completed: Opened ARMOR-3D REP monthly climatology dataset from Zarr stores.")
+    filepath = f"/dssgfs01/scratch/otooth/npd_data/observations/ARMOR3D/armor-3d_rep_monthly_NA_{year}.zarr"
+    ds = xr.open_dataset(filepath, engine="zarr")
+    logger.info("-> Completed: Opened ARMOR-3D REP monthly climatology dataset from Zarr store(s).")
 
     # Rename variables to standard names:
     ds = ds.rename({"to": "thetao",
@@ -68,6 +71,8 @@ def main():
         "bbox": "[-180.0, 180.0, -90.0, 90.0]",
     })
 
+    logger.info("-> Completed: Updated global attributes for ARMOR-3D dataset.")
+
     # Add ancillary variables:
     ds['mask'] = compute_land_sea_mask(ds['thetao'].isel(time=0, depth=0))
     ds['dx'] = compute_dx(ds)
@@ -84,13 +89,15 @@ def main():
         'units': "m3",
     })
 
+    logger.info("-> Completed: Added ancillary variables for ARMOR-3D dataset.")
+
     # ========== Send to Icechunk Repository ========== #
     bucket = "armor3d"
     store_credentials_json = ".../credentials/jasmin_os_credentials.json"
     branch = "main"
     config_kwargs = {
-            "temporary_directory":".../OceanDataStore/OceanDataStore/data/ARMOR3D/",
-            "local_directory":".../OceanDataStore/OceanDataStore/data/ARMOR3D/"
+            "temporary_directory":f"{os.getcwd()}",
+            "local_directory":f"{os.getcwd()}"
         }
     cluster_kwargs = {
             "n_workers" : 25,
@@ -119,16 +126,18 @@ def main():
             ds[var].encoding['chunks'] = (50,)
 
     # Update variable encodings:
-    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=5, shuffle=zarr.codecs.BloscShuffle.shuffle)
+    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=5, shuffle="shuffle")
     for var in list(ds.data_vars) + list(ds.coords):
         ds[var].encoding['compressors'] = [blosccodec]
 
     # Define prefix and commit message based on period:
     prefix = "armor3d_global_my_monthly"
-    commit_message = "Added ARMOR3D Global Monthly (2000-2024)."
+    start_date_str = ds["time"][0].dt.strftime("%Y-%m-%d")
+    end_date_str = ds["time"][-1].dt.strftime("%Y-%m-%d")
+    commit_message = f"Added ARMOR3D Global Monthly ({start_date_str} - {end_date_str})."
 
     update_icechunk(
-        file=ds.sel(time=slice("2000-01-01", "2024-12-31")),
+        file=ds,
         bucket=bucket,
         object_prefix=prefix,
         store_credentials_json=store_credentials_json,
@@ -140,4 +149,8 @@ def main():
         )
 
 if __name__ == "__main__":
-    main()
+    # Define ARMOR-3D reprocessed year:
+    year = 2025
+
+    # === Update ARMOR-3D Global Monthly Icechunk repo === #
+    main(year=year)

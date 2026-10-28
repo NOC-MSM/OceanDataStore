@@ -18,7 +18,7 @@ credentials_fpath = ".../copernicusmarine-credentials"
 out_fdir = "/dssgfs01/scratch/otooth/npd_data/observations/ARMOR3D/"
 
 # Download the ARMOR3D analysis dataset for North Atlantic subdomain:
-for year in range(2001, 2025):
+for year in range(2025, 2027):
   print(f"In Progress: Downloading ARMOR3D analysis dataset for: {year}...")
   copernicusmarine.subset(
     dataset_id="cmems_obs-mob_glo_phy_my_0.125deg_P1M-m",
