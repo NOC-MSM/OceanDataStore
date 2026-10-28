@@ -36,11 +36,11 @@ Behind the **OceanDataCatalog** API, STAC catalogs are used to describe publicly
 
 ### NOC Ocean Modelling + STAC
 
-National Oceanography Centre ocean model outputs are organised in the `odc-stac` **Catalog**, which serves as the highest-level STAC object in our hierarchy.
+National Oceanography Centre ocean model outputs are organised in the `ods-stac` **Catalog**, which serves as the highest-level STAC object in our hierarchy.
 
 ```mermaid
 flowchart TD
-    A["📁 Catalog\nnoc-stac"] --> B["🗂️ Collection\nnoc-npd-era5"]
+    A["📁 Catalog\nods-stac"] --> B["🗂️ Collection\nnoc-npd-era5"]
     B --> C["📁 Catalog\nnpd-eorca1-era5v1"]
     B --> D["📁 Catalog\nnpd-eorca025-era5v1"]
     B --> E["📁 Catalog\nnpd-eorca12-era5v1"]

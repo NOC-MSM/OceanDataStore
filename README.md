@@ -95,7 +95,7 @@ More complete publishing workflows and examples are available in the `examples` 
 from oceandatastore import OceanDataCatalog
 
 # Connect to the NOC STAC catalog:
-catalog = OceanDataCatalog(catalog_name="noc-stac")
+catalog = OceanDataCatalog(catalog_name="ods-stac")
 
 # Search the catalog:
 catalog.search(

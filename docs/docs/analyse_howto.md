@@ -100,7 +100,7 @@ nemo = NEMODataTree.from_datasets(datasets=datasets, iperio=True, nftype="F", re
 from nemo_cookbook import NEMODataTree
 
 # Open Icechunk repository:
-repo = catalog.open_dataset(id="noc-npd-era5/npd-eorca12-era5v1/r1i1c1f1/eorca12-era5v1-5d")
+repo = catalog.open_repo(id="noc-npd-era5/npd-eorca12-era5v1/r1i1c1f1/eorca12-era5v1-5d")
 
 # Create a new grid-aware NEMODataTree:
 nemo = NEMODataTree.from_icechunk(repo=repo, branch="main", iperio=True, nftype="T")
