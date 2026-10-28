@@ -427,6 +427,7 @@ def update_icechunk_variable_attrs(
         attrs: list[dict],
         commit_message: str,
         branch: str='main',
+        group: str | None=None,
         region: str='us-east-1',
         force_path_style: bool=True,
 ) -> str:
@@ -452,6 +453,8 @@ def update_icechunk_variable_attrs(
         Commit message describing the update to the Icechunk store.
     branch : str, optional
         Branch of the Icechunk repository to update (default: 'main').
+    group : str or None, optional
+        Group within the Icechunk repository to update (default: None, i.e., root group).
     region : str, optional
         AWS region where the S3 bucket is located (default: 'us-east-1').
     force_path_style : bool, optional
@@ -477,6 +480,8 @@ def update_icechunk_variable_attrs(
         raise TypeError("commit_message must be a string.")
     if not isinstance(branch, str):
         raise TypeError("branch must be a string.")
+    if group is not None and not isinstance(group, str):
+        raise TypeError("group must be a string or None.")
     if not isinstance(region, str):
         raise TypeError("region must be a string.")
     if not isinstance(force_path_style, bool):
@@ -504,7 +509,8 @@ def update_icechunk_variable_attrs(
 
     # Open a writable session on root group:
     session = repo.writable_session(branch=branch)
-    root = zarr.open_group(session.store)
+    root = zarr.open_group(store=session.store, path=group)
+    print(f"Opened writable session on group '{group or 'root'}'")
     # Update variable attributes & commit changes to repo:
     for var, attr in zip(vars, attrs):
         root[var].attrs.update(attr)
