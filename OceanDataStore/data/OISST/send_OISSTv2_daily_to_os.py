@@ -7,6 +7,7 @@
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
 import logging
+import os
 
 import xarray as xr
 import zarr
@@ -126,8 +127,8 @@ def main():
     commit_message = "Added OISSTv2.1 Sea Surface Temperature Daily Timeseries (1981-09-2026-10)." 
 
     config_kwargs = {
-            "temporary_directory":"/dssgfs01/working/otooth/Software/OceanDataStore/OceanDataStore/data/OISST/",
-            "local_directory":"/dssgfs01/working/otooth/Software/OceanDataStore/OceanDataStore/data/OISST/"
+            "temporary_directory":f"{os.getcwd()}",
+            "local_directory":f"{os.getcwd()}"
         }
     cluster_kwargs = {
             "n_workers" : 15,

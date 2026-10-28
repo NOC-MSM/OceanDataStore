@@ -7,6 +7,7 @@
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
 import logging
+import os
 
 import numpy as np
 import xarray as xr
@@ -43,8 +44,8 @@ def main():
     store_credentials_json = ".../credentials/jasmin_os_credentials.json"
     branch = "main"
     config_kwargs = {
-            "temporary_directory":"/dssgfs01/working/otooth/Software/OceanDataStore/OceanDataStore/data/OISST/",
-            "local_directory":"/dssgfs01/working/otooth/Software/OceanDataStore/OceanDataStore/data/OISST/"
+            "temporary_directory":f"{os.getcwd()}",
+            "local_directory":f"{os.getcwd()}"
         }
     cluster_kwargs = {
             "n_workers" : 15,

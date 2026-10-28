@@ -7,6 +7,7 @@
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
 import logging
+import os
 
 import numpy as np
 import xarray as xr
@@ -121,11 +122,26 @@ def main():
     # Update variable encodings:
     blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=3, shuffle="shuffle")
     for var in list(ds.data_vars) + list(ds.coords):
+        ds[var].encoding.clear()
         ds[var].encoding['compressors'] = [blosccodec]
 
-    # Define prefix and commit message based on climatology period:
+    # ========== Send to Icechunk Repository ========== #
+    bucket = "oisst"
+    exists = False
+    store_credentials_json = ".../credentials/jasmin_os_credentials.json"
+    branch = "main"
+    variable_commits = True
     prefix = "oisst_v2.1_monthly"
-    commit_message = "Added OISSTv2.1 Sea Surface Temperature & Sea Ice Fraction Monthly Timeseries (1981-2026)."
+    commit_message = f"Added OISSTv2.1 Sea Surface Temperature & Sea Ice Fraction Monthly Timeseries ({ds['time'].dt.strftime('%Y-%m-%d').values[0]} to {ds['time'].dt.strftime('%Y-%m-%d').values[-1]})."
+    config_kwargs = {
+            "temporary_directory":f"{os.getcwd()}",
+            "local_directory":f"{os.getcwd()}"
+        }
+    cluster_kwargs = {
+            "n_workers" : 12,
+            "threads_per_worker" : 1,
+            "memory_limit":"3GB"
+        }
 
     send_to_icechunk(
         file=ds,
@@ -137,8 +153,8 @@ def main():
         branch=branch,
         commit_message=commit_message,
         variable_commits=variable_commits,
-        dask_config_kwargs=None,
-        dask_cluster_kwargs=None,
+        dask_config_kwargs=config_kwargs,
+        dask_cluster_kwargs=cluster_kwargs,
         )
 
 if __name__ == "__main__":
