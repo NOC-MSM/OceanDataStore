@@ -21,7 +21,7 @@ To get started accessing and analysing cloud-hosted ocean datasets, including bu
     &mdash; <a href="catalog_guide.md">OceanDataCatalog API guide</a>
   </span>
   <a class="ods-stac-bar__btn"
-     href="https://radiantearth.github.io/stac-browser/#/external/noc-msm-o.s3-ext.jc.rl.ac.uk/oceandatastore/noc-stac/catalog.json"
+     href="https://radiantearth.github.io/stac-browser/#/external/noc-msm-o.s3-ext.jc.rl.ac.uk/oceandatastore/ods-stac/catalog.json"
      target="_blank" rel="noopener">
     Open in new tab ↗
   </a>
@@ -33,7 +33,7 @@ To get started accessing and analysing cloud-hosted ocean datasets, including bu
   </div>
   <iframe
     class="ods-stac-frame"
-    src="https://radiantearth.github.io/stac-browser/#/external/noc-msm-o.s3-ext.jc.rl.ac.uk/oceandatastore/noc-stac/catalog.json"
+    src="https://radiantearth.github.io/stac-browser/#/external/noc-msm-o.s3-ext.jc.rl.ac.uk/oceandatastore/ods-stac/catalog.json"
     loading="lazy"
     title="NOC STAC Browser"
     onload="document.getElementById('stac-loading').style.display='none'">
