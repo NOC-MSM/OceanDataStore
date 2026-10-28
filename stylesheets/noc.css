@@ -1,0 +1,558 @@
+/* =====================================================================
+   NOC brand overrides for MkDocs Material
+   Palette reference: noc.ac.uk — #000f37 / #004866 / #006d99 / #00b5ff
+   ===================================================================== */
+
+/* ---- Font: system-UI stack (matches _NOC_CSS) ---- */
+:root {
+  --md-text-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --md-code-font: ui-monospace, "SFMono-Regular", "Roboto Mono", monospace;
+}
+
+body,
+.md-typeset {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ---- Light mode palette ---- */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color:        #000f37;
+  --md-primary-fg-color--light: #006d99;
+  --md-primary-fg-color--dark:  #00091f;
+  --md-primary-bg-color:        #ffffff;
+  --md-primary-bg-color--light: #f7f7f7;
+  --md-accent-fg-color:         #00b5ff;
+  --md-accent-fg-color--transparent: rgba(0, 181, 255, 0.12);
+  --md-typeset-a-color:         #006d99;
+
+  /* Card/surface colours — noc.ac.uk palette */
+  --ods-surface:    #f7f7f7;
+  --ods-border:     #cde8f5;
+  --ods-stripe:     #daeef8;
+  --ods-hover:      #b3dcee;
+  --ods-neutral:    #006d99;
+}
+
+/* ---- Dark mode palette ---- */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        #00b5ff;
+  --md-primary-fg-color--light: #33c4ff;
+  --md-primary-fg-color--dark:  #006d99;
+  --md-primary-bg-color:        #e8f6ff;
+  --md-primary-bg-color--light: rgba(232, 246, 255, 0.7);
+  --md-accent-fg-color:         #33c4ff;
+  --md-accent-fg-color--transparent: rgba(51, 196, 255, 0.12);
+  --md-typeset-a-color:         #33c4ff;
+
+  /* Deep ocean dark surface — noc.ac.uk */
+  --md-default-bg-color:        #01080c;
+  --md-default-bg-color--light: #011018;
+  --md-default-bg-color--lighter: #021924;
+  --md-default-fg-color:        #e8f6ff;
+  --md-default-fg-color--light: rgba(232, 246, 255, 0.75);
+
+  --ods-surface:    #011018;
+  --ods-border:     #004866;
+  --ods-stripe:     #02131e;
+  --ods-hover:      #004866;
+  --ods-neutral:    #006d99;
+}
+
+/* ---- Navigation header ---- */
+.md-header {
+  background-color: #0a2942;
+  box-shadow: 0 2px 6px rgba(0, 9, 31, 0.35);
+}
+
+[data-md-color-scheme="slate"] .md-header {
+  background-color: #010d14;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- Navigation tabs ---- */
+.md-tabs {
+  background-color: #0a2942;
+}
+
+[data-md-color-scheme="slate"] .md-tabs {
+  background-color: #010d14;
+}
+
+/* ---- Links ---- */
+.md-typeset a {
+  color: #006d99;
+}
+.md-typeset a:hover {
+  color: #004866;
+}
+
+[data-md-color-scheme="slate"] .md-typeset a {
+  color: #33c4ff;
+}
+[data-md-color-scheme="slate"] .md-typeset a:hover {
+  color: #66d3ff;
+}
+
+/* ---- Admonitions ---- */
+.md-typeset .admonition,
+.md-typeset details {
+  border-left-color: #00b5ff;
+}
+.md-typeset .admonition-title,
+.md-typeset summary {
+  background-color: rgba(0, 181, 255, 0.1);
+}
+.md-typeset .admonition-title::before,
+.md-typeset summary::before {
+  background-color: #00b5ff;
+}
+
+/* ---- Search highlight ---- */
+.md-search-result mark {
+  color: #000f37;
+  background-color: #daeef8;
+}
+
+/* =====================================================================
+   Hero landing section
+   ===================================================================== */
+
+.ods-hero {
+  /* Flat matte navy matching noc.ac.uk — no diagonal sweep */
+  background: linear-gradient(to bottom, #0a2942 0%, #0e4d72 100%);
+  color: #ffffff;
+  /* Fill viewport minus the slim Material header (48px) */
+  min-height: calc(100vh - 48px);
+  padding: 64px 24px 56px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-md-color-scheme="slate"] .ods-hero {
+  background: linear-gradient(to bottom, #010d14 0%, #03243a 100%);
+}
+
+.ods-hero__inner {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.ods-hero__logos {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ods-hero__logos img {
+  height: 56px;
+  width: auto;
+  /* Invert dark NOC logo to white for hero */
+  filter: brightness(0) invert(1);
+}
+
+.ods-hero__title {
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin: 0;
+  line-height: 1.2;
+  /* Override Material .md-typeset h1 which inherits primary-fg-color */
+  color: #ffffff !important;
+}
+
+.ods-hero__subtitle {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 640px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.ods-hero__badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ods-hero__cta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.ods-btn {
+  display: inline-block;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.ods-btn--primary {
+  background: #ffffff;
+  color: #000f37 !important;
+  border: 2px solid #ffffff;
+}
+.ods-btn--primary:hover {
+  background: #f7f7f7;
+  color: #000f37 !important;
+  transform: translateY(-1px);
+}
+
+.ods-btn--secondary {
+  background: transparent;
+  color: #ffffff !important;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+.ods-btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+/* ---- Hero illustration ---- */
+.ods-hero__image {
+  margin-top: 2px;
+  max-width: min(500px, 60%);
+  border-radius: 6px;
+}
+
+/* =====================================================================
+   Feature card grid
+   ===================================================================== */
+
+.ods-features {
+  padding: 48px 24px;
+  background: var(--md-default-bg-color, #ffffff);
+}
+
+.ods-features__heading {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #000f37;
+  margin-bottom: 32px;
+}
+
+[data-md-color-scheme="slate"] .ods-features__heading {
+  color: #33c4ff;
+}
+
+.ods-features__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.ods-feature-card {
+  background: #ffffff;
+  border: 1px solid #cde8f5;
+  border-top: 3px solid #00b5ff;
+  border-radius: 8px;
+  padding: 24px 20px;
+  box-shadow: 0 2px 8px rgba(0, 9, 31, 0.08);
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+
+.ods-feature-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 9, 31, 0.16);
+  transform: translateY(-2px);
+}
+
+[data-md-color-scheme="slate"] .ods-feature-card {
+  background: #011018;
+  border-color: #004866;
+  border-top-color: #00b5ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+[data-md-color-scheme="slate"] .ods-feature-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+}
+
+.ods-feature-card__icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.ods-feature-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000f37;
+  margin: 0 0 8px;
+}
+
+[data-md-color-scheme="slate"] .ods-feature-card__title {
+  color: #e8f6ff;
+}
+
+.ods-feature-card__desc {
+  font-size: 0.875rem;
+  color: #232323;
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+
+[data-md-color-scheme="slate"] .ods-feature-card__desc {
+  color: rgba(232, 246, 255, 0.75);
+}
+
+.ods-feature-card__link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #006d99 !important;
+  text-decoration: none !important;
+}
+.ods-feature-card__link:hover {
+  color: #004866 !important;
+  text-decoration: underline !important;
+}
+
+[data-md-color-scheme="slate"] .ods-feature-card__link {
+  color: #33c4ff !important;
+}
+[data-md-color-scheme="slate"] .ods-feature-card__link:hover {
+  color: #66d3ff !important;
+}
+
+/* =====================================================================
+   Quick-start section on landing page
+   ===================================================================== */
+
+.ods-quickstart {
+  background: #f7f7f7;
+  padding: 40px 24px;
+  border-top: 1px solid #cde8f5;
+}
+
+[data-md-color-scheme="slate"] .ods-quickstart {
+  background: #01080c;
+  border-top-color: #004866;
+}
+
+.ods-quickstart__inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.ods-quickstart__heading {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #000f37;
+  margin-bottom: 16px;
+}
+
+[data-md-color-scheme="slate"] .ods-quickstart__heading {
+  color: #e8f6ff;
+}
+
+/* =====================================================================
+   STAC Browser page
+   ===================================================================== */
+
+/* Slim info bar above the iframe */
+.ods-stac-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--ods-surface, #f7f7f7);
+  border: 1px solid var(--ods-border, #cde8f5);
+  border-radius: 6px 6px 0 0;
+  font-size: 0.82rem;
+}
+
+.ods-stac-bar__text {
+  color: #444;
+}
+
+[data-md-color-scheme="slate"] .ods-stac-bar__text {
+  color: rgba(232, 246, 255, 0.75);
+}
+
+.ods-stac-bar__btn {
+  background: #0a2942;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.ods-stac-bar__btn:hover {
+  background: #0e4d72;
+}
+
+/* Wrapper fills remaining viewport height below the info bar */
+.ods-stac-wrapper {
+  position: relative;
+  width: 100%;
+  /* header (48px) + tabs (48px) + info bar (~41px); nav+toc hidden via frontmatter */
+  height: calc(100vh - 137px);
+  min-height: 500px;
+  border: 1px solid var(--ods-border, #cde8f5);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+
+.ods-stac-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Loading overlay — hidden once iframe fires onload */
+.ods-stac-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--ods-surface, #f7f7f7);
+  font-size: 0.875rem;
+  color: #006d99;
+  z-index: 1;
+}
+
+[data-md-color-scheme="slate"] .ods-stac-loading {
+  background: #011018;
+  color: #33c4ff;
+}
+
+/* CSS-only spinner */
+.ods-stac-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cde8f5;
+  border-top-color: #0a2942;
+  border-radius: 50%;
+  animation: ods-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+[data-md-color-scheme="slate"] .ods-stac-spinner {
+  border-color: #004866;
+  border-top-color: #00b5ff;
+}
+
+@keyframes ods-spin {
+  to { transform: rotate(360deg); }
+}
+.md-content--home .md-content__inner {
+  padding: 0;
+  margin: 0;
+}
+
+/* Full-bleed: escape any inherited container max-width */
+.md-content--home {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  max-width: none;
+  padding: 0;
+}
+
+/* Remove page title on home page (title is in the hero) */
+.md-content--home h1:first-child {
+  display: none;
+}
+
+/* ---- Quick-start code blocks (outside .md-typeset pipeline) ---- */
+.ods-quickstart pre {
+  background: #ffffff;
+  border: 1px solid #cde8f5;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  overflow-x: auto;
+  text-align: left;
+}
+
+.ods-quickstart pre code {
+  font-family: ui-monospace, "SFMono-Regular", "Roboto Mono", monospace;
+  font-size: 0.85rem;
+  color: #000f37;
+  background: none;
+  padding: 0;
+}
+
+[data-md-color-scheme="slate"] .ods-quickstart pre {
+  background: #011018;
+  border-color: #004866;
+}
+
+[data-md-color-scheme="slate"] .ods-quickstart pre code {
+  color: #e8f6ff;
+}
+
+/* Copy-block wrapper: positions the Copy button inside the code block */
+.ods-copy-block {
+  position: relative;
+}
+
+.ods-copy-block .ods-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #0a2942;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  line-height: 0;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ods-copy-block .ods-copy-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: #ffffff;
+  display: block;
+}
+
+.ods-copy-block:hover .ods-copy-btn {
+  opacity: 1;
+}
+
+.ods-copy-block .ods-copy-btn:hover {
+  background: #0e4d72;
+}
+
+[data-md-color-scheme="slate"] .ods-copy-block .ods-copy-btn {
+  background: #004866;
+}
+
+[data-md-color-scheme="slate"] .ods-copy-block .ods-copy-btn:hover {
+  background: #006d99;
+}
