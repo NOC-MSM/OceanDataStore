@@ -28,7 +28,7 @@ class TestCatalogSummaryRepr:
 class TestOceanDataCatalogRepr:
     def test_repr_contains_catalog_name(self, catalog_instance):
         r = repr(catalog_instance)
-        assert "noc-stac" in r
+        assert "ods-stac" in r
         assert "OceanDataCatalog" in r
 
     def test_repr_contains_item_count(self, catalog_instance):

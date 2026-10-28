@@ -65,16 +65,22 @@ def test_open_icechunk_dataset(catalog, icechunk_item_id):
 def test_open_zarr_dataset(catalog, zarr_item_id):
     assert isinstance(catalog.open_dataset(id=zarr_item_id), xr.Dataset)
 
-def test_open_dataset_with_time_range(catalog, icechunk_item_id):
-    ds = catalog.open_dataset(id=icechunk_item_id, start_datetime="2020-01", end_datetime="2025-01")
+def test_open_dataset_variable_subset(catalog, icechunk_item_id):
+    ds = catalog.open_dataset(id=icechunk_item_id, variable_names=["thetao", "so"])
     assert isinstance(ds, xr.Dataset)
-    assert ds["time_counter"].min() >= np.datetime64("2020-01")
-    assert ds["time_counter"].max() <= np.datetime64("2025-01")
+    assert "thetao" in ds.data_vars
+    assert "so" in ds.data_vars
+
+def test_open_dataset_with_time_range(catalog, icechunk_item_id):
+    ds = catalog.open_dataset(id=icechunk_item_id, start_datetime="2020-01", end_datetime="2025-12")
+    assert isinstance(ds, xr.Dataset)
+    assert ds["time"].min() >= np.datetime64("2020-01")
+    assert ds["time"].max() <= np.datetime64("2026-01")
 
 def test_open_dataset_with_bbox(catalog, icechunk_item_id):
     ds = catalog.open_dataset(id=icechunk_item_id, bbox=(-180.0, 0.0, -45.0, 45.0))
     assert isinstance(ds, xr.Dataset)
-    assert ds["glamt"].min() >= -180.0
-    assert ds["glamt"].max() <= 0.0
-    assert ds["gphit"].min() >= -45.0
-    assert ds["gphit"].max() <= 45.0
+    assert ds["longitude"].min() >= -180.0
+    assert ds["longitude"].max() <= 0.0
+    assert ds["latitude"].min() >= -45.0
+    assert ds["latitude"].max() <= 45.0
