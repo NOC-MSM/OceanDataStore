@@ -195,7 +195,7 @@ def apply_bbox(ds: xr.Dataset,
     
     # -- Identify geographical coordinate names & dimensions -- #
     # Default lat/lon coord names:
-    lon_name, lat_name = "nav_lon", "nav_lat"
+    lon_name, lat_name = "longitude", "latitude"
     # Update lat/lon coord names via standard_name attributes:
     for coord in ds.coords:
         if ds[coord].attrs.get('standard_name', '').lower() == 'longitude':
@@ -212,11 +212,21 @@ def apply_bbox(ds: xr.Dataset,
         else:  
             y_name, x_name = ds[lon_name].dims
 
+        # Apply land-sea mask to NEMODataTree grid nodes:
+        if ("glam" in lon_name) & ("gphi" in lat_name):
+            lsea_mask_name = f"{lon_name[-1]}maskutil"
+            if lsea_mask_name in ds:
+                lsea_mask = ds[lsea_mask_name]
+                ds[lon_name] = ds[lon_name].where(lsea_mask, drop=False)
+                ds[lat_name] = ds[lat_name].where(lsea_mask, drop=False)
+            else:
+                raise ValueError(f"Land-sea mask '{lsea_mask_name}' not found in dataset.")
+
         # Define bbox mask:
         mask = (
             (ds[lon_name] >= bbox[0])
-            & (ds[lon_name] <= bbox[2])
-            & (ds[lat_name] >= bbox[1])
+            & (ds[lon_name] <= bbox[1])
+            & (ds[lat_name] >= bbox[2])
             & (ds[lat_name] <= bbox[3])
             )
 
@@ -1139,8 +1149,8 @@ class OceanDataCatalog:
             in ISO format (e.g., "2024-12-31T00:00:00Z"). Default is to use
             the Item end_datetime.
         bbox : tuple[float | int, float | int, float | int, float | int], optional
-            Spatial bounding box used to subset the dataset. Should be a list of four floats
-            representing the bounding box in the format: (min_lon, min_lat, max_lon, max_lat).
+            Spatial bounding box used to subset the dataset. Should be a tuple of four floats
+            representing the bounding box in the format: (min_lon, max_lon, min_lat, max_lat).
             Default is to use the Item bbox.
         branch : str, optional
             Branch of the Icechunk repository to use. Default is to use the "main" branch.
@@ -1179,7 +1189,7 @@ class OceanDataCatalog:
         if not isinstance(bbox, (type(None), tuple)):
             raise TypeError("'bbox' must be a tuple or None.")
         if bbox is not None and (len(bbox) != 4 or not all(isinstance(coord, (float, int)) for coord in bbox)):
-            raise TypeError("'bbox' must be a tuple of the form (min_lon, min_lat, max_lon, max_lat) with float or int values.")
+            raise TypeError("'bbox' must be a tuple of the form (min_lon, max_lon, min_lat, max_lat) with float or int values.")
         if not isinstance(branch, str):
             raise TypeError("'branch' must be a string.")
         if not isinstance(consolidated, bool):
