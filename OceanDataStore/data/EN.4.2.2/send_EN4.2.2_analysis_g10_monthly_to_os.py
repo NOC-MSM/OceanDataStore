@@ -7,6 +7,7 @@
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
 import logging
+import os
 
 import xarray as xr
 import zarr
@@ -130,8 +131,8 @@ def main():
     commit_message = "Added EN.4.2.2.analysis.g10 monthly (1950-01-1999-12)."
     variable_commits = True
     config_kwargs = {
-            "temporary_directory":".../OceanDataStore/OceanDataStore/data/EN.4.2.2/",
-            "local_directory":".../OceanDataStore/OceanDataStore/data/EN.4.2.2/"
+            "temporary_directory":f"{os.getcwd()}",
+            "local_directory":f"{os.getcwd()}"
         }
     cluster_kwargs = {
             "n_workers" : 25,

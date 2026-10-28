@@ -7,10 +7,13 @@
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
 import logging
+import os
 
+import numpy as np
 import xarray as xr
 import zarr
 
+from OceanDataStore import OceanDataCatalog
 from OceanDataStore.cli import initialise_logging, update_icechunk
 from OceanDataStore.data.utils import (
     compute_cell_area,
@@ -26,10 +29,21 @@ def main():
     # ========== Initialise OceanDataStore Logging ========== #
     initialise_logging()
 
+    # ========== Initialise OceanDataStore Catalog ========== #
+    # Open OSTIA Dataset from Icechunk repository in OceanDataStore:
+    catalog = OceanDataCatalog(catalog_name="noc-stac")
+    ds_ods = catalog.open_dataset(id="en4.2.2/en4.2.2_analysis_g10_monthly")
+
+    latest_datetime = ds_ods["time"][-1].values
+    logger.info(f"Latest EN4.2.2 Monthly Data in OceanDataStore Icechunk repository -> {latest_datetime}")
+
     # ========== Prepare Data ========== #
     # Open EN.4.2.2 analyses dataset:
-    filepath = "/dssgfs01/scratch/otooth/npd_data/observations/EN.4.2.2/EN.4.2.2.f.analysis.g10.20*.nc"
+    filepath = "/dssgfs01/scratch/otooth/npd_data/observations/EN.4.2.2/EN.4.2.2.f.analysis.g10.202*.nc"
     ds = xr.open_mfdataset(filepath, combine="by_coords", data_vars="all", engine="netcdf4")
+
+    # Select data from the latest datetime in the Icechunk repository:
+    ds = ds.sel(time=slice(latest_datetime + np.timedelta64(1, "D"), None))
 
     # Standardise coordinate dimension names:
     ds = ds.rename({"lon": "longitude", "lat": "latitude"})
@@ -126,13 +140,13 @@ def main():
     prefix = "en4.2.2_analysis_g10_monthly"
     store_credentials_json = ".../credentials/jasmin_os_credentials.json"
     branch = "main"
-    commit_message = "Added EN.4.2.2.analysis.g10 monthly (2000-01-2026-03)."
+    commit_message = f"Added EN.4.2.2.analysis.g10 monthly ({ds['time'].dt.strftime('%Y-%m-%d').values[0]} to {ds['time'].dt.strftime('%Y-%m-%d').values[-1]})."
     config_kwargs = {
-            "temporary_directory":".../OceanDataStore/OceanDataStore/data/EN.4.2.2/",
-            "local_directory":".../OceanDataStore/OceanDataStore/data/EN.4.2.2/"
+            "temporary_directory":f"{os.getcwd()}",
+            "local_directory":f"{os.getcwd()}"
         }
     cluster_kwargs = {
-            "n_workers" : 25,
+            "n_workers" : 20,
             "threads_per_worker" : 1,
             "memory_limit":"3GB"
         }
@@ -141,7 +155,7 @@ def main():
     ds = ds.chunk({'time': 1, 'depth': 20, 'latitude': 173, 'longitude': 360})
 
     # Update variable encodings:
-    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=3, shuffle=zarr.codecs.BloscShuffle.shuffle)
+    blosccodec = zarr.codecs.BloscCodec(cname="zstd", clevel=3, shuffle="shuffle")
     for var in list(ds.data_vars) + list(ds.coords):
         ds[var].encoding['compressors'] = [blosccodec]
 

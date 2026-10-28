@@ -7,10 +7,11 @@
 # Created By: Ollie Tooth (oliver.tooth@noc.ac.uk)
 # =========================================================
 import logging
+import os
 
 import xarray as xr
 
-from OceanDataStore.cli import send_to_icechunk, initialise_logging
+from OceanDataStore.cli import initialise_logging, send_to_icechunk
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,8 @@ def main():
     branch = "main"
     variable_commits = True
     config_kwargs = {
-            "temporary_directory":".../OceanDataStore/OceanDataStore/data/EN.4.2.2/",
-            "local_directory":".../OceanDataStore/OceanDataStore/data/EN.4.2.2/"
+            "temporary_directory":f"{os.getcwd()}",
+            "local_directory":f"{os.getcwd()}"
         }
     cluster_kwargs = {
             "n_workers" : 10,
