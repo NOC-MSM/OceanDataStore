@@ -8,15 +8,11 @@ Authors:
     - Ollie Tooth
 """
 import logging
-import pytest
+
 import numpy as np
+import pytest
 import xarray as xr
 
-from OceanDataStore.cli.zarr import (
-    _check_zarr_compatibility,
-    _write_to_zarr,
-    _update_zarr_store,
-)
 from OceanDataStore.cli.exceptions import (
     AppendDimensionError,
     AppendDimensionSizeError,
@@ -25,6 +21,12 @@ from OceanDataStore.cli.exceptions import (
     DimensionSizeError,
     ObjectNotFound,
 )
+from OceanDataStore.cli.zarr import (
+    _check_zarr_compatibility,
+    _update_zarr_store,
+    _write_to_zarr,
+)
+
 
 # --- Unit Tests --- #
 class TestCheckZarrCompatibility:
@@ -41,7 +43,7 @@ class TestCheckZarrCompatibility:
     def test_store_not_found_raises(self, mock_obj_store, mocker):
         # Test FileNotFoundError when zarr version is incompatible with the store:
         mocker.patch("OceanDataStore.cli.zarr._check_zarr_store", return_value=True)
-        mocker.patch("OceanDataStore.cli.zarr.xr.open_zarr", side_effect=Exception("incompatible format"))
+        mocker.patch("OceanDataStore.cli.zarr.xr.open_zarr", side_effect=FileNotFoundError("incompatible format"))
         source_ds = xr.Dataset(
             {"uo": (["time_counter", "x"], np.ones((5, 4), dtype="float32"))},
             coords={"time_counter": np.arange(5)},

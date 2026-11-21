@@ -6,13 +6,29 @@ Unit tests for custom exceptions in OceanDataStore.cli.exceptions.
 import pytest
 
 from OceanDataStore.cli.exceptions import (
-    ObjectNotFound,
     AppendDimensionError,
-    DimensionNotFound,
-    DimensionSizeError,
     AppendDimensionSizeError,
     ChunkSizeError,
+    DimensionNotFound,
+    DimensionSizeError,
+    ObjectNotFound,
+    OceanDataStoreError,
 )
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        ObjectNotFound("obj"),
+        AppendDimensionError("time_counter"),
+        DimensionNotFound("depth", "obj"),
+        DimensionSizeError("x", 3, 4),
+        AppendDimensionSizeError("time_counter", 5, 3),
+        ChunkSizeError({"x": 2}, {"x": 3}),
+    ],
+)
+def test_exceptions_share_base_class(exc):
+    assert isinstance(exc, OceanDataStoreError)
 
 
 def test_ObjectNotFound():
