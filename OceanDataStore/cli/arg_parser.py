@@ -23,14 +23,22 @@ Authors:
     - Joao Morado
     - Tobias Ferreira
 """
-import json
+
 import argparse
+import json
 
 from OceanDataStore import __version__
 
 
-def create_parser():
-    """Create the argument parser."""
+def create_parser() -> argparse.ArgumentParser:
+    """
+    Create the OceanDataStore command line argument parser.
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        Argument parser for the ``ods`` command line interface.
+    """
     parser = argparse.ArgumentParser(
         description=f"OceanDataStore {__version__} command line interface",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -125,7 +133,10 @@ def create_parser():
         "-uc",
         "--update-coords",
         dest="update_coords",
-        help="Coordinate dimensions to update as a JSON string. E.g., '{\"nav_lon\": \"glamt\", \"nav_lat\": \"gphit\"}'",
+        help=(
+            "Coordinate dimensions to update as a JSON string. "
+            "E.g., '{\"nav_lon\": \"glamt\", \"nav_lat\": \"gphit\"}'"
+        ),
         type=json.loads,
         default=None,
     )
