@@ -7,22 +7,23 @@ Authors:
     - Ollie Tooth
 """
 import logging
-import pytest
-import numpy as np
-import xarray as xr
 from unittest.mock import MagicMock
 
-from OceanDataStore.cli.icechunk import (
-    _check_icechunk_compatibility,
-    _write_to_icechunk,
-    _update_icechunk_store,
-)
+import numpy as np
+import pytest
+import xarray as xr
+
 from OceanDataStore.cli.exceptions import (
-    DimensionSizeError,
-    DimensionNotFound,
     AppendDimensionError,
     AppendDimensionSizeError,
     ChunkSizeError,
+    DimensionNotFound,
+    DimensionSizeError,
+)
+from OceanDataStore.cli.icechunk import (
+    _check_icechunk_compatibility,
+    _update_icechunk_store,
+    _write_to_icechunk,
 )
 
 
@@ -40,7 +41,7 @@ class TestCheckIcechunkCompatibility:
     def test_store_not_found_raises(self, mocker, simple_dataset, mock_repo):
         mocker.patch(
             "OceanDataStore.cli.icechunk.xr.open_zarr",
-            side_effect=Exception("store does not exist"),
+            side_effect=FileNotFoundError("store does not exist"),
         )
         with pytest.raises(FileNotFoundError, match="IcechunkStore not found"):
             _check_icechunk_compatibility(

@@ -8,43 +8,43 @@ import xarray as xr
 
 from OceanDataStore.cli.utils import (
     CaptureWarningsPlugin,
-    timer,
+    Timer,
     _preprocess_dataset,
 )
+
 
 # --- Unit Tests --- #
 class TestTimer:
     def test_send_dataset_action(self):
-        t = timer("send", "dest/path")
+        t = Timer("send", "dest/path")
         assert t.action == "Sent dataset to"
 
     def test_send_variable_action(self):
-        t = timer("send", "dest/path", var="tos")
+        t = Timer("send", "dest/path", var="tos")
         assert t.action == "Sent tos to"
 
     def test_replace_dataset_action(self):
-        t = timer("replace", "dest/path")
+        t = Timer("replace", "dest/path")
         assert t.action == "Updated"
 
     def test_replace_variable_action(self):
-        t = timer("replace", "dest/path", var="tos")
+        t = Timer("replace", "dest/path", var="tos")
         assert t.action == "Updated tos in"
 
     def test_append_dataset_action(self):
-        t = timer("append", "dest/path")
+        t = Timer("append", "dest/path")
         assert t.action == "Appended to"
 
     def test_append_variable_action(self):
-        t = timer("append", "dest/path", var="tos")
+        t = Timer("append", "dest/path", var="tos")
         assert t.action == "Appended tos to"
 
     def test_invalid_action_raises(self):
         with pytest.raises(ValueError, match="Invalid action"):
-            timer("invalid", "dest/path")
+            Timer("invalid", "dest/path")
 
     def test_context_manager_sets_timing(self):
-        t = timer("send", "dest/path")
-        with t:
+        with Timer("send", "dest/path") as t:
             pass
         assert hasattr(t, "t_start")
         assert hasattr(t, "t_end")

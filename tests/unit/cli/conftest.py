@@ -3,12 +3,25 @@ conftest.py
 
 Shared fixtures for OceanDataStore CLI unit tests.
 """
-import pytest
-import numpy as np
-import xarray as xr
 from unittest.mock import MagicMock
 
+import numpy as np
+import pytest
+import xarray as xr
+
 from OceanDataStore.cli.object_store import ObjectStoreS3
+
+
+@pytest.fixture(autouse=True)
+def clear_fs_instance_cache():
+    """
+    Clear the fsspec instance cache before & after each test.
+    fsspec caches filesystem instances by constructor arguments, so
+    ObjectStoreS3 instances would otherwise be shared between tests.
+    """
+    ObjectStoreS3.clear_instance_cache()
+    yield
+    ObjectStoreS3.clear_instance_cache()
 
 
 @pytest.fixture
@@ -24,19 +37,17 @@ def credentials_dict():
 
 
 @pytest.fixture
-def store_with_args(credentials_dict, mocker):
+def store_with_args(credentials_dict, mocker, monkeypatch):
     """
-    Fixture providing example ObjectStoreS3 instance from keyword arguments.
+    Fixture providing example ObjectStoreS3 instance with credentials read
+    from environment variables (from_env=True).
     Mocks s3fs.S3FileSystem.__init__ to prevent real connection attempts.
     """
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", credentials_dict["token"])
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", credentials_dict["secret"])
+    monkeypatch.setenv("AWS_ENDPOINT_URL", credentials_dict["endpoint_url"])
     mocker.patch("OceanDataStore.cli.object_store.s3fs.S3FileSystem.__init__", return_value=None)
-    return ObjectStoreS3(
-        anon=True,
-        asynchronous=False,
-        secret=credentials_dict["secret"],
-        key=credentials_dict["token"],
-        endpoint_url=credentials_dict["endpoint_url"],
-    )
+    return ObjectStoreS3(anon=True, asynchronous=False, from_env=True)
 
 
 @pytest.fixture

@@ -12,23 +12,27 @@
 # permissions and limitations under the License.
 # ===================================================================
 """
-OceanDataStore: CLI Sub-package
+OceanDataStore: CLI Sub-package.
 
 An open-source Python library to streamline writing, updating and accessing
 ocean data stored in cloud object storage.
 """
+
 __author__ = "Ollie Tooth, Joao Morado, Tobias Ferreira"
 __credits__ = "National Oceanography Centre (NOC), Southampton, UK"
 
-from OceanDataStore.cli.icechunk import (
-    send_to_icechunk,
-    update_icechunk,
-)
+from OceanDataStore.cli.icechunk import send_to_icechunk, update_icechunk
 from OceanDataStore.cli.logging import initialise_logging
-from OceanDataStore.cli.utils import ObjectStoreS3, list_objects
-from OceanDataStore.cli.zarr import (
-    send_to_zarr,
-    update_zarr,
-)
+from OceanDataStore.cli.object_store import ObjectStoreS3
+from OceanDataStore.cli.utils import list_objects
+from OceanDataStore.cli.zarr import send_to_zarr, update_zarr
 
-__all__ = ("initialise_logging", "send_to_zarr", "send_to_icechunk", "update_zarr", "update_icechunk", "list_objects", "ObjectStoreS3")
+__all__ = (
+    "ObjectStoreS3",
+    "initialise_logging",
+    "list_objects",
+    "send_to_icechunk",
+    "send_to_zarr",
+    "update_icechunk",
+    "update_zarr",
+)

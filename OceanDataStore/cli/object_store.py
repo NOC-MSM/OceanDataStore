@@ -23,116 +23,137 @@ Authors:
     - Joao Morado
     - Tobias Ferreira
 """
+
 import json
 import logging
-from typing import Union
+import os
+from typing import Any
 
 import icechunk
 import s3fs
 
+logger = logging.getLogger(__name__)
+
+# Default Icechunk configuration used when none is provided (e.g., JASMIN Object Store).
+DEFAULT_ICECHUNK_CONFIG: dict[str, dict[str, Any]] = {
+    "storage_config_kwargs": {"region": "us-east-1", "force_path_style": True},
+    "repository_config_kwargs": {},
+    "storage_settings_kwargs": {"unsafe_use_conditional_update": False, "unsafe_use_conditional_create": False},
+}
+
 
 class ObjectStoreS3(s3fs.S3FileSystem):
     """
-    Initialize S3 Object Store.
+    S3-compatible object store filesystem.
 
     Parameters
     ----------
-    anon, bool (False)
-        Whether to use anonymous connection (public buckets only).
-    asynchronous, bool (True)
-        Whether to use asynchronous operations (instance to be used inside corountines).
-    store_credentials_json, str (None)
-        File path to object store credentials .json file.
-    secret, str (None)
-        If not anonymous, use this secret key to access object store.
-    key, str (None)
-        If not anonymous, use this key to access object store.
-    endpoint_url, str (None)
-        Endpoint URL of object store. Needed for non-AWS S3 object stores.
+    anon : bool, default False
+        Whether to use an anonymous connection (public buckets only).
+    asynchronous : bool, default False
+        Whether to use asynchronous operations (instance to be used inside coroutines).
+    store_credentials_json : str | None, default None
+        Filepath to the object store credentials JSON file, containing the
+        keys ``token`` (access key ID), ``secret`` (secret access key) and
+        ``endpoint_url``.
+    from_env : bool, default False
+        Whether to read object store credentials from the environment variables
+        ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY`` and ``AWS_ENDPOINT_URL``.
+        Only used when ``store_credentials_json`` is None.
+    *fs_args : Any
+        Additional positional arguments passed to ``s3fs.S3FileSystem``.
+    **fs_kwargs : Any
+        Additional keyword arguments passed to ``s3fs.S3FileSystem``.
+
+    Raises
+    ------
+    ValueError
+        If neither ``store_credentials_json`` nor ``from_env=True`` is provided.
     """
+
     def __init__(
         self,
         anon: bool = False,
         asynchronous: bool = False,
-        store_credentials_json: Union[str, None] = None,
-        secret: Union[str, None] = None,
-        key: Union[str, None] = None,
-        endpoint_url: Union[str, None] = None,
-        *fs_args,
-        **fs_kwargs,
+        store_credentials_json: str | None = None,
+        from_env: bool = False,
+        *fs_args: Any,
+        **fs_kwargs: Any,
     ) -> None:
-
-        # Get object store credentials:
         self._anon = anon
         self._asynchronous = asynchronous
 
+        # Get object store credentials:
         if store_credentials_json is None:
-            logging.info(
-                "No JSON file was provided."
-                "Object store credentials will be obtained from the arguments passed."
-            )
-            self._store_credentials = {
-                "secret": secret,
-                "token": key,
-                "endpoint_url": endpoint_url,
-            }
+            if from_env:
+                self._store_credentials = {
+                    "secret": os.getenv("AWS_SECRET_ACCESS_KEY", None),
+                    "token": os.getenv("AWS_ACCESS_KEY_ID", None),
+                    "endpoint_url": os.getenv("AWS_ENDPOINT_URL", None),
+                }
+            else:
+                raise ValueError(
+                    "Object store credentials must be provided via `store_credentials_json` "
+                    "or set using `from_env=True`."
+                )
         else:
             self._store_credentials = self.load_store_credentials(store_credentials_json)
 
-        # Configure storage options:
+        # Configure storage options:
         self._storage_options = self.get_storage_options()
 
         super().__init__(*fs_args, **self._storage_options, **fs_kwargs)
 
     @staticmethod
-    def load_store_credentials(path: str) -> dict:
+    def load_store_credentials(path: str) -> dict[str, Any]:
         """
-        Set the credentials of the object store from a JSON file.
+        Load object store credentials from a JSON file.
 
         Parameters
         ----------
-        path
-            Absolute or relative filepath to the JSON file containing
-            the object store credentials.
+        path : str
+            Filepath to the JSON file containing object store credentials.
 
         Returns
         -------
-        store_credentials
-            Dictionary containing the values of the `token`,
-            `secret` and `endpoint_url` keys used to access the
-            object store.
+        dict[str, Any]
+            Dictionary containing the values of the ``token``, ``secret`` and
+            ``endpoint_url`` keys used to access the object store.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the credentials file does not exist.
         """
-        try:
-            with open(path) as f:
-                store_credentials = json.load(f)
-        except Exception as error:
-            raise Exception(error)
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Credentials file not found: {path}")
+
+        with open(path) as f:
+            store_credentials = json.load(f)
 
         for key in ["token", "secret", "endpoint_url"]:
             if key not in store_credentials:
-                logging.warning(
-                    '"%s" is not a key in the JSON file provided. Its value will be set to None.',
-                    key
-                )
+                logger.warning('"%s" not included in the JSON credentials file -> value will be set to None.', key)
 
         return store_credentials
 
-
-    def get_storage_options(
-        self,
-        set_async: bool=False,
-    ) -> dict:
+    def get_storage_options(self, set_async: bool = False) -> dict[str, Any]:
         """
         Get the storage options to access the object store.
 
+        Parameters
+        ----------
+        set_async : bool, default False
+            Whether to return storage options for asynchronous access,
+            overriding the ``asynchronous`` option of this instance.
+
         Returns
         -------
-        storage_options
-            Dictionary containing the storage options to access the object store.
-
+        dict[str, Any]
+            Storage options to access the object store (e.g., for
+            ``xarray.open_zarr(storage_options=...)``).
         """
-        # Create storage options dict from credentials:
-        self._storage_options = {
+        return {
             "anon": self._anon,
             "secret": self._store_credentials["secret"],
             "key": self._store_credentials["token"],
@@ -143,151 +164,178 @@ class ObjectStoreS3(s3fs.S3FileSystem):
                 "request_checksum_calculation": "when_required",
                 "response_checksum_validation": "when_required",
             },
+            "asynchronous": True if set_async else self._asynchronous,
         }
 
-        if set_async:
-            # Override asynchronous option of ObjectStoreS3:
-            self._storage_options["asynchronous"] = True
-        else:
-            self._storage_options["asynchronous"] = self._asynchronous
-
-        return self._storage_options
-
-
-    def create_bucket(
-        self,
-        bucket: str,
-        **kwargs
-    ) -> None:
+    def create_bucket(self, bucket: str, **kwargs: Any) -> None:
         """
         Create a bucket in the object store.
 
+        If the bucket already exists, this is logged and no error is raised.
+
         Parameters
         ----------
-        bucket
+        bucket : str
             Name of bucket to create.
-            Bucket names can consist only of lowercase letters,
-            numbers, dots (.), and hyphens (-).
+        **kwargs : Any
+            Additional keyword arguments passed to ``S3FileSystem.mkdir()``.
         """
         try:
-            return self.mkdir(bucket, **kwargs)
+            self.mkdir(bucket, **kwargs)
         except FileExistsError:
-            logging.info(f"Bucket {bucket} already exists.")
+            logger.info("Failed to create bucket %s -> bucket already exists.", bucket)
 
+    def _icechunk_storage_and_config(
+        self,
+        bucket: str,
+        prefix: str,
+        storage_config_kwargs: dict[str, Any] | None = None,
+        storage_settings_kwargs: dict[str, Any] | None = None,
+        repository_config_kwargs: dict[str, Any] | None = None,
+    ) -> tuple[icechunk.Storage, icechunk.RepositoryConfig]:
+        """
+        Define the Icechunk S3 storage and repository configuration.
+
+        Input dictionaries are copied and are not modified.
+
+        Parameters
+        ----------
+        bucket : str
+            Name of bucket containing the Icechunk repository.
+        prefix : str
+            Prefix within bucket of the Icechunk repository.
+        storage_config_kwargs : dict[str, Any] | None, default None
+            Keyword arguments for ``icechunk.s3_storage()``.
+        storage_settings_kwargs : dict[str, Any] | None, default None
+            Keyword arguments for ``icechunk.StorageSettings()``.
+        repository_config_kwargs : dict[str, Any] | None, default None
+            Keyword arguments for ``icechunk.RepositoryConfig()``.
+
+        Returns
+        -------
+        tuple[icechunk.Storage, icechunk.RepositoryConfig]
+            Icechunk S3 storage and repository configuration.
+        """
+        storage_config_kwargs = dict(storage_config_kwargs or {})
+        storage_config_kwargs.setdefault("bucket", bucket)
+        storage_config_kwargs.setdefault("prefix", prefix)
+        storage_config_kwargs.setdefault("region", "us-east-1")
+        storage_config_kwargs.setdefault("force_path_style", True)
+        storage_config_kwargs.setdefault("access_key_id", self._store_credentials["token"])
+        storage_config_kwargs.setdefault("secret_access_key", self._store_credentials["secret"])
+        storage_config_kwargs.setdefault("endpoint_url", self._store_credentials["endpoint_url"])
+
+        storage_settings_kwargs = dict(storage_settings_kwargs or {})
+        storage_settings_kwargs.setdefault("unsafe_use_conditional_update", False)
+        storage_settings_kwargs.setdefault("unsafe_use_conditional_create", False)
+
+        repository_config_kwargs = dict(repository_config_kwargs or {})
+        repository_config_kwargs.setdefault("storage", icechunk.StorageSettings(**storage_settings_kwargs))
+
+        storage = icechunk.s3_storage(**storage_config_kwargs)
+        repo_config = icechunk.RepositoryConfig(**repository_config_kwargs)
+
+        return storage, repo_config
 
     def create_icechunk_repo(
         self,
         bucket: str,
         prefix: str,
-        storage_config_kwargs: dict = {'region': 'us-east-1', 'force_path_style': True},
-        repository_config_kwargs: dict = {},
-        storage_settings_kwargs: dict = {'unsafe_use_conditional_update': False, 'unsafe_use_conditional_create': False},
+        storage_config_kwargs: dict[str, Any] | None = None,
+        storage_settings_kwargs: dict[str, Any] | None = None,
+        repository_config_kwargs: dict[str, Any] | None = None,
+        virtual_chunk_containers: icechunk.VirtualChunkContainer | None = None,
     ) -> icechunk.Repository:
         """
-        Create a new Icechunk repository in cloud object storage.
+        Create a new Icechunk repository in an S3-compatible object store.
 
         Parameters
         ----------
-        bucket: str
-            Name of bucket in s3 object store.
-        prefix: str
-            Name of prefix within bucket to store object.
-        storage_config_kwargs
-            Kwargs for icechunk.s3_storage().
-            See: https://icechunk.io/en/latest/icechunk-python/storage/.
-        repository_config_kwargs
-            Kwargs for icechunk.RepositoryConfig().
-            See: https://icechunk.io/en/latest/icechunk-python/configuration/.
-        storage_settings_kwargs
-            Kwargs for icechunk.StorageSettings().
-            See: https://icechunk.io/en/latest/icechunk-python/configuration/#storage.
+        bucket : str
+            Name of bucket to store Icechunk repository.
+        prefix : str
+            Prefix within bucket to store Icechunk repository.
+        storage_config_kwargs : dict[str, Any] | None, default None
+            Keyword arguments for ``icechunk.s3_storage()``.
+            See: https://icechunk.io/en/stable/icechunk-python/storage/.
+        storage_settings_kwargs : dict[str, Any] | None, default None
+            Keyword arguments for ``icechunk.StorageSettings()``.
+            See: https://icechunk.io/en/stable/icechunk-python/configuration/#storage.
+        repository_config_kwargs : dict[str, Any] | None, default None
+            Keyword arguments for ``icechunk.RepositoryConfig()``.
+            See: https://icechunk.io/en/stable/icechunk-python/configuration/.
+        virtual_chunk_containers : icechunk.VirtualChunkContainer | None, default None
+            Virtual chunk container to register in the repository configuration.
+            See: https://icechunk.io/en/stable/reference/virtual/#icechunk.virtual.VirtualChunkContainer.
 
         Returns
         -------
-        repo, icechunk.Repository
-            Icechunk repository.
+        icechunk.Repository
+            New Icechunk repository.
         """
-        # -- Define S3 storage -- #
-        storage = icechunk.s3_storage(
+        storage, repo_config = self._icechunk_storage_and_config(
             bucket=bucket,
             prefix=prefix,
-            access_key_id=self._store_credentials["token"],
-            secret_access_key=self._store_credentials['secret'],
-            endpoint_url=self._store_credentials['endpoint_url'],
-            **storage_config_kwargs
-            )
+            storage_config_kwargs=storage_config_kwargs,
+            storage_settings_kwargs=storage_settings_kwargs,
+            repository_config_kwargs=repository_config_kwargs,
+        )
+        if virtual_chunk_containers is not None:
+            repo_config.set_virtual_chunk_container(virtual_chunk_containers)
 
-        # -- Define Icechunk repo config -- #
-        repo_config = icechunk.RepositoryConfig(
-                        storage = icechunk.StorageSettings(
-                            **storage_settings_kwargs,
-                            ),
-                        **repository_config_kwargs,
-                        )
-
-        # -- Create Icechunk repo -- #
-        repo = icechunk.Repository.create(
-            storage=storage,
-            config=repo_config
-            )
-
-        return repo
-
+        return icechunk.Repository.create(storage=storage, config=repo_config)
 
     def open_icechunk_repo(
         self,
         bucket: str,
         prefix: str,
-        storage_config_kwargs: dict = {'region': 'us-east-1', 'force_path_style': True},
-        repository_config_kwargs: dict = {},
-        storage_settings_kwargs: dict = {'unsafe_use_conditional_update': False, 'unsafe_use_conditional_create': False},
+        storage_config_kwargs: dict[str, Any] | None = None,
+        repository_config_kwargs: dict[str, Any] | None = None,
+        storage_settings_kwargs: dict[str, Any] | None = None,
+        container_credentials: dict[str, Any] | None = None,
     ) -> icechunk.Repository:
         """
-        Open an existing Icechunk repository in cloud object storage.
+        Open an existing Icechunk repository from an S3-compatible object store.
 
         Parameters
         ----------
-        bucket: str
-            Name of bucket in s3 object store.
-        prefix: str
-            Name of prefix within bucket to store object.
-        storage_config_kwargs
-            Kwargs for icechunk.s3_storage().
-            See: https://icechunk.io/en/latest/icechunk-python/storage/.
-        repository_config_kwargs
-            Kwargs for icechunk.RepositoryConfig().
-            See: https://icechunk.io/en/latest/icechunk-python/configuration/.
-        storage_settings_kwargs
-            Kwargs for icechunk.StorageSettings().
-            See: https://icechunk.io/en/latest/icechunk-python/configuration/#storage.
+        bucket : str
+            Name of bucket containing the Icechunk repository.
+        prefix : str
+            Prefix within bucket of the Icechunk repository.
+        storage_config_kwargs : dict[str, Any] | None, default None
+            Keyword arguments for ``icechunk.s3_storage()``.
+            See: https://icechunk.io/en/stable/icechunk-python/storage/.
+        repository_config_kwargs : dict[str, Any] | None, default None
+            Keyword arguments for ``icechunk.RepositoryConfig()``.
+            See: https://icechunk.io/en/stable/icechunk-python/configuration/.
+        storage_settings_kwargs : dict[str, Any] | None, default None
+            Keyword arguments for ``icechunk.StorageSettings()``.
+            See: https://icechunk.io/en/stable/icechunk-python/configuration/#storage.
+        container_credentials : dict[str, Any] | None, default None
+            Mapping of virtual chunk container URL prefixes to credential objects.
+            See: https://icechunk.io/en/stable/reference/#icechunk.Repository.open.
 
         Returns
         -------
-        repo, icechunk.Repository
-            Icechunk repository.
+        icechunk.Repository
+            Existing Icechunk repository.
         """
-        # -- Define S3 storage -- #
-        storage = icechunk.s3_storage(
+        storage, repo_config = self._icechunk_storage_and_config(
             bucket=bucket,
             prefix=prefix,
-            access_key_id=self._store_credentials["token"],
-            secret_access_key=self._store_credentials['secret'],
-            endpoint_url=self._store_credentials['endpoint_url'],
-            **storage_config_kwargs
-            )
+            storage_config_kwargs=storage_config_kwargs,
+            storage_settings_kwargs=storage_settings_kwargs,
+            repository_config_kwargs=repository_config_kwargs,
+        )
 
-        # -- Define Icechunk repo config -- #
-        repo_config = icechunk.RepositoryConfig(
-                        storage = icechunk.StorageSettings(
-                            **storage_settings_kwargs,
-                            ),
-                        **repository_config_kwargs,
-                        )
+        if container_credentials is None:
+            authorize_virtual_chunk_access = None
+        else:
+            authorize_virtual_chunk_access = icechunk.credentials.containers_credentials(container_credentials)
 
-        # -- Open existing Icechunk repo -- #
-        repo = icechunk.Repository.open(
+        return icechunk.Repository.open(
             storage=storage,
-            config=repo_config
-            )
-
-        return repo
+            config=repo_config,
+            authorize_virtual_chunk_access=authorize_virtual_chunk_access,
+        )

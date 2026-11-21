@@ -15,69 +15,114 @@
 exceptions.py
 
 Description:
-This module defines exceptions classes to be
-raised when performing sanity checks.
+This module defines the exception classes raised by OceanDataStore when
+performing compatibility checks against existing stores.
 
 Authors:
     - Joao Morado
     - Tobias Ferreira
     - Ollie Tooth
 """
-import logging
+
+from collections.abc import Mapping
+from typing import Any
 
 
-class ObjectNotFound(Exception):
-    """Exception raised for when an object is not found in the object store."""
+class OceanDataStoreError(Exception):
+    """Base class for all OceanDataStore exceptions."""
 
-    def __init__(self, object_name):
-        """Initialise the exception."""
-        message = f"Object '{object_name}' not found in the object store."
-        logging.warning(message)
-        super().__init__(message)
 
-class AppendDimensionError(Exception):
+class ObjectNotFound(OceanDataStoreError):
     """
-    Exception raised when attempting to modify values along append dimension.
+    Exception raised when an object is not found in the object store.
+
+    Parameters
+    ----------
+    object_name : str
+        Path to the missing object in the object store.
     """
 
-    def __init__(self, dim):
-        """Initialise the exception."""
-        message = f"Cannot prepend to existing values along append dimension {dim}."
-        logging.warning(message)
-        super().__init__(message)
+    def __init__(self, object_name: str) -> None:
+        super().__init__(f"Object '{object_name}' not found in the object store.")
 
-class DimensionNotFound(Exception):
-    """Exception raised when a dimension is missing."""
 
-    def __init__(self, dim, object_name):
-        """Initialise the exception."""
-        message = f"Dimension {dim} is not found in {object_name}."
-        logging.warning(message)
-        super().__init__(message)
+class AppendDimensionError(OceanDataStoreError):
+    """
+    Exception raised when attempting to prepend values along the append dimension.
 
-class DimensionSizeError(Exception):
-    """Exception raised when a dimension has incorrect size."""
+    Parameters
+    ----------
+    dim : str
+        Name of the append dimension.
+    """
 
-    def __init__(self, dim, size, expected_size):
-        """Initialise the exception."""
-        message = f"Dimension {dim} has size {size}, expected {expected_size}."
-        logging.warning(message)
-        super().__init__(message)
+    def __init__(self, dim: str) -> None:
+        super().__init__(f"Cannot prepend to existing values along append dimension {dim}.")
 
-class AppendDimensionSizeError(Exception):
-    """Exception raised when an append dimension has incorrect size."""
 
-    def __init__(self, dim, size, expected_size):
-        """Initialise the exception."""
-        message = f"Append dimension {dim} has {size} overlapping values, expected {expected_size}."
-        logging.warning(message)
-        super().__init__(message)
+class DimensionNotFound(OceanDataStoreError):
+    """
+    Exception raised when a dimension is missing from an existing store.
 
-class ChunkSizeError(Exception):
-    """Exception raised when data chunks do not match zarr store chunks."""
+    Parameters
+    ----------
+    dim : str
+        Name of the missing dimension.
+    object_name : str
+        Path to the store in the object store.
+    """
 
-    def __init__(self, chunks, store_chunks):
-        """Initialise the exception."""
-        message = f"Specified chunks are {chunks}, expected {store_chunks}."
-        logging.warning(message)
-        super().__init__(message)
+    def __init__(self, dim: str, object_name: str) -> None:
+        super().__init__(f"Dimension {dim} is not found in {object_name}.")
+
+
+class DimensionSizeError(OceanDataStoreError):
+    """
+    Exception raised when a dimension size differs from the existing store.
+
+    Parameters
+    ----------
+    dim : str
+        Name of the dimension.
+    size : int
+        Size of the dimension in the source data.
+    expected_size : int
+        Size of the dimension in the existing store.
+    """
+
+    def __init__(self, dim: str, size: int, expected_size: int) -> None:
+        super().__init__(f"Dimension {dim} has size {size}, expected {expected_size}.")
+
+
+class AppendDimensionSizeError(OceanDataStoreError):
+    """
+    Exception raised when the overlap along the append dimension is inconsistent.
+
+    Parameters
+    ----------
+    dim : str
+        Name of the append dimension.
+    size : int
+        Number of source values that overlap the existing store.
+    expected_size : int
+        Number of source values found in the existing store.
+    """
+
+    def __init__(self, dim: str, size: int, expected_size: int) -> None:
+        super().__init__(f"Append dimension {dim} has {size} overlapping values, expected {expected_size}.")
+
+
+class ChunkSizeError(OceanDataStoreError):
+    """
+    Exception raised when the requested chunks do not match the existing store chunks.
+
+    Parameters
+    ----------
+    chunks : Mapping[str, Any]
+        Requested chunk sizes per dimension.
+    store_chunks : Mapping[str, Any]
+        Chunk sizes per dimension in the existing store.
+    """
+
+    def __init__(self, chunks: Mapping[str, Any], store_chunks: Mapping[str, Any]) -> None:
+        super().__init__(f"Specified chunks are {chunks}, expected {store_chunks}.")
